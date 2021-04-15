@@ -2,21 +2,23 @@
 
 HIP acceleration for SpMV solver.
 
-## Demo code
-编译方式
+## Build
+### Pre-requestment
+- [ROCM](https://rocmdocs.amd.com): version 3.x or higher. For example: `module load compiler/rocm/3.9.1`
+- [HIP](https://github.com/ROCm-Developer-Tools/HIP)
+- [CMake](https://cmake.org): version 3.6 or higher.
 
-异构端验证
+### Build steps
+Build and run for GPU side:
 ```bash
-hipcc -Dgpu -I/public/software/compiler/rocm/rocm-3.9.1/rocsparse/include -I ./  -L/public/software/compiler/rocm/rocm-3.9.1/rocsparse/lib/ -lrocsparse main.cpp -o Csrsparse
-```
-Cpu端验证  
-如果采用CPU端验证使用下面编译方式即可,通常情况下采用cpu端验证即可
-```bash
-hipcc main.cpp -I ./ -o Csrsparse   
+CC=clang CXX=hipcc cmake -DHIP_ENABLE_FLAG=ON -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
+cmake --build ./build-hip
+./build-hip/bin/spmv-hip
 ```
 
-运行方式:
+Build and run for CPU side:
 ```bash
-./Csrsparse 3000 3000 0.5
+CC=clang CXX=hipcc cmake -DCMAKE_BUILD_TYPE=Release -B./build-cpu -S./
+cmake --build ./build-cpu
+./build-cpu/bin/spmv-cpu
 ```
-第一个和第二个参数是矩阵维度(m行n列)，第三个参数是稠密度(稀疏度=1-稠密度)
