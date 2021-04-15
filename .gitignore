@@ -1,6 +1,7 @@
 # General
 .DS_Store
 .idea/
+cmake-build-debug
 
 ### VisualStudioCode template
 .vscode/*
