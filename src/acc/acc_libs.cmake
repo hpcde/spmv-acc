@@ -5,7 +5,7 @@ if (ARCH_NAME)
 
     # set default arch directory and include it.
     if (NOT ACC_SRC_PATH)
-        set(ACC_SRC_PATH "${CURRENT_ACC_SOURCE_DIR}/${ARCH_NAME}")
+        set(ACC_SRC_PATH "${CURRENT_ACC_SOURCE_DIR}/${ARCH_NAME}${KERNEL_STRATEGY_SRC_DIR_POSTFIX}")
     endif ()
     # check ACC_SRC_PATH and add_subdirectory
     if (NOT EXISTS "${ACC_SRC_PATH}" OR NOT IS_DIRECTORY "${ACC_SRC_PATH}")
