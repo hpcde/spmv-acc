@@ -1,5 +1,3 @@
-#include "./Csrsparse.hpp"
-#include "./common_function.hpp"
 #include <cstdlib>
 #include <ctime>
 #include <hip/hip_runtime.h>
@@ -8,6 +6,9 @@
 #include <math.h>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
+
+#include "./Csrsparse.hpp"
+#include "./common_function.hpp"
 
 using namespace std;
 

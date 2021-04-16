@@ -17,3 +17,7 @@ if (ARCH_NAME)
         # add_subdirectory(${ACC_SRC_PATH} arch_${ARCH_NAME})
     endif ()
 endif ()
+
+if (DEVICE_SIDE_VERIFY_FLAG)
+    set(ACC_LIBS ${ACC_LIBS} rocsparse)
+endif ()

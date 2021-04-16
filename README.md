@@ -9,16 +9,16 @@ HIP acceleration for SpMV solver.
 - [CMake](https://cmake.org): version 3.6 or higher.
 
 ### Build steps
-Build and run for GPU side:
+Build and verify on GPU side (make sure lib `rocsparse` is loaded):
 ```bash
-CC=clang CXX=hipcc cmake -DHIP_ENABLE_FLAG=ON -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
+CC=clang CXX=hipcc cmake -DDEVICE_SIDE_VERIFY_FLAG=ON -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
 cmake --build ./build-hip
 ./build-hip/bin/spmv-hip
 ```
 
-Build and run for CPU side:
+Build and verify on CPU side:
 ```bash
-CC=clang CXX=hipcc cmake -DCMAKE_BUILD_TYPE=Release -B./build-cpu -S./
-cmake --build ./build-cpu
-./build-cpu/bin/spmv-cpu
+CC=clang CXX=hipcc cmake -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
+cmake --build ./build-hip
+./build-hip/bin/spmv-hip
 ```

@@ -15,4 +15,7 @@
 #cmakedefine ARCH_NAME @ARCH_NAME@
 #cmakedefine ARCH_HIP  // for hip env.
 
+#cmakedefine DEVICE_SIDE_VERIFY
+#cmakedefine gpu
+
 #endif // SPMV_BUILDING_CONFIG_H
