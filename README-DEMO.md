@@ -2,7 +2,9 @@
 
 ## Origin README.md in file demo.zip
 ### 编译方式
-
+加载环境rocm-3.9.1
+module switch compiler/rocm/2.9 compiler/rocm/3.9.1
+编译方式  
 异构端验证
 ```bash
 hipcc -Dgpu -I/public/software/compiler/rocm/rocm-3.9.1/rocsparse/include -I ./  -L/public/software/compiler/rocm/rocm-3.9.1/rocsparse/lib/ -lrocsparse main.cpp -o Csrsparse
