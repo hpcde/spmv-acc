@@ -6,11 +6,24 @@
 #include <math.h>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "./Csrsparse.hpp"
 #include "./common_function.hpp"
 
 using namespace std;
+
+// 定义计时器
+struct my_timer {
+  struct timeval start_time, end_time;
+  double time_use; // us
+  void start() { gettimeofday(&start_time, NULL); }
+  void stop() {
+    gettimeofday(&end_time, NULL);
+    time_use = (end_time.tv_sec - start_time.tv_sec) * 1.0e6 + end_time.tv_usec - start_time.tv_usec;
+  }
+};
 
 int main(int argc, char **argv) {
   srand(1);
@@ -44,16 +57,17 @@ int main(int argc, char **argv) {
     sparse_spmv(operation, alpha, beta, A_num_rows, A_num_cols, dA_csrOffsets, dA_columns, dA_values, dX, dY);
   }
   hipDeviceSynchronize();
-  clock_t start, end;
-  start = clock();
+  double sum_costs = 0.0;
+  my_timer timer1;
+  //计时开始
+  timer1.start();
   // execute device SpMV
   for (int i = 0; i < 1; i++) {
     sparse_spmv(operation, alpha, beta, A_num_rows, A_num_cols, dA_csrOffsets, dA_columns, dA_values, dX, dY);
     hipDeviceSynchronize();
   }
-
-  end = clock();
-  double endtime = (double)(end - start) / CLOCKS_PER_SEC;
+  //计时结束
+  timer1.stop();
   // device result check
   HIP_CHECK(hipMemcpy(dY, temphY, A_num_rows * sizeof(double), hipMemcpyHostToDevice))
   sparse_spmv(operation, alpha, beta, A_num_rows, A_num_cols, dA_csrOffsets, dA_columns, dA_values, dX, dY);
@@ -69,7 +83,7 @@ int main(int argc, char **argv) {
 // print_vector(n,hhY);
 #endif
   verify(hY, hhY, m);
-  cout << "Total time:" << endtime * 1000 << "ms" << endl;
+  cout << "elapsed time:" << timer1.time_use << "(us)" << endl;
   // printf("hy as flows\n");
   // print_vector(n,hY);
   return 0;
