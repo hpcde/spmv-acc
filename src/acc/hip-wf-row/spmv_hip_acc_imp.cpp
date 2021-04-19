@@ -37,7 +37,7 @@ static __device__ void csr_spmv_device(J m, T alpha, T beta, const I *row_offset
   int lid = hipThreadIdx_x & (WF_SIZE - 1); // local id in the wavefront
 
   J gid = hipBlockIdx_x * BLOCK_SIZE + hipThreadIdx_x; // global thread id
-  J nwf = hipGridDim_x * BLOCK_SIZE / WF_SIZE;         // step length
+  J nwf = hipGridDim_x * BLOCK_SIZE / WF_SIZE;         // number of wavefront, or step length
 
   // Loop over rows
   for (J row = gid / WF_SIZE; row < m; row += nwf) {
@@ -68,10 +68,10 @@ static __device__ void csr_spmv_device(J m, T alpha, T beta, const I *row_offset
 
 __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                                        const int *colindex, const double *value, const double *x, double *y) {
-  csr_spmv_device<256, 64, int, int, double>(m, alpha, beta, rowptr, colindex, value, x, y);
+  csr_spmv_device<1024, 64, int, int, double>(m, alpha, beta, rowptr, colindex, value, x, y);
 }
 
 void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
                  const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
-  device_sparse_spmv_acc<<<1, 256>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
+  device_sparse_spmv_acc<<<1, 1024>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
 }
