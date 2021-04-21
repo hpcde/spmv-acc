@@ -23,11 +23,11 @@ cmake --build ./build-hip
 ./build-hip/bin/spmv-hip
 ```
 
-- Build by specifcing a kernel strategy (e.g. use strategy `ROW_WF`):
+- Build by specifcing a kernel strategy (e.g. use strategy `WF_ROW`):
 ```bash
-CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=ROW_WF -DCMAKE_BUILD_TYPE=Release -B./build-hip-row-wf -S./
-cmake --build ./build-hip-row-wf
-./build-hip-row-wf/bin/spmv-hip
+CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=WF_ROW -DCMAKE_BUILD_TYPE=Release -B./build-hip-wf-row -S./
+cmake --build ./build-hip-wf-row
+./build-hip-wf-row/bin/spmv-hip
 ```
 
 ## For Developers
