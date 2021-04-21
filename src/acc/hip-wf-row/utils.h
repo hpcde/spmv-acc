@@ -2,8 +2,8 @@
 // Created by genshen on 2021/4/18.
 //
 
-#ifndef SPMV_ACC_ROW_WF_UTILS_H
-#define SPMV_ACC_ROW_WF_UTILS_H
+#ifndef SPMV_ACC_WF_ROW_UTILS_H
+#define SPMV_ACC_WF_ROW_UTILS_H
 
 #include <hip/hip_runtime.h>
 
@@ -59,4 +59,4 @@ template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(do
   return sum;
 }
 
-#endif // SPMV_ACC_ROW_WF_UTILS_H
+#endif // SPMV_ACC_WF_ROW_UTILS_H

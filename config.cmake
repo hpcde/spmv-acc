@@ -7,13 +7,13 @@ option(DEVICE_SIDE_VERIFY_FLAG "Verify result of device side" OFF)
 set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # options are:
 # - DEFAULT: default strategy. The source files are saved in 'acc/hip'.
-# - ROW_THREAD: each thread process one row. The source files are saved in 'acc/hip-row-thread'
-# - ROW_WF: each wavefront process one row. The source files are saved in 'acc/hip-row-wf'
+# - THREAD_ROW: each thread process one row. The source files are saved in 'acc/hip-thread-row'
+# - WF_ROW: each wavefront process one row. The source files are saved in 'acc/hip-wf-row'
 
 # check strategies
 string(TOLOWER ${KERNEL_STRATEGY} KERNEL_STRATEGY_LOWER)
-if ((KERNEL_STRATEGY_LOWER MATCHES "default") OR (KERNEL_STRATEGY_LOWER MATCHES "row_thread")
-        OR (KERNEL_STRATEGY_LOWER MATCHES "row_wf"))
+if ((KERNEL_STRATEGY_LOWER MATCHES "default") OR (KERNEL_STRATEGY_LOWER MATCHES "thread_row")
+        OR (KERNEL_STRATEGY_LOWER MATCHES "wf_row"))
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 else ()
     MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
