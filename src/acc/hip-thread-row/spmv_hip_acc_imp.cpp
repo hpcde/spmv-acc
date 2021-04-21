@@ -11,8 +11,10 @@
 __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                                        const int *colindex, const double *value, const double *x, double *y) {
   int thread_id = threadIdx.x + blockDim.x * blockIdx.x;
-  for (int i = thread_id; i < m; i += blockDim.x * gridDim.x) {
-    double y0 = 0;
+  const int next_row_step = blockDim.x * gridDim.x;
+  double y0 = 0.0;
+  for (int i = thread_id; i < m; i += next_row_step) {
+    y0 = 0.0;
     for (int j = rowptr[i]; j < rowptr[i + 1]; j++) {
       y0 += value[j] * x[colindex[j]];
     }
