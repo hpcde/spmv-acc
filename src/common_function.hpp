@@ -82,7 +82,7 @@ void generate_sparse_matrix(dtype **&ptr, int m, int n, double s) {
   for (int i = 0; i < m; i++)
     for (int j = 0; j < n; j++) {
       double x = rand_double(-1, 1);
-      if (x > 10 * s)
+      if (x > (-1 + 2 * s))
         ptr[i][j] = 0;
       else
         ptr[i][j] = x;
