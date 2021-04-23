@@ -19,6 +19,8 @@ if ((KERNEL_STRATEGY_LOWER MATCHES "default") OR (KERNEL_STRATEGY_LOWER MATCHES 
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 elseif (KERNEL_STRATEGY_LOWER MATCHES "wf_row_reg")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
+elseif (KERNEL_STRATEGY_LOWER MATCHES "sync_wf_row")
+    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 elseif (KERNEL_STRATEGY_LOWER MATCHES "block_row_ordinary")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 else ()
