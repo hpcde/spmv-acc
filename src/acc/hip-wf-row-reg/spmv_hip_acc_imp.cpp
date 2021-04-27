@@ -10,7 +10,6 @@
 
 #define WF_SIZE 64
 #define BLOCK_SIZE 256
-#define THREAD_X_CACHE 47
 __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                                    const int *colindex, const double *value, const double *x, double *y) {
   // thread id in block
@@ -24,8 +23,6 @@ __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int bet
   // number of wavefront
   int num_wf = gridDim.x * BLOCK_SIZE / WF_SIZE; 
   // share memory for store thread result
-  // __shared__ volatile double share_mem[BLOCK_SIZE];
-  // const double x_cache[THREAD_X_CACHE];
   for (int row = global_wf_id; row < m; row += num_wf) {
     int row_begin = rowptr[row];
     int row_end = rowptr[row + 1];
@@ -36,8 +33,6 @@ __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int bet
     for (int j = row_begin + wf_thread_id; j < row_end; j += WF_SIZE) {
       local_sum += value[j] * __ldg(x + colindex[j]);
     }
-    // share_mem[block_thread_id] = alpha * sum;
-    // __syncthreads();
     // reduce thread sum to row sum
     total_sum += local_sum;
     __shfl_down(local_sum, 32);
