@@ -9,11 +9,14 @@ set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # - DEFAULT: default strategy. The source files are saved in 'acc/hip'.
 # - THREAD_ROW: each thread process one row. The source files are saved in 'acc/hip-thread-row'
 # - WF_ROW: each wavefront process one row. The source files are saved in 'acc/hip-wf-row'
+# - WF_ROW_REG: each wavefront process one row, but with register __shfl_down. The source files are located at 'acc/hip-wf-row-reg'
 
 # check strategies
 string(TOLOWER ${KERNEL_STRATEGY} KERNEL_STRATEGY_LOWER)
 if ((KERNEL_STRATEGY_LOWER MATCHES "default") OR (KERNEL_STRATEGY_LOWER MATCHES "thread_row")
         OR (KERNEL_STRATEGY_LOWER MATCHES "wf_row"))
+    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
+elseif (KERNEL_STRATEGY_LOWER MATCHES "wf_row_reg")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 else ()
     MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
