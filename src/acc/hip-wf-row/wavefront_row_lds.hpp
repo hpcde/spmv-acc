@@ -2,14 +2,17 @@
 // Created by genshen on 2021/4/15.
 //
 
-#ifndef SPMV_ACC_WAVEFRONT_ROW_LDS_H
-#define SPMV_ACC_WAVEFRONT_ROW_LDS_H
+#ifndef SPMV_ACC_WAVEFRONT_ROW_LDS_HPP
+#define SPMV_ACC_WAVEFRONT_ROW_LDS_HPP
 
-#include <hip/hip_runtime.h>
-#include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 #include <iostream>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
+
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
+
+#include "utils.h"
 
 template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE>
 __global__ void device_spmv_wf_row_lds(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
@@ -57,4 +60,4 @@ __global__ void device_spmv_wf_row_lds(int trans, const int alpha, const int bet
   }
 }
 
-#endif // SPMV_ACC_WAVEFRONT_ROW_LDS_H
+#endif // SPMV_ACC_WAVEFRONT_ROW_LDS_HPP

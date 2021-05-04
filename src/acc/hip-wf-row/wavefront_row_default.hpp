@@ -2,8 +2,8 @@
 // Created by genshen on 2021/4/17.
 //
 
-#ifndef SPMV_ACC_WAVEFRONT_ROW_DEFAULT_H
-#define SPMV_ACC_WAVEFRONT_ROW_DEFAULT_H
+#ifndef SPMV_ACC_WAVEFRONT_ROW_DEFAULT_HPP
+#define SPMV_ACC_WAVEFRONT_ROW_DEFAULT_HPP
 
 #include <iostream>
 #include <stdio.h>  // printf
@@ -11,6 +11,8 @@
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
+
+#include "utils.h"
 
 /**
  * calculate: Y = alpha * A*X+beta * y
@@ -30,7 +32,7 @@
  * @return
  */
 template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE, typename I, typename J, typename T>
-static __device__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_offset, const J *csr_col_ind,
+__global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_offset, const J *csr_col_ind,
                                        const T *csr_val, const T *x, T *y) {
   int lid = hipThreadIdx_x & (WF_SIZE - 1); // local id in the wavefront
 
@@ -64,9 +66,5 @@ static __device__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I 
   }
 }
 
-__global__ void device_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
-                                       const int *colindex, const double *value, const double *x, double *y) {
-  device_spmv_wf_row_default<1024, 64, int, int, double>(m, alpha, beta, rowptr, colindex, value, x, y);
-}
 
-#endif // SPMV_ACC_WAVEFRONT_ROW_DEFAULT_H
+#endif // SPMV_ACC_WAVEFRONT_ROW_DEFAULT_HPP

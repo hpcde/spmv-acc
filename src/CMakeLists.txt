@@ -19,6 +19,10 @@ include(acc/acc_libs.cmake)
 
 # make lib
 add_executable(${SPMV_BIN_NAME} ${HEADER_FILES} ${SOURCE_FILES} ${ACC_FILES})
+target_include_directories(
+        ${SPMV_BIN_NAME}
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 target_link_libraries(
         ${SPMV_BIN_NAME}
