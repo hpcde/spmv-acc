@@ -4,13 +4,22 @@ if (HIP_ENABLE_FLAG)
     set(ACCELERATE_ENABLED ON)
     set(ARCH_HIP ON)
     MESSAGE(STATUS "HIP acceleration is enabled")
-else()
+else ()
 
 endif ()
 
 if (DEVICE_SIDE_VERIFY_FLAG)
     set(DEVICE_SIDE_VERIFY ON)
     set(gpu ON)
+endif ()
+
+
+if (WF_REDUCE_LOWER MATCHES "default")
+set(WF_REDUCE_DEFAULT ON)
+elseif (WF_REDUCE_LOWER MATCHES "lds")
+    set(WF_REDUCE_LDS ON)
+elseif (WF_REDUCE_LOWER MATCHES "reg")
+    set(WF_REDUCE_REG ON)
 endif ()
 
 configure_file(

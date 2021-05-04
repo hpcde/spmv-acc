@@ -7,11 +7,9 @@
 
 #include <hip/hip_runtime.h>
 
-#define device_ldg(ptr) \
-  __ldg(ptr)
+#define device_ldg(ptr) __ldg(ptr)
 
-#define device_fma(p, q, r) \
-  fma(p, q, r)
+#define device_fma(p, q, r) fma(p, q, r)
 
 // __hip_move_dpp is already defined in hip_runtime.
 
@@ -58,5 +56,23 @@ template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(do
   sum = temp_sum.val;
   return sum;
 }
+
+// register and __shfl_down based wavefront reduction
+#define SHFL_DOWN_WF_REDUCE(total_sum, local_sum)                                                                      \
+  {                                                                                                                    \
+    total_sum += local_sum;                                                                                            \
+    __shfl_down(local_sum, 32);                                                                                        \
+    total_sum += local_sum;                                                                                            \
+    __shfl_down(local_sum, 16);                                                                                        \
+    total_sum += local_sum;                                                                                            \
+    __shfl_down(local_sum, 8);                                                                                         \
+    total_sum += local_sum;                                                                                            \
+    __shfl_down(local_sum, 4);                                                                                         \
+    total_sum += local_sum;                                                                                            \
+    __shfl_down(local_sum, 2);                                                                                         \
+    total_sum += local_sum;                                                                                            \
+    __shfl_down(local_sum, 1);                                                                                         \
+    total_sum += local_sum;                                                                                            \
+  }
 
 #endif // SPMV_ACC_WF_ROW_UTILS_H
