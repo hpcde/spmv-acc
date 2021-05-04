@@ -12,6 +12,12 @@
 
 #cmakedefine ACCELERATE_ENABLED // is accelerate enabled.
 
+#cmakedefine WF_REDUCE @WF_REDUCE@
+#cmakedefine WF_REDUCE_DEFAULT
+#cmakedefine WF_REDUCE_LDS
+#cmakedefine WF_REDUCE_REG
+
+
 #cmakedefine ARCH_NAME @ARCH_NAME@
 #cmakedefine ARCH_HIP  // for hip env.
 

@@ -2,17 +2,15 @@
 // Created by genshen on 2021/4/17.
 //
 
+#ifndef SPMV_ACC_WAVEFRONT_ROW_DEFAULT_H
+#define SPMV_ACC_WAVEFRONT_ROW_DEFAULT_H
+
 #include <iostream>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
-
-#include "utils.h"
-
-typedef int type_index;
-typedef double type_values;
 
 /**
  * calculate: Y = alpha * A*X+beta * y
@@ -32,7 +30,7 @@ typedef double type_values;
  * @return
  */
 template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE, typename I, typename J, typename T>
-static __device__ void csr_spmv_device(J m, T alpha, T beta, const I *row_offset, const J *csr_col_ind,
+static __device__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_offset, const J *csr_col_ind,
                                        const T *csr_val, const T *x, T *y) {
   int lid = hipThreadIdx_x & (WF_SIZE - 1); // local id in the wavefront
 
@@ -66,12 +64,9 @@ static __device__ void csr_spmv_device(J m, T alpha, T beta, const I *row_offset
   }
 }
 
-__global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
+__global__ void device_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                                        const int *colindex, const double *value, const double *x, double *y) {
-  csr_spmv_device<1024, 64, int, int, double>(m, alpha, beta, rowptr, colindex, value, x, y);
+  device_spmv_wf_row_default<1024, 64, int, int, double>(m, alpha, beta, rowptr, colindex, value, x, y);
 }
 
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                 const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
-  device_sparse_spmv_acc<<<1, 1024>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
-}
+#endif // SPMV_ACC_WAVEFRONT_ROW_DEFAULT_H

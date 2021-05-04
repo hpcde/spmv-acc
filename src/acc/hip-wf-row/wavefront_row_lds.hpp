@@ -1,16 +1,18 @@
 //
 // Created by genshen on 2021/4/15.
 //
-// spmv_csr_scalar_kernel version 一个线程负责A一行的计算
+
+#ifndef SPMV_ACC_WAVEFRONT_ROW_LDS_H
+#define SPMV_ACC_WAVEFRONT_ROW_LDS_H
+
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 #include <iostream>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
 
-#define WF_SIZE 64
-#define BLOCK_SIZE 256
-__global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
+template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE>
+__global__ void device_spmv_wf_row_lds(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                                        const int *colindex, const double *value, const double *x, double *y) {
   // thread id in block
   int block_thread_id = threadIdx.x;
@@ -55,7 +57,4 @@ __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int bet
   }
 }
 
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                 const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
-  device_sparse_spmv_acc<<<64, 256>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
-}
+#endif // SPMV_ACC_WAVEFRONT_ROW_LDS_H
