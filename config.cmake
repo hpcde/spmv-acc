@@ -10,7 +10,6 @@ set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # - THREAD_ROW: each thread process one row. The source files are saved in 'acc/hip-thread-row'
 # - BLOCK_ROW_ORDINARY: each block process one row with ordinary method. The source files are saved in 'acc/hip-block-row-ordinary'
 # - WF_ROW: each wavefront process one row. The source files are saved in 'acc/hip-wf-row'
-# - WF_ROW_REG: each wavefront process one row, but with register __shfl_down. The source files are located at 'acc/hip-wf-row-reg'
 
 set(WF_REDUCE "DEFAULT" CACHE STRING "reduce strategy of wavefront row kernel strategy")
 # options are:
