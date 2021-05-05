@@ -61,18 +61,12 @@ template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(do
 #define SHFL_DOWN_WF_REDUCE(total_sum, local_sum)                                                                      \
   {                                                                                                                    \
     total_sum += local_sum;                                                                                            \
-    __shfl_down(local_sum, 32);                                                                                        \
-    total_sum += local_sum;                                                                                            \
-    __shfl_down(local_sum, 16);                                                                                        \
-    total_sum += local_sum;                                                                                            \
-    __shfl_down(local_sum, 8);                                                                                         \
-    total_sum += local_sum;                                                                                            \
-    __shfl_down(local_sum, 4);                                                                                         \
-    total_sum += local_sum;                                                                                            \
-    __shfl_down(local_sum, 2);                                                                                         \
-    total_sum += local_sum;                                                                                            \
-    __shfl_down(local_sum, 1);                                                                                         \
-    total_sum += local_sum;                                                                                            \
+    total_sum += __shfl_down(total_sum, 32, 64);                                                                       \
+    total_sum += __shfl_down(total_sum, 16, 64);                                                                       \
+    total_sum += __shfl_down(total_sum, 8, 64);                                                                       \
+    total_sum += __shfl_down(total_sum, 4, 64);                                                                       \
+    total_sum += __shfl_down(total_sum, 2, 64);                                                                       \
+    total_sum += __shfl_down(total_sum, 1, 64);                                                                       \
   }
 
 #endif // SPMV_ACC_WF_ROW_UTILS_H
