@@ -49,7 +49,7 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
 
     // Loop over non-zero elements
     for (I j = row_start + lid; j < row_end; j += WF_SIZE) {
-      sum = device_fma(alpha * csr_val[j], device_ldg(x + csr_col_ind[j]), sum);
+      sum = device_fma(csr_val[j], device_ldg(x + csr_col_ind[j]), sum);
     }
 
     // Obtain row sum using parallel reduction
@@ -60,7 +60,7 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
       if (beta == static_cast<T>(0)) {
         y[row] = sum;
       } else {
-        y[row] = device_fma(beta, y[row], sum);
+        y[row] = device_fma(beta, y[row], alpha * sum);
       }
     }
   }
