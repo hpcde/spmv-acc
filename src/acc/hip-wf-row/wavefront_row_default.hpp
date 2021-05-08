@@ -12,7 +12,11 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
+#include "global_mem_ops.hpp"
 #include "utils.h"
+
+#define N_UNROLLING 2
+
 
 /**
  * calculate: Y = alpha * A*X+beta * y
@@ -39,6 +43,7 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
   J gid = hipBlockIdx_x * BLOCK_SIZE + hipThreadIdx_x; // global thread id
   J nwf = hipGridDim_x * BLOCK_SIZE / WF_SIZE;         // number of wavefront, or step length
 
+  J unrolling_loop_end;
   // Loop over rows
   for (J row = gid / WF_SIZE; row < m; row += nwf) {
     // Each wavefront processes one row
@@ -48,7 +53,14 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
     T sum = static_cast<T>(0);
 
     // Loop over non-zero elements
-    for (I j = row_start + lid; j < row_end; j += WF_SIZE) {
+    unrolling_loop_end = row_start + ((row_end - row_start) / N_UNROLLING) * N_UNROLLING;
+    for (I _j = row_start + N_UNROLLING * lid; _j < unrolling_loop_end; _j += N_UNROLLING * WF_SIZE) {
+      dbl_x2 val_x2;
+      global_load(static_cast<const void*>(csr_val + _j), val_x2);
+      sum = device_fma(val_x2.a, device_ldg(x + csr_col_ind[_j]), sum);
+      sum = device_fma(val_x2.b, device_ldg(x + csr_col_ind[_j + 1]), sum);
+    }
+    for (I j = unrolling_loop_end + lid; j < row_end; j += WF_SIZE) {
       sum = device_fma(csr_val[j], device_ldg(x + csr_col_ind[j]), sum);
     }
 
