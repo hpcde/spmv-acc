@@ -16,7 +16,7 @@
 #include "utils.h"
 
 #define N_UNROLLING 2
-
+#define N_UNROLLING_SHIFT 1
 
 /**
  * calculate: Y = alpha * A*X+beta * y
@@ -52,7 +52,7 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
     T sum = static_cast<T>(0);
 
     // Loop over non-zero elements
-    const J unrolling_loop_end = row_start + ((row_end - row_start) / N_UNROLLING) * N_UNROLLING);
+    const J unrolling_loop_end = row_start + (((row_end - row_start) >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
     for (I _j = row_start + N_UNROLLING * lid; _j < unrolling_loop_end; _j += N_UNROLLING * WF_SIZE) {
       dbl_x2 val_x2;
       global_load(static_cast<const void*>(csr_val + _j), val_x2);
