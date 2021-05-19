@@ -18,4 +18,4 @@ module load compiler/rocm/3.9.1
 
 #ldd ${BIN_PATH}
 ulimit -c unlimited
-${BIN_PATH} 3000 3000 0.5
+${BIN_PATH} ./data/af23560.csr
