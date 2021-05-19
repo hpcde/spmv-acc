@@ -12,7 +12,11 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
+#include "global_mem_ops.hpp"
 #include "utils.h"
+
+#define N_UNROLLING 2
+#define N_UNROLLING_SHIFT 1
 
 /**
  * calculate: Y = alpha * A*X+beta * y
@@ -33,22 +37,29 @@
  */
 template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE, typename I, typename J, typename T>
 __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_offset, const J *csr_col_ind,
-                                       const T *csr_val, const T *x, T *y) {
-  int lid = hipThreadIdx_x & (WF_SIZE - 1); // local id in the wavefront
+                                           const T *csr_val, const T *x, T *y) {
+  const int lid = hipThreadIdx_x & (WF_SIZE - 1); // local id in the wavefront
 
-  J gid = hipBlockIdx_x * BLOCK_SIZE + hipThreadIdx_x; // global thread id
-  J nwf = hipGridDim_x * BLOCK_SIZE / WF_SIZE;         // number of wavefront, or step length
+  const J gid = hipBlockIdx_x * BLOCK_SIZE + hipThreadIdx_x; // global thread id
+  const J nwf = hipGridDim_x * BLOCK_SIZE / WF_SIZE;         // number of wavefront, or step length
 
   // Loop over rows
   for (J row = gid / WF_SIZE; row < m; row += nwf) {
     // Each wavefront processes one row
-    I row_start = row_offset[row];
-    I row_end = row_offset[row + 1];
+    const I row_start = row_offset[row];
+    const I row_end = row_offset[row + 1];
 
     T sum = static_cast<T>(0);
 
     // Loop over non-zero elements
-    for (I j = row_start + lid; j < row_end; j += WF_SIZE) {
+    const J unrolling_loop_end = row_start + (((row_end - row_start) >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
+    for (I _j = row_start + N_UNROLLING * lid; _j < unrolling_loop_end; _j += N_UNROLLING * WF_SIZE) {
+      dbl_x2 val_x2;
+      global_load(static_cast<const void*>(csr_val + _j), val_x2);
+      sum = device_fma(val_x2.a, device_ldg(x + csr_col_ind[_j]), sum);
+      sum = device_fma(val_x2.b, device_ldg(x + csr_col_ind[_j + 1]), sum);
+    }
+    for (I j = unrolling_loop_end + lid; j < row_end; j += WF_SIZE) {
       sum = device_fma(csr_val[j], device_ldg(x + csr_col_ind[j]), sum);
     }
 
