@@ -13,21 +13,21 @@ HIP acceleration for SpMV solver.
 ```bash
 CC=clang CXX=hipcc cmake -DDEVICE_SIDE_VERIFY_FLAG=ON -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
 cmake --build ./build-hip
-./build-hip/bin/spmv-hip
+./build-hip/bin/spmv-hip examples/data/rajat03.csr
 ```
 
 - Build and verify on CPU side:
 ```bash
 CC=clang CXX=hipcc cmake -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
 cmake --build ./build-hip
-./build-hip/bin/spmv-hip
+./build-hip/bin/spmv-hip examples/data/rajat03.csr
 ```
 
 - Build by specifcing a kernel strategy (e.g. use strategy `WF_ROW`):
 ```bash
 CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=WF_ROW -DCMAKE_BUILD_TYPE=Release -B./build-hip-wf-row -S./
 cmake --build ./build-hip-wf-row
-./build-hip-wf-row/bin/spmv-hip
+./build-hip-wf-row/bin/spmv-hip examples/data/rajat03.csr
 ```
 
 ## For Developers

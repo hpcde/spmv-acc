@@ -1,26 +1,40 @@
 # About the Demo code
 
 ## Origin README.md in file demo.zip
-### 编译方式
-加载环境rocm-3.9.1
+测试用例说明
+
+加载环境 rocm-3.9.1
+```bash
 module switch compiler/rocm/2.9 compiler/rocm/3.9.1
-编译方式  
-异构端验证
-```bash
+```
+### 编译方式
+分为主机端编译和异构端编译
+### 异构端编译
+异构端验证采用rocsparse库和自定义函数进行结果比对，编译方式如下  
 hipcc -Dgpu -I/public/software/compiler/rocm/rocm-3.9.1/rocsparse/include -I ./  -L/public/software/compiler/rocm/rocm-3.9.1/rocsparse/lib/ -lrocsparse main.cpp -o Csrsparse
-```
-Cpu端验证  
-如果采用CPU端验证使用下面编译方式即可,通常情况下采用cpu端验证即可
-```bash
-hipcc main.cpp -I ./ -o Csrsparse   
-```
 
-### 运行方式:
-```bash
-./Csrsparse 3000 3000 0.5
-```
-第一个和第二个参数是矩阵维度(m行n列)，第三个参数是稠密度(稀疏度=1-稠密度)
+### 主机端编译
+主机端验证调用下面的函数
+```c++
+spmv(alpha,beta,value,rowptr,colindex,m,n,a,hX,hhY);
+```  
+与参赛者实现的接口函数进行结果比对   
+如果采用CPU端验证使用下面编译方式即可,通常情况下采用cpu端验证即可  
+hipcc main.cpp -I ./ -o Csrsparse
 
+### 运行方式
+```shell
+./Csrsparse ./af23560.csr
+./Csrsparse ./bayer10.csr
+./Csrsparse ./bcsstk18.csr
+./Csrsparse ./coater2.csr
+./Csrsparse ./dw4096.csr
+./Csrsparse ./epb1.csr
+./Csrsparse ./exdata_1.csr
+./Csrsparse ./nemeth03.csr
+./Csrsparse ./poli_large.csr
+./Csrsparse ./rajat03.csr
+```
 
 ## Some comments to demo code from authors of this project (spmv-acc)
 ## 已知问题

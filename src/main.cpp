@@ -2,12 +2,16 @@
 #include <ctime>
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
+#include <string.h>
 #include <sys/time.h>
+#include <type_traits>
 #include <unistd.h>
+#include <vector>
 
 #include "./Csrsparse.hpp"
 #include "./common_function.hpp"
@@ -26,22 +30,12 @@ struct my_timer {
 };
 
 int main(int argc, char **argv) {
-  srand(1);
-  if (argc != 4) {
-    cout << "请输入运行参数,第一个参数为矩阵维度m,第二个参数为矩阵维度n,第三个参数为稠密度(稀疏度+稠密度=1)" << endl;
-    return 1;
-  }
-
+  char path[1024];
+  strcpy(path, argv[1]);
+  read_file(path);
   // n为矩阵维度N*N
-  m = atoi(argv[1]);
-  n = atoi(argv[2]);
-  // s为稠密度,s越大0越少
-  s = atof(argv[3]);
-  // s = rand_double(0,1);
-  //  alpha = rand_integer(1,10);
-  //  beta=rand_integer(1,10);
-  // beta=0;
-  cout << "稀疏度:" << (1 - s) << " alpha:" << alpha << " beta:" << beta << endl;
+  m = dense_vector.size();
+  n = dense_vector.size();
 
   hipSetDevice(0);
 
@@ -75,7 +69,12 @@ int main(int argc, char **argv) {
 #ifdef gpu
   //设备端端验证
   HIP_CHECK(hipMemcpy(dY, temphY, A_num_rows * sizeof(double), hipMemcpyHostToDevice))
+  my_timer timer2;
+  timer2.start();
   rocsparse();
+  hipDeviceSynchronize();
+  timer2.stop();
+  cout << "rocsparse elapsed time:" << timer2.time_use << "(us)" << endl;
   HIP_CHECK(hipMemcpy(hhY, dY, A_num_rows * sizeof(double), hipMemcpyDeviceToHost));
 #else
   //主机端验证
@@ -83,7 +82,7 @@ int main(int argc, char **argv) {
 // print_vector(n,hhY);
 #endif
   verify(hY, hhY, m);
-  cout << "elapsed time:" << timer1.time_use << "(us)" << endl;
+  cout << path << " elapsed time:" << timer1.time_use << "(us)" << endl;
   // printf("hy as flows\n");
   // print_vector(n,hY);
   return 0;

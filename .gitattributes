@@ -1,0 +1,10 @@
+examples/data/bayer10.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/bcsstk18.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/dw4096.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/poli_large.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/rajat03.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/af23560.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/epb1.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/exdata_1.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/nemeth03.csr filter=lfs diff=lfs merge=lfs -text
+examples/data/coater2.csr filter=lfs diff=lfs merge=lfs -text
