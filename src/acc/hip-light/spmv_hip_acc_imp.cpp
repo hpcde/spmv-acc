@@ -1,5 +1,5 @@
 //
-// Created by chaohu on 2021/04/??.
+// Created by chaohu on 2021/04/25.
 //
 // spmv_csr_pcsr_kernel version
 #include "utils.h"
@@ -14,82 +14,77 @@
 #define GRID_SIZE 256
 
 template <int THREADS_PER_VECTOR>
-__global__ void spmv_light_kernel(int trans, const int alpha, const int beta, int *hipRowCounter, const int *ia,
+__global__ void spmv_light_kernel(int trans, const int alpha, const int beta, int *hip_row_counter, const int *ia,
                                   const int *ja, const double *va, const double *x, double *y, int size) {
 
   int i;
   double sum;
   int row;
-  int rowStart, rowEnd;
-  int laneId = threadIdx.x % THREADS_PER_VECTOR;
-  int vectorId = threadIdx.x / THREADS_PER_VECTOR;
-  int warpLaneId = threadIdx.x & (WF_SIZE - 1);
-  int warpVectorId = warpLaneId / THREADS_PER_VECTOR;
+  int row_start, row_end;
+  const int land_id = threadIdx.x % THREADS_PER_VECTOR;
+  const int wf_land_id = threadIdx.x & (WF_SIZE - 1);
+  const int wf_vec_id = wf_land_id / THREADS_PER_VECTOR;
 
-  if (warpLaneId == 0) {
-    row = atomicAdd(hipRowCounter, WF_SIZE / THREADS_PER_VECTOR);
+  if (wf_land_id == 0) {
+    row = atomicAdd(hip_row_counter, WF_SIZE / THREADS_PER_VECTOR);
   }
-  row = __shfl(row, 0, WF_SIZE) + warpVectorId;
+  row = __shfl(row, 0, WF_SIZE) + wf_vec_id;
   __syncthreads();
 
   while (row < size) {
-
-    rowStart = ia[row];
-    rowEnd = ia[row + 1];
+    row_start = ia[row];
+    row_end = ia[row + 1];
     sum = 0;
 
-    for (i = rowStart + laneId; i < rowEnd; i += THREADS_PER_VECTOR) {
+    for (i = row_start + land_id; i < row_end; i += THREADS_PER_VECTOR) {
       sum += va[i] * x[ja[i]];
     }
 
+    // reduction
     for (i = THREADS_PER_VECTOR >> 1; i > 0; i >>= 1) {
       sum += __shfl_down(sum, i, THREADS_PER_VECTOR);
       __syncthreads();
     }
 
-    if (laneId == 0) {
+    if (land_id == 0) {
       y[row] = device_fma(beta, y[row], alpha * sum);
     }
 
-    if (warpLaneId == 0) {
-      row = atomicAdd(hipRowCounter, WF_SIZE / THREADS_PER_VECTOR);
+    if (wf_land_id == 0) {
+      row = atomicAdd(hip_row_counter, WF_SIZE / THREADS_PER_VECTOR);
     }
-    row = __shfl(row, 0, WF_SIZE) + warpVectorId;
+    row = __shfl(row, 0, WF_SIZE) + wf_vec_id;
     __syncthreads();
   }
 }
 
+#define LIGHT_KERNEL_CALLER(N)                                                                                         \
+  ((spmv_light_kernel<N>) <<<GRID_SIZE, BLOCK_SIZE>>>                                                                  \
+   (trans, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y, m))
+
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
 
-  int *hipRowCounter;
-  int rowCounter = 0;
-  hipMalloc((void **)&hipRowCounter, sizeof(int));
-  int meanElementsPerRow = (rowptr[m] - rowptr[0]) / m;
-  hipMemset(hipRowCounter, 0, sizeof(int));
+  int *hip_row_counter;
+  hipMalloc((void **)&hip_row_counter, sizeof(int));
+  const int mean_eles_per_row = (rowptr[m] - rowptr[0]) / m;
+  hipMemset(hip_row_counter, 0, sizeof(int));
 
-  if (meanElementsPerRow <= 2) {
-    spmv_light_kernel<1>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
-  } else if (meanElementsPerRow <= 4) {
-    spmv_light_kernel<2>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
-  } else if (meanElementsPerRow <= 8) {
-    spmv_light_kernel<4>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
-  } else if (meanElementsPerRow <= 16) {
-    spmv_light_kernel<8>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
-  } else if (meanElementsPerRow <= 32) {
-    spmv_light_kernel<16>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
-  } else if (meanElementsPerRow <= 64) {
-    spmv_light_kernel<32>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
+  if (mean_eles_per_row <= 2) {
+    LIGHT_KERNEL_CALLER(1);
+  } else if (mean_eles_per_row <= 4) {
+    LIGHT_KERNEL_CALLER(2);
+  } else if (mean_eles_per_row <= 8) {
+    LIGHT_KERNEL_CALLER(4);
+  } else if (mean_eles_per_row <= 16) {
+    LIGHT_KERNEL_CALLER(8);
+  } else if (mean_eles_per_row <= 32) {
+    LIGHT_KERNEL_CALLER(16);
+  } else if (mean_eles_per_row <= 64) {
+    LIGHT_KERNEL_CALLER(32);
   } else {
-    spmv_light_kernel<64>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, hipRowCounter, rowptr, colindex, value, x, y, m);
+    LIGHT_KERNEL_CALLER(64);
   }
 
-  hipFree(hipRowCounter);
+  hipFree(hip_row_counter);
 }
