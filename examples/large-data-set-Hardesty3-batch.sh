@@ -15,6 +15,8 @@ BIN_PATH=./spmv-hip
 module purge
 module load compiler/rocm/3.9.1
 
+echo $SLURM_JOB_NODELIST
+
 #ldd ${BIN_PATH}
 ulimit -c unlimited
 
