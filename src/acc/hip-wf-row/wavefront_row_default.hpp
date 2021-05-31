@@ -18,6 +18,16 @@
 #define N_UNROLLING 2
 #define N_UNROLLING_SHIFT 1
 
+struct IntCom {
+  std::int32_t i1; // occupies 4 bytes
+  std::int32_t i2; // occupies 4 bytes
+};
+
+union Address {
+  std::uint64_t L; // occupies 8 bytes
+  IntCom I;        // occupies 8 bytes
+};
+
 /**
  * calculate: Y = alpha * A*X+beta * y
  * @tparam BLOCK_SIZE block size
@@ -43,6 +53,8 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
   const J gid = hipBlockIdx_x * BLOCK_SIZE + hipThreadIdx_x; // global thread id
   const J nwf = hipGridDim_x * BLOCK_SIZE / WF_SIZE;         // number of wavefront, or step length
 
+  Address col_index_a = {0L};
+  Address col_index_b = {0L};
   // Loop over rows
   for (J row = gid / WF_SIZE; row < m; row += nwf) {
     // Each wavefront processes one row
@@ -55,9 +67,11 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
     const J unrolling_loop_end = row_start + (((row_end - row_start) >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
     for (I _j = row_start + N_UNROLLING * lid; _j < unrolling_loop_end; _j += N_UNROLLING * WF_SIZE) {
       dbl_x2 val_x2;
-      global_load(static_cast<const void*>(csr_val + _j), val_x2);
-      sum = device_fma(val_x2.a, device_ldg(x + csr_col_ind[_j]), sum);
-      sum = device_fma(val_x2.b, device_ldg(x + csr_col_ind[_j + 1]), sum);
+      global_load(static_cast<const void *>(csr_val + _j), val_x2);
+      col_index_a.I.i1 = csr_col_ind[_j];
+      col_index_b.I.i1 = csr_col_ind[_j + 1];
+      sum = device_fma(val_x2.a, device_ldg(x + col_index_a.L), sum);
+      sum = device_fma(val_x2.b, device_ldg(x + col_index_b.L), sum);
     }
     for (I j = unrolling_loop_end + lid; j < row_end; j += WF_SIZE) {
       sum = device_fma(csr_val[j], device_ldg(x + csr_col_ind[j]), sum);
@@ -76,6 +90,5 @@ __global__ void device_spmv_wf_row_default(J m, T alpha, T beta, const I *row_of
     }
   }
 }
-
 
 #endif // SPMV_ACC_WAVEFRONT_ROW_DEFAULT_HPP
