@@ -1,7 +1,7 @@
 include(configure.cmake)
 
 set(HEADER_FILES
-#        common_function_wrapper.h
+        #  common_function_wrapper.h
         )
 
 set(SOURCE_FILES
@@ -21,7 +21,9 @@ include(acc/acc_libs.cmake)
 add_executable(${SPMV_BIN_NAME} ${HEADER_FILES} ${SOURCE_FILES} ${ACC_FILES})
 target_include_directories(
         ${SPMV_BIN_NAME}
-        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_CURRENT_BINARY_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(

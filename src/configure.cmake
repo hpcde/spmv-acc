@@ -15,7 +15,7 @@ endif ()
 
 
 if (WF_REDUCE_LOWER MATCHES "default")
-set(WF_REDUCE_DEFAULT ON)
+    set(WF_REDUCE_DEFAULT ON)
 elseif (WF_REDUCE_LOWER MATCHES "lds")
     set(WF_REDUCE_LDS ON)
 elseif (WF_REDUCE_LOWER MATCHES "reg")
@@ -24,5 +24,10 @@ endif ()
 
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/building_config.h.in"
-        "${CMAKE_CURRENT_SOURCE_DIR}/building_config.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/building_config.h"
 )
+
+# install the generated file
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/building_config.h"
+        DESTINATION "include"
+        )
