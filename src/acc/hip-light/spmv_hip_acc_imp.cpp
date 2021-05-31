@@ -2,12 +2,13 @@
 // Created by chaohu on 2021/04/25.
 //
 // spmv_csr_pcsr_kernel version
-#include "utils.h"
 #include <cstdio>
 #include <cstdlib>
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 #include <iostream>
+
+#include "../common/utils.h"
 
 #define WF_SIZE 64
 #define BLOCK_SIZE 256

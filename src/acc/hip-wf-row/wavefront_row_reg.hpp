@@ -8,7 +8,7 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
-#include "utils.h"
+#include "../common/utils.h"
 
 template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE>
 __global__ void device_spmv_wf_row_reg(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
