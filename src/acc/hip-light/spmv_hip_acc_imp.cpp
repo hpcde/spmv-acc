@@ -1,15 +1,36 @@
 //
 // Created by chaohu on 2021/04/25.
 //
-// spmv_csr_pcsr_kernel version
+
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
-#include <iostream>
 
 #include "../common/utils.h"
 
+/**
+ * Implementation of SpMV with LightSpMV (see: https://doi.org/10.1007/s11265-016-1216-4).
+ * In this method, wavefront can be divided into several vectors (wavefront must be divided with no remainder).
+ * (e.g. vector size can only be 1, 2,4,8,16,32,64 if \tparam WF_SIZE is 64).
+ * Then, each vector can process one row of matrix A,
+ * which also means one wavefront with multiple vectors can compute multiple rows.
+ *
+ * @tparam THREADS_PER_VECTOR threads in on vector
+ * @tparam WF_SIZE threads in one wavefront
+ * @param size rows in matrix A
+ * @param alpha alpha value
+ * @param beta beta value
+ * @param hip_row_counter shared GRM data
+ * @param ia row offset array of csr matrix A
+ * @param ja col index of csr matrix A
+ * @param va matrix A in csr format
+ * @param x vector x
+ * @param y vector y
+ * @return
+ */
 template <int THREADS_PER_VECTOR, int WF_SIZE>
 __global__ void spmv_light_kernel(int trans, const int alpha, const int beta, int *hip_row_counter, const int *ia,
                                   const int *ja, const double *va, const double *x, double *y, int size) {
@@ -18,11 +39,13 @@ __global__ void spmv_light_kernel(int trans, const int alpha, const int beta, in
   double sum;
   int row;
   int row_start, row_end;
-  const int land_id = threadIdx.x % THREADS_PER_VECTOR;
-  const int wf_land_id = threadIdx.x & (WF_SIZE - 1);
-  const int wf_vec_id = wf_land_id / THREADS_PER_VECTOR;
+  const int land_id = threadIdx.x % THREADS_PER_VECTOR;  // land_id in current vector
+  const int wf_land_id = threadIdx.x & (WF_SIZE - 1);    // land_id in current wavefront
+  const int wf_vec_id = wf_land_id / THREADS_PER_VECTOR; // vector id in current wavefront
 
+  // Each time, in each wavefront, it will consume {vectors in one wavefront} rows.
   if (wf_land_id == 0) {
+    // atomicAdd is only for the first thread in wavefront
     row = atomicAdd(hip_row_counter, WF_SIZE / THREADS_PER_VECTOR);
   }
   row = __shfl(row, 0, WF_SIZE) + wf_vec_id;

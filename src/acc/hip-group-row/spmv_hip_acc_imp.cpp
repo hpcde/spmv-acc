@@ -1,21 +1,41 @@
 //
 // Created by chaohu on 2021/04/25.
 //
-// spmv_csr_pcsr_kernel version
+
 #include <cstdio>
 #include <cstdlib>
-#include <hip/hip_runtime.h>
-#include <hip/hip_runtime_api.h>
 #include <iostream>
 
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
+
+/**
+ * We solve SpMV with group method.
+ * In this method, wavefront can be divided into several groups (wavefront must be divided with no remainder).
+ * (e.g. groups size can only be 1, 2,4,8,16,32,64 if \tparam WF_SIZE is 64).
+ * Then, each group can process one row of matrix A,
+ * which also means one wavefront with multiple groups can compute multiple rows.
+ *
+ * @tparam GROUP_SIZE threads in on group
+ * @tparam WF_SIZE threads in one wavefront
+ * @param size rows in matrix A
+ * @param alpha alpha value
+ * @param beta beta value
+ * @param ia row offset array of csr matrix A
+ * @param ja col index of csr matrix A
+ * @param va matrix A in csr format
+ * @param x vector x
+ * @param y vector y
+ * @return
+ */
 template <int GROUP_SIZE, int WF_SIZE>
 __global__ void spmv_group_row_kernel(int trans, const int alpha, const int beta, const int *ia, const int *ja,
                                       const double *va, const double *x, double *y, int size) {
 
   int globalThreadId = threadIdx.x + blockDim.x * blockIdx.x;
-  int groupThreadId = globalThreadId % GROUP_SIZE;
-  const int group_id = globalThreadId / GROUP_SIZE;
-  const int group_num = gridDim.x * blockDim.x / GROUP_SIZE;
+  int groupThreadId = globalThreadId % GROUP_SIZE;           // local thread id in current group
+  const int group_id = globalThreadId / GROUP_SIZE;          // global group id
+  const int group_num = gridDim.x * blockDim.x / GROUP_SIZE; // total groups on device
   int rowStart, rowEnd;
   double sum;
 
