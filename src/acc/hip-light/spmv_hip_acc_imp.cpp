@@ -10,11 +10,7 @@
 
 #include "../common/utils.h"
 
-#define WF_SIZE 64
-#define BLOCK_SIZE 256
-#define GRID_SIZE 256
-
-template <int THREADS_PER_VECTOR>
+template <int THREADS_PER_VECTOR, int WF_SIZE>
 __global__ void spmv_light_kernel(int trans, const int alpha, const int beta, int *hip_row_counter, const int *ia,
                                   const int *ja, const double *va, const double *x, double *y, int size) {
 
@@ -60,7 +56,7 @@ __global__ void spmv_light_kernel(int trans, const int alpha, const int beta, in
 }
 
 #define LIGHT_KERNEL_CALLER(N)                                                                                         \
-  ((spmv_light_kernel<N>) <<<GRID_SIZE, BLOCK_SIZE>>>                                                                  \
+  ((spmv_light_kernel<N, 64>) <<<256, 256>>>                                                                           \
    (trans, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y, m))
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,

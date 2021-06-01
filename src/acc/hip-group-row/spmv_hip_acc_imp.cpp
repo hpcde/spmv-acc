@@ -8,11 +8,7 @@
 #include <hip/hip_runtime_api.h>
 #include <iostream>
 
-#define WF_SIZE 64
-#define BLOCK_SIZE 256
-#define GRID_SIZE 256
-
-template <int GROUP_SIZE>
+template <int GROUP_SIZE, int WF_SIZE>
 __global__ void spmv_group_row_kernel(int trans, const int alpha, const int beta, const int *ia, const int *ja,
                                       const double *va, const double *x, double *y, int size) {
 
@@ -45,7 +41,7 @@ __global__ void spmv_group_row_kernel(int trans, const int alpha, const int beta
 }
 
 #define GROUP_KERNEL_WRAPPER(N)                                                                                        \
-  spmv_group_row_kernel<N><<<GRID_SIZE, BLOCK_SIZE>>>(trans, alpha, beta, rowptr, colindex, value, x, y, m);
+  (spmv_group_row_kernel<N, 64>)<<<256, 256>>>(trans, alpha, beta, rowptr, colindex, value, x, y, m)
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
