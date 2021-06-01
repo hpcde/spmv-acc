@@ -68,7 +68,7 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
 
   int *hip_row_counter;
   hipMalloc((void **)&hip_row_counter, sizeof(int));
-  const int mean_eles_per_row = (rowptr[m] - rowptr[0]) / m;
+  const int mean_eles_per_row = rowptr[m] / m;
   hipMemset(hip_row_counter, 0, sizeof(int));
 
   if (mean_eles_per_row <= 2) {

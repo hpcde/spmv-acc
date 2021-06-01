@@ -50,7 +50,7 @@ __global__ void spmv_group_row_kernel(int trans, const int alpha, const int beta
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
 
-  const int mean_eles_per_row = (rowptr[m] - rowptr[0]) / m;
+  const int mean_eles_per_row = rowptr[m] / m;
 
   if (mean_eles_per_row <= 4) {
     GROUP_KERNEL_WRAPPER(2);
