@@ -8,8 +8,9 @@
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
 
-__global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
-                                       const int *colindex, const double *value, const double *x, double *y) {
+__global__ void device_sparse_spmv_acc(int trans, const double alpha, const double beta, int m, int n,
+                                       const int *rowptr, const int *colindex, const double *value, const double *x,
+                                       double *y) {
   int thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int next_row_step = blockDim.x * gridDim.x;
   double y0 = 0.0;

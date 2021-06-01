@@ -20,6 +20,7 @@
  *
  * @tparam THREADS_PER_VECTOR threads in on vector
  * @tparam WF_SIZE threads in one wavefront
+ * @tparam T type of data in matrix A, vector x, vector y and alpha, beta.
  * @param m rows in matrix A
  * @param alpha alpha value
  * @param beta beta value
@@ -31,10 +32,9 @@
  * @param y vector y
  * @return
  */
-template <int THREADS_PER_VECTOR, int WF_SIZE>
-__global__ void spmv_light_kernel(const int m, const int alpha, const int beta, int *hip_row_counter,
-                                  const int *row_offset, const int *csr_col_ind, const double *csr_val,
-                                  const double *x, double *y) {
+template <int THREADS_PER_VECTOR, int WF_SIZE, typename T>
+__global__ void spmv_light_kernel(const int m, const T alpha, const T beta, int *hip_row_counter, const int *row_offset,
+                                  const int *csr_col_ind, const T *csr_val, const T *x, T *y) {
   const int land_id = threadIdx.x % THREADS_PER_VECTOR;  // land_id in current vector
   const int wf_land_id = threadIdx.x & (WF_SIZE - 1);    // land_id in current wavefront
   const int wf_vec_id = wf_land_id / THREADS_PER_VECTOR; // vector id in current wavefront
@@ -52,7 +52,7 @@ __global__ void spmv_light_kernel(const int m, const int alpha, const int beta, 
   while (row < size) {
     const int row_start = row_offset[row];
     const int row_end = row_offset[row + 1];
-    double sum = 0;
+    T sum = 0;
 
     for (i = row_start + land_id; i < row_end; i += THREADS_PER_VECTOR) {
       sum += csr_col_ind[i] * x[csr_col_ind[i]];
@@ -77,7 +77,7 @@ __global__ void spmv_light_kernel(const int m, const int alpha, const int beta, 
 }
 
 #define LIGHT_KERNEL_CALLER(N)                                                                                         \
-  ((spmv_light_kernel<N, 64>) <<<256, 256>>> (m, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y))
+  ((spmv_light_kernel<N, 64, double>) <<<256, 256>>> (m, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y))
 
 void sparse_spmv(int m, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {

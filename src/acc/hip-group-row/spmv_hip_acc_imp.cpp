@@ -18,6 +18,7 @@
  *
  * @tparam GROUP_SIZE threads in on group
  * @tparam WF_SIZE threads in one wavefront
+ * @tparam T type of data in matrix A, vector x, vector y and alpha, beta.
  * @param m rows in matrix A
  * @param alpha alpha value
  * @param beta beta value
@@ -28,9 +29,9 @@
  * @param y vector y
  * @return
  */
-template <int GROUP_SIZE, int WF_SIZE>
-__global__ void spmv_group_row_kernel(int m, const int alpha, const int beta, const int *row_offset,
-                                      const int *csr_col_ind, const double *csr_val, const double *x, double *y) {
+template <int GROUP_SIZE, int WF_SIZE, typename T>
+__global__ void spmv_group_row_kernel(int m, const T alpha, const T beta, const int *row_offset, const int *csr_col_ind,
+                                      const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int group_thread_id = global_thread_id % GROUP_SIZE; // local thread id in current group
   const int group_id = global_thread_id / GROUP_SIZE;        // global group id
@@ -40,7 +41,7 @@ __global__ void spmv_group_row_kernel(int m, const int alpha, const int beta, co
   for (row = group_id; row < m; row += group_num) {
     const int row_start = row_offset[row];
     const int row_end = row_offset[row + 1];
-    double sum = 0;
+    T sum = 0;
 
     for (int i = row_start + group_thread_id; i < row_end; i += GROUP_SIZE) {
       sum += csr_val[i] * x[csr_col_ind[i]];
@@ -58,7 +59,7 @@ __global__ void spmv_group_row_kernel(int m, const int alpha, const int beta, co
 }
 
 #define GROUP_KERNEL_WRAPPER(N)                                                                                        \
-  (spmv_group_row_kernel<N, 64>)<<<256, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
+  (spmv_group_row_kernel<N, 64, double>)<<<256, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {

@@ -11,8 +11,9 @@
 #include "../common/utils.h"
 
 template <unsigned int BLOCK_SIZE, unsigned int WF_SIZE>
-__global__ void device_spmv_wf_row_reg(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
-                                       const int *colindex, const double *value, const double *x, double *y) {
+__global__ void device_spmv_wf_row_reg(int trans, const double alpha, const double beta, int m, int n,
+                                       const int *rowptr, const int *colindex, const double *value, const double *x,
+                                       double *y) {
   // thread id in block
   int block_thread_id = threadIdx.x;
   // thread id in wavefront
