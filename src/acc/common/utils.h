@@ -11,6 +11,8 @@
 
 #define device_fma(p, q, r) fma(p, q, r)
 
+#define asm_v_fma_f64(p, q, r) asm volatile("v_fma_f64 %0, %1, %2, %3" : "=v"(r) : "v"(p), "v"(q), "v"(r));
+
 // __hip_move_dpp is already defined in hip_runtime.
 
 // DPP-based double wavefront reduction
@@ -63,10 +65,10 @@ template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(do
     total_sum += local_sum;                                                                                            \
     total_sum += __shfl_down(total_sum, 32, 64);                                                                       \
     total_sum += __shfl_down(total_sum, 16, 64);                                                                       \
-    total_sum += __shfl_down(total_sum, 8, 64);                                                                       \
-    total_sum += __shfl_down(total_sum, 4, 64);                                                                       \
-    total_sum += __shfl_down(total_sum, 2, 64);                                                                       \
-    total_sum += __shfl_down(total_sum, 1, 64);                                                                       \
+    total_sum += __shfl_down(total_sum, 8, 64);                                                                        \
+    total_sum += __shfl_down(total_sum, 4, 64);                                                                        \
+    total_sum += __shfl_down(total_sum, 2, 64);                                                                        \
+    total_sum += __shfl_down(total_sum, 1, 64);                                                                        \
   }
 
 #endif // SPMV_ACC_WF_ROW_UTILS_H

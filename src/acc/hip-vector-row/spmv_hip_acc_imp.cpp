@@ -8,6 +8,7 @@
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
+#include "../common/utils.h"
 
 /**
  * We solve SpMV with vector method.
@@ -38,14 +39,13 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
   const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
   const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
 
-  int row = vector_id;
-  for (row = vector_id; row < m; row += vector_num) {
+  for (int row = vector_id; row < m; row += vector_num) {
     const int row_start = row_offset[row];
     const int row_end = row_offset[row + 1];
-    T sum = 0;
+    T sum = static_cast<T>(0);
 
     for (int i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
-      sum += csr_val[i] * x[csr_col_ind[i]];
+      asm_v_fma_f64(csr_val[i], device_ldg(x + csr_col_ind[i]), sum);
     }
 
     // reduce inside a vector
@@ -54,7 +54,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
     }
 
     if (vector_thread_id == 0) {
-      y[row] = alpha * sum + beta * y[row];
+      y[row] = device_fma(beta, y[row], alpha * sum);
     }
   }
 }
