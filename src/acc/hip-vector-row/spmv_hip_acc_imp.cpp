@@ -10,13 +10,14 @@
 #include <hip/hip_runtime_api.h>
 
 /**
- * We solve SpMV with group method.
+ * We solve SpMV with vector method.
  * In this method, wavefront can be divided into several groups (wavefront must be divided with no remainder).
  * (e.g. groups size can only be 1, 2,4,8,16,32,64 if \tparam WF_SIZE is 64).
- * Then, each group can process one row of matrix A,
- * which also means one wavefront with multiple groups can compute multiple rows.
+ * Here, one group of threads are called a "vector".
+ * Then, each vector can process one row of matrix A,
+ * which also means one wavefront with multiple vectors can compute multiple rows.
  *
- * @tparam GROUP_SIZE threads in on group
+ * @tparam VECTOR_SIZE threads in one vector
  * @tparam WF_SIZE threads in one wavefront
  * @tparam T type of data in matrix A, vector x, vector y and alpha, beta.
  * @param m rows in matrix A
@@ -29,53 +30,53 @@
  * @param y vector y
  * @return
  */
-template <int GROUP_SIZE, int WF_SIZE, typename T>
-__global__ void spmv_group_row_kernel(int m, const T alpha, const T beta, const int *row_offset, const int *csr_col_ind,
+template <int VECTOR_SIZE, int WF_SIZE, typename T>
+__global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset, const int *csr_col_ind,
                                       const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
-  const int group_thread_id = global_thread_id % GROUP_SIZE; // local thread id in current group
-  const int group_id = global_thread_id / GROUP_SIZE;        // global group id
-  const int group_num = gridDim.x * blockDim.x / GROUP_SIZE; // total groups on device
+  const int vector_thread_id = global_thread_id % VECTOR_SIZE; // local thread id in current vector
+  const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
+  const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
 
-  int row = group_id;
-  for (row = group_id; row < m; row += group_num) {
+  int row = vector_id;
+  for (row = vector_id; row < m; row += vector_num) {
     const int row_start = row_offset[row];
     const int row_end = row_offset[row + 1];
     T sum = 0;
 
-    for (int i = row_start + group_thread_id; i < row_end; i += GROUP_SIZE) {
+    for (int i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
       sum += csr_val[i] * x[csr_col_ind[i]];
     }
 
-    // reduce inside a group
-    for (int i = GROUP_SIZE >> 1; i > 0; i >>= 1) {
-      sum += __shfl_down(sum, i, GROUP_SIZE);
+    // reduce inside a vector
+    for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
+      sum += __shfl_down(sum, i, VECTOR_SIZE);
     }
 
-    if (group_thread_id == 0) {
+    if (vector_thread_id == 0) {
       y[row] = alpha * sum + beta * y[row];
     }
   }
 }
 
-#define GROUP_KERNEL_WRAPPER(N)                                                                                        \
-  (spmv_group_row_kernel<N, 64, double>)<<<256, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
+#define VECTOR_KERNEL_WRAPPER(N)                                                                                        \
+  (spmv_vector_row_kernel<N, 64, double>)<<<256, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
   const int avg_eles_per_row = rowptr[m] / m;
 
   if (avg_eles_per_row <= 4) {
-    GROUP_KERNEL_WRAPPER(2);
+    VECTOR_KERNEL_WRAPPER(2);
   } else if (avg_eles_per_row <= 8) {
-    GROUP_KERNEL_WRAPPER(4);
+    VECTOR_KERNEL_WRAPPER(4);
   } else if (avg_eles_per_row <= 16) {
-    GROUP_KERNEL_WRAPPER(8);
+    VECTOR_KERNEL_WRAPPER(8);
   } else if (avg_eles_per_row <= 32) {
-    GROUP_KERNEL_WRAPPER(16);
+    VECTOR_KERNEL_WRAPPER(16);
   } else if (avg_eles_per_row <= 64) {
-    GROUP_KERNEL_WRAPPER(32);
+    VECTOR_KERNEL_WRAPPER(32);
   } else {
-    GROUP_KERNEL_WRAPPER(64);
+    VECTOR_KERNEL_WRAPPER(64);
   }
 }
