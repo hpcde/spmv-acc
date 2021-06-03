@@ -13,7 +13,7 @@
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
 #include "global_mem_ops.hpp"
-#include "utils.h"
+#include "../common/utils.h"
 
 #define N_UNROLLING 2
 #define N_UNROLLING_SHIFT 1
