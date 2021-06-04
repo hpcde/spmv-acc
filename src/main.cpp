@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   strcpy(path, argv[1]);
   read_file(path);
   // n为矩阵维度N*N
-  m = dense_vector.size();
+  m = csr_indptr.size() - 1;
   n = dense_vector.size();
 
   hipSetDevice(0);
