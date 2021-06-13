@@ -3,7 +3,7 @@
 HIP acceleration for SpMV solver.
 
 ## Build
-### Pre-requestment
+### Pre-requirements
 - [ROCM](https://rocmdocs.amd.com): version 3.x or higher. For example: `module load compiler/rocm/3.9.1`
 - [HIP](https://github.com/ROCm-Developer-Tools/HIP)
 - [CMake](https://cmake.org): version 3.6 or higher.
@@ -23,7 +23,7 @@ cmake --build ./build-hip
 ./build-hip/bin/spmv-hip examples/data/rajat03.csr
 ```
 
-- Build by specifcing a kernel strategy (e.g. use strategy `WF_ROW`):
+- Build by specifying a kernel strategy (e.g., use strategy `WF_ROW`):
 ```bash
 CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=WF_ROW -DCMAKE_BUILD_TYPE=Release -B./build-hip-wf-row -S./
 cmake --build ./build-hip-wf-row
@@ -32,7 +32,7 @@ cmake --build ./build-hip-wf-row
 
 ## For Developers
 ### Add a new kernel strategy
-A **kernel strategy** is a algorithm for calculating SpMV on device side.  
+A **kernel strategy** is an algorithm for calculating SpMV on device side.  
 You can specific another kernel strategy (algorithm) by following rules:
 1. Edit [config.cmake](config.cmake) to add a kernel strategy checking (e.g. add a strategy named `awesome_spmv`).
 ```diff
