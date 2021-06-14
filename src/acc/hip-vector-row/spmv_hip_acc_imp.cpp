@@ -130,7 +130,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
 }
 
 #define VECTOR_KERNEL_WRAPPER(N)                                                                                       \
-  (spmv_vector_row_kernel<N, (64 / N), 64, 256, double>)<<<256, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
+  (spmv_vector_row_kernel<N, (64 / N), 64, 512, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
