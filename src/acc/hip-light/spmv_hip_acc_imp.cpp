@@ -49,13 +49,13 @@ __global__ void spmv_light_kernel(const int m, const T alpha, const T beta, int 
   row = __shfl(row, 0, WF_SIZE) + wf_vec_id;
   __syncthreads();
 
-  while (row < size) {
+  while (row < m) {
     const int row_start = row_offset[row];
     const int row_end = row_offset[row + 1];
     T sum = 0;
 
     for (i = row_start + land_id; i < row_end; i += THREADS_PER_VECTOR) {
-      sum += csr_col_ind[i] * x[csr_col_ind[i]];
+      sum += csr_val[i] * x[csr_col_ind[i]];
     }
 
     // reduction
@@ -79,7 +79,7 @@ __global__ void spmv_light_kernel(const int m, const T alpha, const T beta, int 
 #define LIGHT_KERNEL_CALLER(N)                                                                                         \
   ((spmv_light_kernel<N, 64, double>) <<<256, 256>>> (m, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y))
 
-void sparse_spmv(int m, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
+void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
 
   int *hip_row_counter;
