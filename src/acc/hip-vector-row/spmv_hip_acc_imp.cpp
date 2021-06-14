@@ -47,11 +47,13 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
   const int thread_id_in_wf = global_thread_id % WF_SIZE; // thread id in current wavefront
   const int wf_id_in_block = threadIdx.x / WF_SIZE;       // wavefront id in current block
 
-  constexpr unsigned int shared_len = 64 * 1024 / (BLOCKS / 64) / sizeof(T);
-  const int shared_len_wf = shared_len / nwf_in_block;            // data size in a wavefront.
-  const int wf_inx_shared_start = wf_id_in_block * shared_len_wf; // start index of shared array for current wavefront.
+  constexpr unsigned int shared_len = 64 * 1024 / (BLOCKS / 64) / (sizeof(T) + sizeof(int));
   __shared__ T shared_csr[shared_len];
-  T *_wf_shared_csr = shared_csr + wf_inx_shared_start; // LDS memory for current wavefront.
+  __shared__ int shared_col_inx[shared_len];
+  const int shared_len_wf = shared_len / nwf_in_block;            // data size in a wavefront.
+  const int shared_wf_start_inx = wf_id_in_block * shared_len_wf; // start index of shared mem for current wavefront.
+  T *_wf_shared_csr = shared_csr + shared_wf_start_inx;           // LDS memory for current wavefront.
+  int *_wf_shared_col_inx = shared_col_inx + shared_wf_start_inx; // LDS memory for current wavefront.
 
   const int n_loops = m / vector_num + (m % vector_num == 0 ? 0 : 1);
   int row = vector_id;
@@ -64,6 +66,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
     // todo: assert (end_index - start_index < shared_len/nwf_in_block)
     for (int i = start_index + thread_id_in_wf; i < end_index; i += WF_SIZE) {
       _wf_shared_csr[i - start_index] = csr_val[i];
+      _wf_shared_col_inx[i - start_index] = csr_col_ind[i];
     }
 
     // calculate
@@ -73,7 +76,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
       T sum = static_cast<T>(0);
 
       for (int i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
-        asm_v_fma_f64(_wf_shared_csr[i - start_index], device_ldg(x + csr_col_ind[i]), sum);
+        asm_v_fma_f64(_wf_shared_csr[i - start_index], device_ldg(x + _wf_shared_col_inx[i - start_index]), sum);
       }
 
       // reduce inside a vector
