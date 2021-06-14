@@ -2,6 +2,7 @@
 // Created by chaohu on 2021/04/25.
 //
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -10,6 +11,12 @@
 #include <hip/hip_runtime_api.h>
 
 #include "../common/utils.h"
+#include "../hip-wf-row/global_mem_ops.hpp"
+
+#define GLOBAL_LOAD_X2 // if defined, we load 2 double or 2 int in each loop.
+
+constexpr int N_UNROLLING = 2;
+constexpr int N_UNROLLING_SHIFT = 1;
 
 /**
  * We solve SpMV with vector method.
@@ -64,10 +71,39 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
     const int start_index = row_offset[left_base_index];
     const int end_index = row_offset[right_base_index];
     // todo: assert (end_index - start_index < shared_len/nwf_in_block)
+
+#ifdef GLOBAL_LOAD_X2
+    const int n_lds_load = end_index - start_index;
+    if (n_lds_load <= WF_SIZE) { // load all data just in one round.
+      if (thread_id_in_wf < n_lds_load) {
+        _wf_shared_csr[thread_id_in_wf] = csr_val[start_index + thread_id_in_wf];
+        _wf_shared_col_inx[thread_id_in_wf] = csr_col_ind[start_index + thread_id_in_wf];
+      }
+    } else {
+      // unrolling
+      const int unrolling_loop_end = start_index + ((n_lds_load >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
+      for (int j = start_index + N_UNROLLING * thread_id_in_wf; j < unrolling_loop_end; j += N_UNROLLING * WF_SIZE) {
+        dbl_x2 dbl_v_x2;
+        int_x2 int_v_x2;
+        global_load(static_cast<const void *>(csr_val + j), dbl_v_x2);
+        global_load_int(static_cast<const void *>(csr_col_ind + j), int_v_x2);
+        _wf_shared_csr[j - start_index] = dbl_v_x2.a;
+        _wf_shared_csr[j - start_index + 1] = dbl_v_x2.b;
+        _wf_shared_col_inx[j - start_index] = int_v_x2.a;
+        _wf_shared_col_inx[j - start_index + 1] = int_v_x2.b;
+      }
+      for (int j = unrolling_loop_end + thread_id_in_wf; j < end_index; j += WF_SIZE) {
+        _wf_shared_csr[j - start_index] = csr_val[j];
+        _wf_shared_col_inx[j - start_index] = csr_col_ind[j];
+      }
+    }
+#endif
+#ifndef GLOBAL_LOAD_X2
     for (int i = start_index + thread_id_in_wf; i < end_index; i += WF_SIZE) {
       _wf_shared_csr[i - start_index] = csr_val[i];
       _wf_shared_col_inx[i - start_index] = csr_col_ind[i];
     }
+#endif
 
     // calculate
     if (row < m) {
@@ -98,6 +134,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
+  //  const int avg_eles_per_row = ceil(rowptr[m] + 0.0 / m);
   const int avg_eles_per_row = rowptr[m] / m;
 
   if (avg_eles_per_row <= 4) {
