@@ -11,7 +11,7 @@
 #include <hip/hip_runtime_api.h>
 
 #include "../common/utils.h"
-#include "../hip-wf-row/global_mem_ops.hpp"
+#include "../common/global_mem_ops.hpp"
 
 #define GLOBAL_LOAD_X2 // if defined, we load 2 double or 2 int in each loop.
 
