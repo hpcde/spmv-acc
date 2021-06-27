@@ -70,6 +70,55 @@ __device__ __forceinline__ void vector_calc_a_row(const int vector_thread_id, co
   }
 }
 
+
+/**
+ * double buffer support of vector strategy..
+ * @tparam VECTOR_SIZE
+ * @tparam WF_VECTORS
+ * @tparam WF_SIZE
+ * @tparam BLOCKS
+ * @tparam I
+ * @tparam T
+ * @param m
+ * @param alpha
+ * @param beta
+ * @param row_offset
+ * @param csr_col_ind
+ * @param csr_val
+ * @param x
+ * @param y
+ * @return
+ */
+template <int VECTOR_SIZE, int WF_VECTORS, int WF_SIZE, int BLOCKS, typename I, typename T>
+__global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const T beta, const I *row_offset,
+                                                     const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+  const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
+  const int vector_thread_id = global_thread_id % VECTOR_SIZE; // local thread id in current vector
+  const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
+  const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
+
+  for (I row = vector_id; row < m; row += vector_num) {
+    const I row_start = row_offset[row];
+    const I row_end = row_offset[row + 1];
+
+    T sum = static_cast<T>(0);
+
+    for (I i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
+      asm_v_fma_f64(csr_val[i], device_ldg(x + csr_col_ind[i]), sum);
+    }
+
+    // reduce inside a vector
+#pragma unroll
+    for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
+      sum += __shfl_down(sum, i, VECTOR_SIZE);
+    }
+
+    if (vector_thread_id == 0) {
+      y[row] = device_fma(beta, y[row], alpha * sum);
+    }
+  }
+}
+
 /**
  * We solve SpMV with vector method.
  * In this method, wavefront can be divided into several groups (wavefront must be divided with no remainder).
@@ -170,6 +219,10 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
 
 #define VECTOR_KERNEL_WRAPPER(N)                                                                                       \
   (spmv_vector_row_kernel<N, (64 / N), 64, 512, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
+
+#define VECTOR_KERNEL_WRAPPER_DB_BUFFER(N)                                                                             \
+  (spmv_vector_row_kernel_double_buffer<N, (64 / N), 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr,      \
+                                                                                          colindex, value, x, y)
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
