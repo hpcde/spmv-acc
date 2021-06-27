@@ -124,7 +124,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
     const int end_index = row_offset[right_base_index];
     // todo: assert (end_index - start_index < shared_len/nwf_in_block)
     const int n_lds_load = end_index - start_index;
-    if (n_lds_load >= shared_len_wf) {
+    if (n_lds_load > shared_len_wf) {
       vector_calc_a_row<int, T, false, WF_SIZE, VECTOR_SIZE>(vector_thread_id, 0, row, m, alpha, beta, row_offset,
                                                              csr_col_ind, csr_val, x, y);
     } else {
