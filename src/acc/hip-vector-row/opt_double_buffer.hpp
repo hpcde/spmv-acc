@@ -92,39 +92,89 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
   next_row_offsets.a = row_offset[vector_id];
   next_row_offsets.b = row_offset[vector_id + 1];
 
+  // todo: assert(vector_id + vector_num < m);
+  _type_row_offsets next_next_row_offsets{0, 0};
+  next_next_row_offsets.a = row_offset[vector_id + vector_num];
+  next_next_row_offsets.b = row_offset[vector_id + vector_num + 1];
+
   _type_matrix_data<I, T> next_ele1, next_ele2, next_ele3;
+  _type_matrix_data<I, T> next_next_ele1, next_next_ele2, next_next_ele3;
   load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
                                        next_ele3);
+  load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_next_row_offsets, next_next_ele1,
+                                       next_next_ele2, next_next_ele3);
+
+  T next_x1 = 0.0, next_x2 = 0.0, next_x3 = 0.0;
+  const I outer_load_count = next_row_offsets.b - next_row_offsets.a;
+  if (vector_thread_id < outer_load_count) {
+    // for vector size 2, each thread load 1 element.
+    next_x1 = device_ldg(x + next_ele1.col_ind);
+  }
+  if (vector_thread_id + VECTOR_SIZE < outer_load_count) {
+    // for vector size 2, each thread load 2 elements.
+    next_x2 = device_ldg(x + next_ele2.col_ind);
+  }
+  if (vector_thread_id + 2 * VECTOR_SIZE < outer_load_count) {
+    // for vector size 2, each thread load 3 elements.
+    next_x3 = device_ldg(x + next_ele3.col_ind);
+  } else {
+    // todo: if one row has more than 6 elements.
+  }
 
   for (I row = vector_id; row < m; row += vector_num) {
     const I row_start = next_row_offsets.a;
     const I row_end = next_row_offsets.b;
     const I next_row_inx = row + vector_num;
-    if (next_row_inx < m) {
-      next_row_offsets.a = row_offset[next_row_inx];
-      next_row_offsets.b = row_offset[next_row_inx + 1];
+    const I next_next_row_inx = next_row_inx + vector_num;
+
+    if (next_next_row_inx < m) {
+      next_row_offsets.a = next_next_row_offsets.a;
+      next_row_offsets.b = next_next_row_offsets.b;
+      next_next_row_offsets.a = row_offset[next_next_row_inx];
+      next_next_row_offsets.b = row_offset[next_next_row_inx + 1];
+    } else if (next_row_inx < m) {
+      next_row_offsets.a = next_next_row_offsets.a;
+      next_row_offsets.b = next_next_row_offsets.b;
     }
 
     T sum = static_cast<T>(0);
 
     const _type_matrix_data<I, T> cur_ele1 = next_ele1, cur_ele2 = next_ele2, cur_ele3 = next_ele3;
+    next_ele1 = next_next_ele1, next_ele2 = next_next_ele2, next_ele3 = next_next_ele3;
 
     // In fact, it is not necessary to make this function call with `if (next_row_inx < m)` wrapped.
     // Because, if current row is the last row, value of `next_row_offsets` will not get changed.
     // Then, it will still load data of current row.
-    load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
-                                         next_ele3);
+    load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_next_row_offsets, next_next_ele1,
+                                         next_next_ele2, next_next_ele3);
+
+    const T x1 = next_x1, x2 = next_x2, x3 = next_x3;
+    const I load_count = next_row_offsets.b - next_row_offsets.a;
+    if (vector_thread_id < load_count) {
+      // for vector size 2, each thread load 1 element.
+      next_x1 = device_ldg(x + next_ele1.col_ind);
+    }
+    if (vector_thread_id + VECTOR_SIZE < load_count) {
+      // for vector size 2, each thread load 2 elements.
+      next_x2 = device_ldg(x + next_ele2.col_ind);
+    }
+    if (vector_thread_id + 2 * VECTOR_SIZE < load_count) {
+      // for vector size 2, each thread load 3 elements.
+      next_x3 = device_ldg(x + next_ele3.col_ind);
+    } else {
+      // todo: if one row has more than 6 elements.
+    }
 
     // calculation
     const I cur_data_count = row_end - row_start;
     if (vector_thread_id < cur_data_count) { // cur_data_count <= 2 &&
-      asm_v_fma_f64(cur_ele1.value, device_ldg(x + cur_ele1.col_ind), sum);
+      asm_v_fma_f64(cur_ele1.value, x1, sum);
     }
     if (vector_thread_id + VECTOR_SIZE < cur_data_count) {
-      asm_v_fma_f64(cur_ele2.value, device_ldg(x + cur_ele2.col_ind), sum);
+      asm_v_fma_f64(cur_ele2.value, x2, sum);
     }
     if (vector_thread_id + 2 * VECTOR_SIZE < cur_data_count) {
-      asm_v_fma_f64(cur_ele3.value, device_ldg(x + cur_ele3.col_ind), sum);
+      asm_v_fma_f64(cur_ele3.value, x3, sum);
     } else {
       // todo:
     }
