@@ -12,8 +12,7 @@
 
 #include "../common/global_mem_ops.hpp"
 #include "../common/utils.h"
-
-#define GLOBAL_LOAD_X2 // if defined, we load 2 double or 2 int in each loop.
+#include "vector_config.h"
 
 constexpr int N_UNROLLING = 2;
 constexpr int N_UNROLLING_SHIFT = 1;
@@ -70,6 +69,16 @@ __device__ __forceinline__ void vector_calc_a_row(const int vector_thread_id, co
   }
 }
 
+/**
+ * one element data in csr matrix.
+ * @tparam I type of column index type
+ * @tparam T type of value in matrix
+ */
+template <typename I, typename T> struct _type_matrix_data {
+  T value; // value of matrix
+  I col_ind; // column index of matrix
+};
+typedef int_x2 _type_row_offsets;
 
 /**
  * double buffer support of vector strategy..
@@ -97,14 +106,65 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
   const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
   const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
 
+  // todo: assert(vector_id < m);
+  _type_row_offsets next_row_offsets{0, 0};
+  next_row_offsets.a = row_offset[vector_id];
+  next_row_offsets.b = row_offset[vector_id + 1];
+  _type_matrix_data<I, T> buffer1{
+      csr_val[next_row_offsets.a + vector_thread_id],
+      csr_col_ind[next_row_offsets.a + vector_thread_id],
+  };
+
   for (I row = vector_id; row < m; row += vector_num) {
-    const I row_start = row_offset[row];
-    const I row_end = row_offset[row + 1];
+    const I row_start = next_row_offsets.a;
+    const I row_end = next_row_offsets.b;
+    const I next_row_inx = row + vector_num;
+    if (next_row_inx < m) {
+#ifdef SYNC_LOAD
+      global_load_intx2_sync(static_cast<const void *>(row_offset + next_row_inx), next_row_offsets);
+#endif
+#ifndef SYNC_LOAD
+      next_row_offsets.a = row_offset[next_row_inx];
+      next_row_offsets.b = row_offset[next_row_inx + 1];
+#endif
+    }
 
     T sum = static_cast<T>(0);
 
     for (I i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
-      asm_v_fma_f64(csr_val[i], device_ldg(x + csr_col_ind[i]), sum);
+#ifdef SYNC_LOAD
+      s_waitcnt(); // wait loading row offset and buffer1
+#endif
+      const T cur_csr_value = buffer1.value;
+      const I cur_csr_col_inx = buffer1.col_ind;
+
+      asm_v_fma_f64(cur_csr_value, device_ldg(x + cur_csr_col_inx), sum);
+      const I next_col_inx = i + VECTOR_SIZE;
+      // load next element
+      if (next_col_inx < row_end) {
+#ifdef SYNC_LOAD
+        global_load_dbl_sync(static_cast<const void *>(csr_val + next_col_inx), buffer1.value);
+        global_load_int_sync(static_cast<const void *>(csr_col_ind + next_col_inx), buffer1.col_ind);
+#endif
+#ifndef SYNC_LOAD
+        buffer1.value = csr_val[next_col_inx];
+        buffer1.col_ind = csr_col_ind[next_col_inx];
+#endif
+      }
+    }
+
+    // load first element of next row/line
+    // note: what if the last row (or some row) have no element.
+    const I next_ele_index = next_row_offsets.a + vector_thread_id;
+    if (next_ele_index < next_row_offsets.b && next_row_inx < m) {
+#ifdef SYNC_LOAD
+      global_load_dbl_sync(static_cast<const void *>(csr_val + next_ele_index), buffer1.value);
+      global_load_int_sync(static_cast<const void *>(csr_col_ind + next_ele_index), buffer1.col_ind);
+#endif
+#ifndef SYNC_LOAD
+      buffer1.value = csr_val[next_ele_index];
+      buffer1.col_ind = csr_col_ind[next_ele_index];
+#endif
     }
 
     // reduce inside a vector
