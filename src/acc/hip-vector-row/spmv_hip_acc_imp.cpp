@@ -110,10 +110,37 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
   _type_row_offsets next_row_offsets{0, 0};
   next_row_offsets.a = row_offset[vector_id];
   next_row_offsets.b = row_offset[vector_id + 1];
+#ifdef LEGACY_PRELOAD
   _type_matrix_data<I, T> buffer1{
       csr_val[next_row_offsets.a + vector_thread_id],
       csr_col_ind[next_row_offsets.a + vector_thread_id],
   };
+#endif // LEGACY_PRELOAD
+
+#ifndef LEGACY_PRELOAD
+  _type_matrix_data<I, T> next_ele1, next_ele2, next_ele3;
+  const I outer_next_load_count = next_row_offsets.b - next_row_offsets.a;
+  I _outer_next_start = next_row_offsets.a + vector_thread_id;
+  if (vector_thread_id < outer_next_load_count) {
+    // for vector size 2, each thread load 1 element.
+    next_ele1.value = csr_val[_outer_next_start];
+    next_ele1.col_ind = csr_col_ind[_outer_next_start];
+  }
+  _outer_next_start += VECTOR_SIZE;
+  if (vector_thread_id + VECTOR_SIZE < outer_next_load_count) {
+    // for vector size 2, each thread load 2 element.
+    next_ele2.value = csr_val[_outer_next_start];
+    next_ele2.col_ind = csr_col_ind[_outer_next_start];
+  }
+  _outer_next_start += VECTOR_SIZE;
+  if (vector_thread_id + 2 * VECTOR_SIZE < outer_next_load_count) { // outer_next_load_count <= 6 &&
+    // for vector size 2, each thread load 3 element.
+    next_ele3.value = csr_val[_outer_next_start];
+    next_ele3.col_ind = csr_col_ind[_outer_next_start];
+  } else {
+    // todo:
+  }
+#endif // LEGACY_PRELOAD
 
   for (I row = vector_id; row < m; row += vector_num) {
     const I row_start = next_row_offsets.a;
@@ -131,6 +158,48 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
 
     T sum = static_cast<T>(0);
 
+#ifndef LEGACY_PRELOAD
+    const _type_matrix_data<I, T> cur_ele1 = next_ele1, cur_ele2 = next_ele2, cur_ele3 = next_ele3;
+
+    const I next_load_count = next_row_offsets.b - next_row_offsets.a;
+    I _local_next_start = next_row_offsets.a + vector_thread_id;
+    if (vector_thread_id < next_load_count) {
+      // for vector size 2, each thread load 1 element.
+      next_ele1.value = csr_val[_local_next_start];
+      next_ele1.col_ind = csr_col_ind[_local_next_start];
+    }
+    _local_next_start += VECTOR_SIZE;
+    if (vector_thread_id + VECTOR_SIZE < next_load_count) {
+      // for vector size 2, each thread load 2 element.
+      next_ele2.value = csr_val[_local_next_start];
+      next_ele2.col_ind = csr_col_ind[_local_next_start];
+    }
+    _local_next_start += VECTOR_SIZE;
+    if (vector_thread_id + 2 * VECTOR_SIZE < next_load_count) { // next_load_count <= 6 &&
+      // for vector size 2, each thread load 3 element.
+      next_ele3.value = csr_val[_local_next_start];
+      next_ele3.col_ind = csr_col_ind[_local_next_start];
+    } else {
+      // todo:
+    }
+
+    // calculation
+    const I cur_data_count = row_end - row_start;
+    if (vector_thread_id < cur_data_count) { // cur_data_count <= 2 &&
+      asm_v_fma_f64(cur_ele1.value, device_ldg(x + cur_ele1.col_ind), sum);
+    }
+    if (vector_thread_id + VECTOR_SIZE < cur_data_count) {
+      asm_v_fma_f64(cur_ele2.value, device_ldg(x + cur_ele2.col_ind), sum);
+    }
+    if (vector_thread_id + 2 * VECTOR_SIZE < cur_data_count) {
+      asm_v_fma_f64(cur_ele3.value, device_ldg(x + cur_ele3.col_ind), sum);
+    } else {
+      // todo:
+    }
+
+#endif // LEGACY_PRELOAD
+
+#ifdef LEGACY_PRELOAD
     for (I i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
 #ifdef SYNC_LOAD
       s_waitcnt(); // wait loading row offset and buffer1
@@ -166,6 +235,7 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
       buffer1.col_ind = csr_col_ind[next_ele_index];
 #endif
     }
+#endif // LEGACY_PRELOAD
 
     // reduce inside a vector
 #pragma unroll
@@ -290,16 +360,16 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
   const int avg_eles_per_row = rowptr[m] / m;
 
   if (avg_eles_per_row <= 4) {
-    VECTOR_KERNEL_WRAPPER(2);
+    VECTOR_KERNEL_WRAPPER_DB_BUFFER(2);
   } else if (avg_eles_per_row <= 8) {
-    VECTOR_KERNEL_WRAPPER(4);
+    VECTOR_KERNEL_WRAPPER_DB_BUFFER(4);
   } else if (avg_eles_per_row <= 16) {
-    VECTOR_KERNEL_WRAPPER(8);
+    VECTOR_KERNEL_WRAPPER_DB_BUFFER(8);
   } else if (avg_eles_per_row <= 32) {
-    VECTOR_KERNEL_WRAPPER(16);
+    VECTOR_KERNEL_WRAPPER_DB_BUFFER(16);
   } else if (avg_eles_per_row <= 64) {
-    VECTOR_KERNEL_WRAPPER(32);
+    VECTOR_KERNEL_WRAPPER_DB_BUFFER(32);
   } else {
-    VECTOR_KERNEL_WRAPPER(64);
+    VECTOR_KERNEL_WRAPPER_DB_BUFFER(64);
   }
 }
