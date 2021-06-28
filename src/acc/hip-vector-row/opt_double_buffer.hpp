@@ -101,13 +101,8 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
     const I row_end = next_row_offsets.b;
     const I next_row_inx = row + vector_num;
     if (next_row_inx < m) {
-#ifdef ASYNC_LOAD
-      global_load_intx2_async(static_cast<const void *>(row_offset + next_row_inx), next_row_offsets);
-#endif
-#ifndef ASYNC_LOAD
       next_row_offsets.a = row_offset[next_row_inx];
       next_row_offsets.b = row_offset[next_row_inx + 1];
-#endif
     }
 
     T sum = static_cast<T>(0);
