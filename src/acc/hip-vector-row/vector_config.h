@@ -9,6 +9,4 @@
 
 // #define SYNC_LOAD // sync load data from device memory.
 
-//#define LEGACY_PRELOAD //
-
 #endif // SPMV_ACC_VEOTR_ROW_CONFIG_H
