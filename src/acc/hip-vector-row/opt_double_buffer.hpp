@@ -114,6 +114,9 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
 
     const _type_matrix_data<I, T> cur_ele1 = next_ele1, cur_ele2 = next_ele2, cur_ele3 = next_ele3;
 
+    // In fact, it is not necessary to make this function call with `if (next_row_inx < m)` wrapped.
+    // Because, if current row is the last row, value of `next_row_offsets` will not get changed.
+    // Then, it will still load data of current row.
     load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
                                          next_ele3);
 
