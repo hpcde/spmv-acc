@@ -23,6 +23,45 @@ template <typename I, typename T> struct _type_matrix_data {
 typedef int_x2 _type_row_offsets;
 
 /**
+ * load one row into local variable (e.g. register).
+ * @tparam VECTOR_SIZE threads in one vector.
+ * @tparam I type of index
+ * @tparam T type of data in matrix
+ * @param vector_thread_id thread id in current vector.
+ * @param csr_val array of csr data
+ * @param csr_col_ind array of csr column index
+ * @param next_row_offsets the start offset and end offset for one row to be loaded.
+ * @param next_ele1, next_ele2, next_ele3 local variable for storing data (matrix value and column index) in one row.
+ */
+template <int VECTOR_SIZE, typename I, typename T>
+__device__ __forceinline__ void
+load_row_into_reg(const int vector_thread_id, const T *csr_val, const I *csr_col_ind,
+                  const _type_row_offsets row_offsets, _type_matrix_data<I, T> &next_ele1,
+                  _type_matrix_data<I, T> &next_ele2, _type_matrix_data<I, T> &next_ele3) {
+  const I load_count = row_offsets.b - row_offsets.a;
+  I cursor = row_offsets.a + vector_thread_id;
+  if (vector_thread_id < load_count) {
+    // for vector size 2, each thread load 1 element.
+    next_ele1.value = csr_val[cursor];
+    next_ele1.col_ind = csr_col_ind[cursor];
+  }
+  cursor += VECTOR_SIZE;
+  if (vector_thread_id + VECTOR_SIZE < load_count) {
+    // for vector size 2, each thread load 2 elements.
+    next_ele2.value = csr_val[cursor];
+    next_ele2.col_ind = csr_col_ind[cursor];
+  }
+  cursor += VECTOR_SIZE;
+  if (vector_thread_id + 2 * VECTOR_SIZE < load_count) {
+    // for vector size 2, each thread load 3 elements.
+    next_ele3.value = csr_val[cursor];
+    next_ele3.col_ind = csr_col_ind[cursor];
+  } else {
+    // todo: if one row has more than 6 elements.
+  }
+}
+
+/**
  * double buffer support of vector strategy..
  * @tparam VECTOR_SIZE
  * @tparam WF_VECTORS
@@ -54,27 +93,8 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
   next_row_offsets.b = row_offset[vector_id + 1];
 
   _type_matrix_data<I, T> next_ele1, next_ele2, next_ele3;
-  const I outer_next_load_count = next_row_offsets.b - next_row_offsets.a;
-  I _outer_next_start = next_row_offsets.a + vector_thread_id;
-  if (vector_thread_id < outer_next_load_count) {
-    // for vector size 2, each thread load 1 element.
-    next_ele1.value = csr_val[_outer_next_start];
-    next_ele1.col_ind = csr_col_ind[_outer_next_start];
-  }
-  _outer_next_start += VECTOR_SIZE;
-  if (vector_thread_id + VECTOR_SIZE < outer_next_load_count) {
-    // for vector size 2, each thread load 2 element.
-    next_ele2.value = csr_val[_outer_next_start];
-    next_ele2.col_ind = csr_col_ind[_outer_next_start];
-  }
-  _outer_next_start += VECTOR_SIZE;
-  if (vector_thread_id + 2 * VECTOR_SIZE < outer_next_load_count) { // outer_next_load_count <= 6 &&
-    // for vector size 2, each thread load 3 element.
-    next_ele3.value = csr_val[_outer_next_start];
-    next_ele3.col_ind = csr_col_ind[_outer_next_start];
-  } else {
-    // todo:
-  }
+  load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
+                                       next_ele3);
 
   for (I row = vector_id; row < m; row += vector_num) {
     const I row_start = next_row_offsets.a;
@@ -94,27 +114,8 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
 
     const _type_matrix_data<I, T> cur_ele1 = next_ele1, cur_ele2 = next_ele2, cur_ele3 = next_ele3;
 
-    const I next_load_count = next_row_offsets.b - next_row_offsets.a;
-    I _local_next_start = next_row_offsets.a + vector_thread_id;
-    if (vector_thread_id < next_load_count) {
-      // for vector size 2, each thread load 1 element.
-      next_ele1.value = csr_val[_local_next_start];
-      next_ele1.col_ind = csr_col_ind[_local_next_start];
-    }
-    _local_next_start += VECTOR_SIZE;
-    if (vector_thread_id + VECTOR_SIZE < next_load_count) {
-      // for vector size 2, each thread load 2 element.
-      next_ele2.value = csr_val[_local_next_start];
-      next_ele2.col_ind = csr_col_ind[_local_next_start];
-    }
-    _local_next_start += VECTOR_SIZE;
-    if (vector_thread_id + 2 * VECTOR_SIZE < next_load_count) { // next_load_count <= 6 &&
-      // for vector size 2, each thread load 3 element.
-      next_ele3.value = csr_val[_local_next_start];
-      next_ele3.col_ind = csr_col_ind[_local_next_start];
-    } else {
-      // todo:
-    }
+    load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
+                                         next_ele3);
 
     // calculation
     const I cur_data_count = row_end - row_start;
