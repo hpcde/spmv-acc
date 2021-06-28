@@ -30,8 +30,18 @@ __device__ __forceinline__ void global_load_int(const void *ptr, int_x2 &val) {
   asm volatile("global_load_dwordx2 %0, %1, off \n s_waitcnt vmcnt(0) " : "=v"(val) : "v"(ptr));
 }
 
-__device__ __forceinline__ void s_waitcnt() {
-  asm volatile("s_waitcnt vmcnt(0)");
+__device__ __forceinline__ void global_load_dbl_async(const void *ptr, double &val) {
+  asm volatile("global_load_dwordx2 %0, %1, off" : "=v"(val) : "v"(ptr));
 }
+
+__device__ __forceinline__ void global_load_int_async(const void *ptr, int &val) {
+  asm volatile("global_load_dword %0, %1, off" : "=v"(val) : "v"(ptr));
+}
+
+__device__ __forceinline__ void global_load_intx2_async(const void *ptr, int_x2 &val) {
+  asm volatile("global_load_dwordx2 %0, %1, off" : "=v"(val) : "v"(ptr));
+}
+
+__device__ __forceinline__ void s_waitcnt() { asm volatile("s_waitcnt vmcnt(0)"); }
 
 #endif // SPMV_ACC_GLOBAL_MEM_OPS_H
