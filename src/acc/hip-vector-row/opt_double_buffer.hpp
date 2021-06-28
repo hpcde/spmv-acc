@@ -101,10 +101,10 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
     const I row_end = next_row_offsets.b;
     const I next_row_inx = row + vector_num;
     if (next_row_inx < m) {
-#ifdef SYNC_LOAD
-      global_load_intx2_sync(static_cast<const void *>(row_offset + next_row_inx), next_row_offsets);
+#ifdef ASYNC_LOAD
+      global_load_intx2_async(static_cast<const void *>(row_offset + next_row_inx), next_row_offsets);
 #endif
-#ifndef SYNC_LOAD
+#ifndef ASYNC_LOAD
       next_row_offsets.a = row_offset[next_row_inx];
       next_row_offsets.b = row_offset[next_row_inx + 1];
 #endif
@@ -186,10 +186,10 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
     const I row_end = next_row_offsets.b;
     const I next_row_inx = row + vector_num;
     if (next_row_inx < m) {
-#ifdef SYNC_LOAD
-      global_load_intx2_sync(static_cast<const void *>(row_offset + next_row_inx), next_row_offsets);
+#ifdef ASYNC_LOAD
+      global_load_intx2_async(static_cast<const void *>(row_offset + next_row_inx), next_row_offsets);
 #endif
-#ifndef SYNC_LOAD
+#ifndef ASYNC_LOAD
       next_row_offsets.a = row_offset[next_row_inx];
       next_row_offsets.b = row_offset[next_row_inx + 1];
 #endif
@@ -198,7 +198,7 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
     T sum = static_cast<T>(0);
 
     for (I i = row_start + vector_thread_id; i < row_end; i += VECTOR_SIZE) {
-#ifdef SYNC_LOAD
+#ifdef ASYNC_LOAD
       s_waitcnt(); // wait loading row offset and buffer1
 #endif
       const T cur_csr_value = buffer1.value;
@@ -208,11 +208,11 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
       const I next_col_inx = i + VECTOR_SIZE;
       // load next element
       if (next_col_inx < row_end) {
-#ifdef SYNC_LOAD
-        global_load_dbl_sync(static_cast<const void *>(csr_val + next_col_inx), buffer1.value);
-        global_load_int_sync(static_cast<const void *>(csr_col_ind + next_col_inx), buffer1.col_ind);
+#ifdef ASYNC_LOAD
+        global_load_dbl_async(static_cast<const void *>(csr_val + next_col_inx), buffer1.value);
+        global_load_int_async(static_cast<const void *>(csr_col_ind + next_col_inx), buffer1.col_ind);
 #endif
-#ifndef SYNC_LOAD
+#ifndef ASYNC_LOAD
         buffer1.value = csr_val[next_col_inx];
         buffer1.col_ind = csr_col_ind[next_col_inx];
 #endif
@@ -223,11 +223,11 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
     // note: what if the last row (or some row) have no element.
     const I next_ele_index = next_row_offsets.a + vector_thread_id;
     if (next_ele_index < next_row_offsets.b && next_row_inx < m) {
-#ifdef SYNC_LOAD
-      global_load_dbl_sync(static_cast<const void *>(csr_val + next_ele_index), buffer1.value);
-      global_load_int_sync(static_cast<const void *>(csr_col_ind + next_ele_index), buffer1.col_ind);
+#ifdef ASYNC_LOAD
+      global_load_dbl_async(static_cast<const void *>(csr_val + next_ele_index), buffer1.value);
+      global_load_int_async(static_cast<const void *>(csr_col_ind + next_ele_index), buffer1.col_ind);
 #endif
-#ifndef SYNC_LOAD
+#ifndef ASYNC_LOAD
       buffer1.value = csr_val[next_ele_index];
       buffer1.col_ind = csr_col_ind[next_ele_index];
 #endif

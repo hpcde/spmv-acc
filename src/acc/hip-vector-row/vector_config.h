@@ -7,6 +7,6 @@
 
 #define GLOBAL_LOAD_X2 // if defined, we load 2 double or 2 int in each loop.
 
-// #define SYNC_LOAD // sync load data from device memory.
+// #define ASYNC_LOAD // asynchronously load data from device memory.
 
 #endif // SPMV_ACC_VEOTR_ROW_CONFIG_H
