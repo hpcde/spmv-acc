@@ -5,6 +5,7 @@
 #ifndef SPMV_ACC_CSR_SPARSE_H
 #define SPMV_ACC_CSR_SPARSE_H
 
+#include "acc/api/types.h"
 #include "acc/hip/spmv_hip_acc_imp.h"
 #include "building_config.h"
 
