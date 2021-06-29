@@ -13,6 +13,7 @@ if (ARCH_NAME)
     else ()
         MESSAGE(STATUS "Arch source files is ${ACC_SRC_PATH}")
         include(${ACC_SRC_PATH}/source_list.cmake) # set ${ACC_FILES} here.
+        set(ACC_FILES ${ACC_FILES} ${CURRENT_ACC_SOURCE_DIR}/api/types.h)
         # set(MD_SOURCE_INCLUDES "${PROJECT_SOURCE_DIR}/src" CACHE PATH "PATH of includes in arch code.")
         # add_subdirectory(${ACC_SRC_PATH} arch_${ARCH_NAME})
     endif ()
