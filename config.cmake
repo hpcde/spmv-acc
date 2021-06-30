@@ -11,6 +11,11 @@ set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # - THREAD_ROW: each thread process one row. The source files are saved in 'acc/hip-thread-row'
 # - BLOCK_ROW_ORDINARY: each block process one row with ordinary method. The source files are saved in 'acc/hip-block-row-ordinary'
 # - WF_ROW: each wavefront process one row. The source files are saved in 'acc/hip-wf-row'
+# - LIGHT: each vector process one row using method described in https://doi.org/10.1007/s11265-016-1216-4.
+#         The source files are saved in 'acc/hip-light'
+# - VECTOR_ROW: each vector process one row.  The source files are saved in 'acc/hip-vector-row'.
+# - LINE: Calculate and save results to LDS, then reduce (the CSR-Stream method in https://doi.org/10.1109/SC.2014.68. )
+#         The source files are saved in 'acc/hip-line'.
 
 set(WF_REDUCE "DEFAULT" CACHE STRING "reduce strategy of wavefront row kernel strategy")
 # options are:
@@ -28,6 +33,8 @@ elseif (KERNEL_STRATEGY_LOWER MATCHES "block_row_ordinary")
 elseif (KERNEL_STRATEGY_LOWER MATCHES "light")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 elseif (KERNEL_STRATEGY_LOWER MATCHES "vector_row")
+    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
+elseif (KERNEL_STRATEGY_LOWER MATCHES "line")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 else ()
     MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
