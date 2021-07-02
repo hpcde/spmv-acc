@@ -58,7 +58,7 @@ __global__ void spmv_line_kernel(int m, const T alpha, const T beta, const I *ro
     __syncthreads();
 
     // reduce via LDS.
-    const I block_end_row_id = min(block_start_row_id + rows_per_block, last_element_index);
+    const I block_end_row_id = min(block_start_row_id + rows_per_block, m);
     // In fact, the threads number in one block can be less than the rows processed
     // in iteration loop (`rows_per_block`).
     // e.g. `threads_in_block` is 256, but `rows_per_block` can be 512.
