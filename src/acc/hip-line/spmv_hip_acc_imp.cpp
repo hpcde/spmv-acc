@@ -43,17 +43,14 @@ __global__ void spmv_line_kernel(int m, const T alpha, const T beta, const I *ro
   __shared__ T shared_val[shared_len];
   constexpr int rows_per_block = shared_len / ROW_SIZE; // rows processed in each loop
   constexpr int nnz_per_block = (shared_len / ROW_SIZE) * ROW_SIZE;
-  const I last_element_index = row_offset[m];
+  const I last_element_index = row_offset[m] - 1;
 
   for (int k = block_id * rows_per_block; k < m; k += BLOCKS * rows_per_block) {
     const I block_start_row_id = k;
     const I base_row_id = row_offset[block_start_row_id];
     for (int i = tid_in_block; i < nnz_per_block; i += threads_in_block) {
-      const I index = i + base_row_id;
-      if (index < last_element_index) {
-        // todo: optimization: the last loop can be moved outside
-        shared_val[i] = csr_val[index] * x[csr_col_ind[index]];
-      }
+      const I index = min(i + base_row_id, last_element_index);
+      shared_val[i] = csr_val[index] * x[csr_col_ind[index]];
     }
     __syncthreads();
 
