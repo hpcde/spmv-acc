@@ -61,6 +61,134 @@ load_row_into_reg(const int vector_thread_id, const T *csr_val, const I *csr_col
   }
 }
 
+template <int VECTOR_SIZE, typename I, typename T>
+__device__ __forceinline__ void load_vec_x_into_reg(const int vector_thread_id, const I load_count, const T *x,
+                                                    T &next_x1, T &next_x2, T &next_x3, const I col_ind1,
+                                                    const I col_ind2, const I col_ind3) {
+  if (vector_thread_id < load_count) {
+    // for vector size 2, each thread load 1 element.
+    next_x1 = device_ldg(x + col_ind1);
+  }
+  if (vector_thread_id + VECTOR_SIZE < load_count) {
+    // for vector size 2, each thread load 2 elements.
+    next_x2 = device_ldg(x + col_ind2);
+  }
+  if (vector_thread_id + 2 * VECTOR_SIZE < load_count) {
+    // for vector size 2, each thread load 3 elements.
+    next_x3 = device_ldg(x + col_ind3);
+  } else {
+    // todo: if one row has more than 6 elements.
+  }
+}
+
+/**
+ * pipeline support of vector strategy.
+ * Load csr_value, csr_col_index and x vector asynchronously.
+ * @tparam VECTOR_SIZE
+ * @tparam WF_VECTORS
+ * @tparam WF_SIZE
+ * @tparam BLOCKS
+ * @tparam I
+ * @tparam T
+ * @param m
+ * @param alpha
+ * @param beta
+ * @param row_offset
+ * @param csr_col_ind
+ * @param csr_val
+ * @param x
+ * @param y
+ * @return
+ */
+template <int VECTOR_SIZE, int WF_VECTORS, int WF_SIZE, int BLOCKS, typename I, typename T>
+__global__ void vector_row_kernel_pipeline(int m, const T alpha, const T beta, const I *row_offset,
+                                           const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+  const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
+  const int vector_thread_id = global_thread_id % VECTOR_SIZE; // local thread id in current vector
+  const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
+  const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
+
+  // todo: assert(vector_id < m);
+  _type_row_offsets next_row_offsets{0, 0};
+  next_row_offsets.a = row_offset[vector_id];
+  next_row_offsets.b = row_offset[vector_id + 1];
+
+  // todo: assert(vector_id + vector_num < m);
+  _type_row_offsets next_next_row_offsets{0, 0};
+  next_next_row_offsets.a = row_offset[vector_id + vector_num];
+  next_next_row_offsets.b = row_offset[vector_id + vector_num + 1];
+
+  _type_matrix_data<I, T> next_ele1, next_ele2, next_ele3;
+  _type_matrix_data<I, T> next_next_ele1, next_next_ele2, next_next_ele3;
+  load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
+                                       next_ele3);
+  load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_next_row_offsets, next_next_ele1,
+                                       next_next_ele2, next_next_ele3);
+
+  T next_x1 = 0.0, next_x2 = 0.0, next_x3 = 0.0;
+  const I outer_load_count = next_row_offsets.b - next_row_offsets.a;
+  load_vec_x_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, outer_load_count, x, next_x1, next_x2, next_x3,
+                                         next_ele1.col_ind, next_ele2.col_ind, next_ele3.col_ind);
+
+  for (I row = vector_id; row < m; row += vector_num) {
+    const I row_start = next_row_offsets.a;
+    const I row_end = next_row_offsets.b;
+    const I next_row_inx = row + vector_num;
+    const I next_next_row_inx = next_row_inx + vector_num;
+
+    if (next_next_row_inx < m) {
+      next_row_offsets.a = next_next_row_offsets.a;
+      next_row_offsets.b = next_next_row_offsets.b;
+      next_next_row_offsets.a = row_offset[next_next_row_inx];
+      next_next_row_offsets.b = row_offset[next_next_row_inx + 1];
+    } else if (next_row_inx < m) {
+      next_row_offsets.a = next_next_row_offsets.a;
+      next_row_offsets.b = next_next_row_offsets.b;
+    }
+
+    T sum = static_cast<T>(0);
+
+    const _type_matrix_data<I, T> cur_ele1 = next_ele1, cur_ele2 = next_ele2, cur_ele3 = next_ele3;
+    next_ele1 = next_next_ele1, next_ele2 = next_next_ele2, next_ele3 = next_next_ele3;
+
+    // In fact, it is not necessary to make this function call with `if (next_row_inx < m)` wrapped.
+    // Because, if current row is the last row, value of `next_row_offsets` will not get changed.
+    // Then, it will still load data of current row.
+    load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_next_row_offsets, next_next_ele1,
+                                         next_next_ele2, next_next_ele3);
+
+    // load next x.
+    const T x1 = next_x1, x2 = next_x2, x3 = next_x3;
+    const I load_count = next_row_offsets.b - next_row_offsets.a;
+    load_vec_x_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, load_count, x, next_x1, next_x2, next_x3,
+                                           next_ele1.col_ind, next_ele2.col_ind, next_ele3.col_ind);
+
+    // calculation
+    const I cur_data_count = row_end - row_start;
+    if (vector_thread_id < cur_data_count) { // cur_data_count <= 2 &&
+      asm_v_fma_f64(cur_ele1.value, x1, sum);
+    }
+    if (vector_thread_id + VECTOR_SIZE < cur_data_count) {
+      asm_v_fma_f64(cur_ele2.value, x2, sum);
+    }
+    if (vector_thread_id + 2 * VECTOR_SIZE < cur_data_count) {
+      asm_v_fma_f64(cur_ele3.value, x3, sum);
+    } else {
+      // todo:
+    }
+
+    // reduce inside a vector
+#pragma unroll
+    for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
+      sum += __shfl_down(sum, i, VECTOR_SIZE);
+    }
+
+    if (vector_thread_id == 0) {
+      y[row] = device_fma(beta, y[row], alpha * sum);
+    }
+  }
+}
+
 /**
  * double buffer support of vector strategy..
  * @tparam VECTOR_SIZE
@@ -239,6 +367,10 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
     }
   }
 }
+
+#define VECTOR_KERNEL_WRAPPER_PIPELINE(N)                                                                              \
+  (vector_row_kernel_pipeline<N, (64 / N), 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex,      \
+                                                                                value, x, y)
 
 #define VECTOR_KERNEL_WRAPPER_DB_BUFFER(N)                                                                             \
   (spmv_vector_row_kernel_double_buffer<N, (64 / N), 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr,      \
