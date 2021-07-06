@@ -61,6 +61,26 @@ load_row_into_reg(const int vector_thread_id, const T *csr_val, const I *csr_col
   }
 }
 
+template <int VECTOR_SIZE, typename I, typename T>
+__device__ __forceinline__ void load_vec_x_into_reg(const int vector_thread_id, const I load_count, const T *x,
+                                                    T &next_x1, T &next_x2, T &next_x3, const I col_ind1,
+                                                    const I col_ind2, const I col_ind3) {
+  if (vector_thread_id < load_count) {
+    // for vector size 2, each thread load 1 element.
+    next_x1 = device_ldg(x + col_ind1);
+  }
+  if (vector_thread_id + VECTOR_SIZE < load_count) {
+    // for vector size 2, each thread load 2 elements.
+    next_x2 = device_ldg(x + col_ind2);
+  }
+  if (vector_thread_id + 2 * VECTOR_SIZE < load_count) {
+    // for vector size 2, each thread load 3 elements.
+    next_x3 = device_ldg(x + col_ind3);
+  } else {
+    // todo: if one row has more than 6 elements.
+  }
+}
+
 /**
  * pipeline support of vector strategy.
  * Load csr_value, csr_col_index and x vector asynchronously.
@@ -107,20 +127,8 @@ __global__ void vector_row_kernel_pipeline(int m, const T alpha, const T beta, c
 
   T next_x1 = 0.0, next_x2 = 0.0, next_x3 = 0.0;
   const I outer_load_count = next_row_offsets.b - next_row_offsets.a;
-  if (vector_thread_id < outer_load_count) {
-    // for vector size 2, each thread load 1 element.
-    next_x1 = device_ldg(x + next_ele1.col_ind);
-  }
-  if (vector_thread_id + VECTOR_SIZE < outer_load_count) {
-    // for vector size 2, each thread load 2 elements.
-    next_x2 = device_ldg(x + next_ele2.col_ind);
-  }
-  if (vector_thread_id + 2 * VECTOR_SIZE < outer_load_count) {
-    // for vector size 2, each thread load 3 elements.
-    next_x3 = device_ldg(x + next_ele3.col_ind);
-  } else {
-    // todo: if one row has more than 6 elements.
-  }
+  load_vec_x_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, outer_load_count, x, next_x1, next_x2, next_x3,
+                                         next_ele1.col_ind, next_ele2.col_ind, next_ele3.col_ind);
 
   for (I row = vector_id; row < m; row += vector_num) {
     const I row_start = next_row_offsets.a;
@@ -149,22 +157,11 @@ __global__ void vector_row_kernel_pipeline(int m, const T alpha, const T beta, c
     load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_next_row_offsets, next_next_ele1,
                                          next_next_ele2, next_next_ele3);
 
+    // load next x.
     const T x1 = next_x1, x2 = next_x2, x3 = next_x3;
     const I load_count = next_row_offsets.b - next_row_offsets.a;
-    if (vector_thread_id < load_count) {
-      // for vector size 2, each thread load 1 element.
-      next_x1 = device_ldg(x + next_ele1.col_ind);
-    }
-    if (vector_thread_id + VECTOR_SIZE < load_count) {
-      // for vector size 2, each thread load 2 elements.
-      next_x2 = device_ldg(x + next_ele2.col_ind);
-    }
-    if (vector_thread_id + 2 * VECTOR_SIZE < load_count) {
-      // for vector size 2, each thread load 3 elements.
-      next_x3 = device_ldg(x + next_ele3.col_ind);
-    } else {
-      // todo: if one row has more than 6 elements.
-    }
+    load_vec_x_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, load_count, x, next_x1, next_x2, next_x3,
+                                           next_ele1.col_ind, next_ele2.col_ind, next_ele3.col_ind);
 
     // calculation
     const I cur_data_count = row_end - row_start;
@@ -371,7 +368,7 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
   }
 }
 
-#define VECTOR_KERNEL_WRAPPER_PIPELINE(N)                                                                             \
+#define VECTOR_KERNEL_WRAPPER_PIPELINE(N)                                                                              \
   (vector_row_kernel_pipeline<N, (64 / N), 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex,      \
                                                                                 value, x, y)
 
