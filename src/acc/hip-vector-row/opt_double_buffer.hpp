@@ -62,7 +62,8 @@ load_row_into_reg(const int vector_thread_id, const T *csr_val, const I *csr_col
 }
 
 /**
- * double buffer support of vector strategy..
+ * pipeline support of vector strategy.
+ * Load csr_value, csr_col_index and x vector asynchronously.
  * @tparam VECTOR_SIZE
  * @tparam WF_VECTORS
  * @tparam WF_SIZE
@@ -80,8 +81,8 @@ load_row_into_reg(const int vector_thread_id, const T *csr_val, const I *csr_col
  * @return
  */
 template <int VECTOR_SIZE, int WF_VECTORS, int WF_SIZE, int BLOCKS, typename I, typename T>
-__global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const T beta, const I *row_offset,
-                                                     const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+__global__ void vector_row_kernel_pipeline(int m, const T alpha, const T beta, const I *row_offset,
+                                           const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int vector_thread_id = global_thread_id % VECTOR_SIZE; // local thread id in current vector
   const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
@@ -175,6 +176,86 @@ __global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const
     }
     if (vector_thread_id + 2 * VECTOR_SIZE < cur_data_count) {
       asm_v_fma_f64(cur_ele3.value, x3, sum);
+    } else {
+      // todo:
+    }
+
+    // reduce inside a vector
+#pragma unroll
+    for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
+      sum += __shfl_down(sum, i, VECTOR_SIZE);
+    }
+
+    if (vector_thread_id == 0) {
+      y[row] = device_fma(beta, y[row], alpha * sum);
+    }
+  }
+}
+
+/**
+ * double buffer support of vector strategy..
+ * @tparam VECTOR_SIZE
+ * @tparam WF_VECTORS
+ * @tparam WF_SIZE
+ * @tparam BLOCKS
+ * @tparam I
+ * @tparam T
+ * @param m
+ * @param alpha
+ * @param beta
+ * @param row_offset
+ * @param csr_col_ind
+ * @param csr_val
+ * @param x
+ * @param y
+ * @return
+ */
+template <int VECTOR_SIZE, int WF_VECTORS, int WF_SIZE, int BLOCKS, typename I, typename T>
+__global__ void spmv_vector_row_kernel_double_buffer(int m, const T alpha, const T beta, const I *row_offset,
+                                                     const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+  const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
+  const int vector_thread_id = global_thread_id % VECTOR_SIZE; // local thread id in current vector
+  const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
+  const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
+
+  // todo: assert(vector_id < m);
+  _type_row_offsets next_row_offsets{0, 0};
+  next_row_offsets.a = row_offset[vector_id];
+  next_row_offsets.b = row_offset[vector_id + 1];
+
+  _type_matrix_data<I, T> next_ele1, next_ele2, next_ele3;
+  load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
+                                       next_ele3);
+
+  for (I row = vector_id; row < m; row += vector_num) {
+    const I row_start = next_row_offsets.a;
+    const I row_end = next_row_offsets.b;
+    const I next_row_inx = row + vector_num;
+    if (next_row_inx < m) {
+      next_row_offsets.a = row_offset[next_row_inx];
+      next_row_offsets.b = row_offset[next_row_inx + 1];
+    }
+
+    T sum = static_cast<T>(0);
+
+    const _type_matrix_data<I, T> cur_ele1 = next_ele1, cur_ele2 = next_ele2, cur_ele3 = next_ele3;
+
+    // In fact, it is not necessary to make this function call with `if (next_row_inx < m)` wrapped.
+    // Because, if current row is the last row, value of `next_row_offsets` will not get changed.
+    // Then, it will still load data of current row.
+    load_row_into_reg<VECTOR_SIZE, I, T>(vector_thread_id, csr_val, csr_col_ind, next_row_offsets, next_ele1, next_ele2,
+                                         next_ele3);
+
+    // calculation
+    const I cur_data_count = row_end - row_start;
+    if (vector_thread_id < cur_data_count) { // cur_data_count <= 2 &&
+      asm_v_fma_f64(cur_ele1.value, device_ldg(x + cur_ele1.col_ind), sum);
+    }
+    if (vector_thread_id + VECTOR_SIZE < cur_data_count) {
+      asm_v_fma_f64(cur_ele2.value, device_ldg(x + cur_ele2.col_ind), sum);
+    }
+    if (vector_thread_id + 2 * VECTOR_SIZE < cur_data_count) {
+      asm_v_fma_f64(cur_ele3.value, device_ldg(x + cur_ele3.col_ind), sum);
     } else {
       // todo:
     }
@@ -289,6 +370,10 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
     }
   }
 }
+
+#define VECTOR_KERNEL_WRAPPER_PIPELINE(N)                                                                             \
+  (vector_row_kernel_pipeline<N, (64 / N), 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex,      \
+                                                                                value, x, y)
 
 #define VECTOR_KERNEL_WRAPPER_DB_BUFFER(N)                                                                             \
   (spmv_vector_row_kernel_double_buffer<N, (64 / N), 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr,      \
