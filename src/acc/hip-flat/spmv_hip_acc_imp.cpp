@@ -60,7 +60,8 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
       reduce_end_row_id = m;
     }
     // if start of the next block cuts some row.
-    if (row_offset[reduce_end_row_id] % nnz_per_block != 0) {
+    // or some row cross multiple blocks.
+    if (row_offset[reduce_end_row_id] % nnz_per_block != 0 || reduce_end_row_id == reduce_start_row_id) {
       reduce_end_row_id = min(reduce_end_row_id + 1, m); // make sure `reduce_end_row_id` is not large than m
     }
 
@@ -96,6 +97,10 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
     // for first element of row i and row i+1, they belong to different blocks.
     if (row_ptr[i] / break_stride != row_ptr[i + 1] / break_stride) { // fixme: step may be not 1
       // record the row id of the first element in the block.
+      // note: a row can cross multiple blocks.
+      for (int j = row_ptr[i] / break_stride + 1; j < row_ptr[i + 1] / break_stride; j++) {
+        break_points[j] = i;
+      }
       if (row_ptr[i + 1] % break_stride == 0) {
         break_points[row_ptr[i + 1] / break_stride] = i + 1;
       } else {
