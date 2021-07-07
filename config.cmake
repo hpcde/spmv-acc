@@ -16,6 +16,8 @@ set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # - VECTOR_ROW: each vector process one row.  The source files are saved in 'acc/hip-vector-row'.
 # - LINE: Calculate and save results to LDS, then reduce (the CSR-Stream method in https://doi.org/10.1109/SC.2014.68. )
 #         The source files are saved in 'acc/hip-line'.
+# - FLAT: flat algorithm, each Block calculate the same number of elements, and then perform reduction.
+#         The source files are saved in 'acc/hip-flat'.
 
 set(WF_REDUCE "DEFAULT" CACHE STRING "reduce strategy of wavefront row kernel strategy")
 # options are:
@@ -36,6 +38,8 @@ elseif (KERNEL_STRATEGY_LOWER MATCHES "vector_row")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 elseif (KERNEL_STRATEGY_LOWER MATCHES "line")
     MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
+elseif (KERNEL_STRATEGY_LOWER MATCHES "flat")
+    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
 else ()
     MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
 endif ()
@@ -52,7 +56,7 @@ string(TOLOWER ${WF_REDUCE} WF_REDUCE_LOWER)
 if ((WF_REDUCE_LOWER MATCHES "default") OR (WF_REDUCE_LOWER MATCHES "lds")
         OR (WF_REDUCE_LOWER MATCHES "reg"))
     MESSAGE(STATUS "current wavefront reduction strategy is: ${WF_REDUCE}")
-else()
+else ()
     MESSAGE(FATAL_ERROR "unsupported wavefront reduction strategy ${WF_REDUCE}")
 endif ()
 
