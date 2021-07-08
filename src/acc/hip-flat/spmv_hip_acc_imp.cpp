@@ -30,7 +30,7 @@
  * @param y vector y
  * @return
  */
-template <int WF_SIZE, int BLOCKS, int THREADS, typename I, typename T>
+template <int WF_SIZE, int R, int BLOCKS, int THREADS, typename I, typename T>
 __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
                                  const I *__restrict__ break_points, const I *__restrict__ csr_col_ind,
                                  const T *__restrict__ csr_val, const T *__restrict__ x, T *__restrict__ y) {
@@ -42,14 +42,18 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
   const int threads_in_block = blockDim.x;                 // threads in one block
   const int tid_in_block = threadIdx.x % threads_in_block; // thread id in one block
 
-  constexpr unsigned int shared_len = THREADS; // 64 * 1024 / (BLOCKS / 64) / sizeof(T); // max nnz per block
+  constexpr unsigned int shared_len = THREADS * R; // 64 * 1024 / (BLOCKS / 64) / sizeof(T); // nnz per block
   __shared__ T shared_val[shared_len];
-  constexpr int nnz_per_block = THREADS;
+  constexpr int nnz_per_block = THREADS * R;
   const I last_element_index = row_offset[m];
 
   I bp_index = block_id;
-  for (int k = global_thread_id; k < last_element_index; k += global_threads_num) {
-    shared_val[tid_in_block] = csr_val[k] * x[csr_col_ind[k]];
+  // each block process THREADS * R elements.
+  for (int k = nnz_per_block * block_id; k < last_element_index; k += BLOCKS * nnz_per_block) {
+    for (I i = tid_in_block; i < nnz_per_block; i += THREADS) {
+      const I index = min(k + i, last_element_index - 1);
+      shared_val[i] = csr_val[index] * x[csr_col_ind[index]];
+    }
     __syncthreads();
 
     // reduce via LDS.
@@ -82,13 +86,13 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
   }
 }
 
-template <int BLOCKS, int THREADS, typename I>
+template <int BREAK_STRIDE, int BLOCKS, typename I>
 __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I *__restrict__ break_points,
                                      const I bp_len) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int global_threads_num = blockDim.x * gridDim.x;
 
-  constexpr I break_stride = THREADS;
+  constexpr I break_stride = BREAK_STRIDE;
   if (global_thread_id == 0) {
     break_points[0] = 0; // start row of the block 0 and the first round.
   }
@@ -98,21 +102,19 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
     if (row_ptr[i] / break_stride != row_ptr[i + 1] / break_stride) { // fixme: step may be not 1
       // record the row id of the first element in the block.
       // note: a row can cross multiple blocks.
-      for (int j = row_ptr[i] / break_stride + 1; j < row_ptr[i + 1] / break_stride; j++) {
+      for (int j = row_ptr[i] / break_stride + 1; j <= row_ptr[i + 1] / break_stride; j++) {
         break_points[j] = i;
       }
       if (row_ptr[i + 1] % break_stride == 0) {
-        break_points[row_ptr[i + 1] / break_stride] = i + 1;
-      } else {
-        break_points[row_ptr[i + 1] / break_stride] = i;
+        break_points[row_ptr[i + 1] / break_stride] += 1;
       }
     }
   }
 }
 
-#define FLAT_KERNEL_WRAPPER(BLOCKS, THREADS)                                                                           \
-  (spmv_flat_kernel<64, BLOCKS, THREADS, int, double>)<<<BLOCKS, THREADS>>>(m, alpha, beta, rowptr, break_points,      \
-                                                                            colindex, value, x, y)
+#define FLAT_KERNEL_WRAPPER(R, BLOCKS, THREADS)                                                                        \
+  (spmv_flat_kernel<64, R, BLOCKS, THREADS, int, double>)<<<BLOCKS, THREADS>>>(m, alpha, beta, rowptr, break_points,   \
+                                                                               colindex, value, x, y)
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
@@ -127,6 +129,7 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
   hipMalloc((void **)&break_points, break_points_len * sizeof(int));
   hipMemset(break_points, 0, break_points_len * sizeof(int));
 
-  (pre_calc_break_point<blocks, threads_per_block, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
-  FLAT_KERNEL_WRAPPER(blocks, threads_per_block);
+  constexpr int R = 2;
+  (pre_calc_break_point<R * threads_per_block, blocks, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
+  FLAT_KERNEL_WRAPPER(R, blocks, threads_per_block);
 }
