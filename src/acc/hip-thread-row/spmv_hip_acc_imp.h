@@ -5,7 +5,7 @@
 #ifndef SPMV_ACC_SPMV_HIP_ACC_IMP_H
 #define SPMV_ACC_SPMV_HIP_ACC_IMP_H
 
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                 const int *hcolindex, const double *hvalue, const double *hx, double *hy);
+void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *d_row_ptr,
+                 const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y);
 
 #endif // SPMV_ACC_SPMV_HIP_ACC_IMP_H
