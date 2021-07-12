@@ -12,6 +12,7 @@
 
 #include "../common/global_mem_ops.hpp"
 #include "../common/utils.h"
+#include "building_config.h"
 #include "opt_double_buffer.hpp"
 
 constexpr int N_UNROLLING = 2;
@@ -106,7 +107,7 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
   const int thread_id_in_wf = global_thread_id % WF_SIZE; // thread id in current wavefront
   const int wf_id_in_block = threadIdx.x / WF_SIZE;       // wavefront id in current block
 
-  constexpr unsigned int shared_len = 64 * 1024 / (BLOCKS / 64) / (sizeof(T) + sizeof(int));
+  constexpr unsigned int shared_len = 64 * 1024 / (BLOCKS / AVAILABLE_CU) / (sizeof(T) + sizeof(int));
   __shared__ T shared_csr[shared_len];
   __shared__ int shared_col_inx[shared_len];
   const int shared_len_wf = shared_len / nwf_in_block;            // data size in a wavefront.

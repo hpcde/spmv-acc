@@ -12,6 +12,8 @@
 
 #cmakedefine ACCELERATE_ENABLED // is accelerate enabled.
 
+#cmakedefine AVAILABLE_CU @AVAILABLE_CU@
+
 #cmakedefine WF_REDUCE @WF_REDUCE@
 #cmakedefine WF_REDUCE_DEFAULT
 #cmakedefine WF_REDUCE_LDS

@@ -5,6 +5,7 @@ option(SPMV_BUILD_TOOLS "build tools" OFF)
 # default: perform result verification on CPU side.
 # However, if it is set to `ON`, it will use device side verification.
 option(DEVICE_SIDE_VERIFY_FLAG "Verify result of device side" OFF)
+set(AVAILABLE_CU "60" CACHE STRING "available Compute Units per GPU")
 set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # options are:
 # - DEFAULT: default strategy. The source files are saved in 'acc/hip'.
@@ -24,6 +25,11 @@ set(WF_REDUCE "DEFAULT" CACHE STRING "reduce strategy of wavefront row kernel st
 #  - DEFAULT: the same method used in rocSparse
 #  - LDS: USE shared memory of LDS for reducing
 #  - REG: use register and `__shfl_down` for reducing
+
+# check CU number
+if (NOT AVAILABLE_CU MATCHES "^[0-9]+$")
+    MESSAGE(FATAL_ERROR "`AVAILABLE_CU` must be a number.")
+endif ()
 
 # check strategies
 string(TOLOWER ${KERNEL_STRATEGY} KERNEL_STRATEGY_LOWER)
