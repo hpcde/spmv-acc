@@ -10,6 +10,7 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+#include "building_config.h"
 #include "../common/utils.h"
 
 /**
@@ -39,7 +40,7 @@ __global__ void spmv_line_kernel(int m, const T alpha, const T beta, const I *ro
   const int threads_in_block = blockDim.x;                 // threads in one block
   const int tid_in_block = threadIdx.x % threads_in_block; // thread id in one block
 
-  constexpr unsigned int shared_len = 64 * 1024 / (BLOCKS / 64) / sizeof(T); // max nnz per block
+  constexpr unsigned int shared_len = 64 * 1024 / (BLOCKS / AVAILABLE_CU) / sizeof(T); // max nnz per block
   __shared__ T shared_val[shared_len];
   constexpr int rows_per_block = shared_len / ROW_SIZE; // rows processed in each loop
   constexpr int nnz_per_block = (shared_len / ROW_SIZE) * ROW_SIZE;
