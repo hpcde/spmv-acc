@@ -99,6 +99,6 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *d_row_ptr,
                  const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y) {
   //  native_thread_row<<<1, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
-  (kernel_thread_row<1, 64, 512, int, double>)<<<512, 512>>>(alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value,
-                                                             d_x, d_y);
+  (kernel_thread_row<1, 64, 256, int, double>)<<<3584, 256>>>(alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value,
+                                                              d_x, d_y);
 }
