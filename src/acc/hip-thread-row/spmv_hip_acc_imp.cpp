@@ -43,7 +43,7 @@ __global__ void native_thread_row(int trans, const double alpha, const double be
  * @param y result vector for y = alpha*A*x + beta*y.
  * @return
  */
-template <int N, int WF_SIZE, int THREADS, typename I, typename T>
+template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
 __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,
                                   const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
                                   const T *__restrict__ x, T *__restrict__ y) {
@@ -55,7 +55,6 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
   const int global_wf_num = global_threads_num / WF_SIZE; // wavefront number in system
   const int wf_id_in_block = threadIdx.x / WF_SIZE;       // wavefront id in current block
 
-  constexpr int MAX_ROW_NNZ = 5;
   constexpr int shared_len = N * THREADS * MAX_ROW_NNZ;
   __shared__ T shared_data[shared_len];
   const int shared_len_wf = N * WF_SIZE * MAX_ROW_NNZ;            // data size in a wavefront.
@@ -98,7 +97,13 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
 
 void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *d_row_ptr,
                  const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y) {
-  //  native_thread_row<<<1, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
-  (kernel_thread_row<1, 64, 256, int, double>)<<<3584, 256>>>(alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value,
-                                                              d_x, d_y);
+  const int avg_nnz_per_row = d_row_ptr[m] / m;
+  if (avg_nnz_per_row <= 4) {
+    constexpr int MAX_ROW_NNZ = 5; // 5 is up bound.
+    (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<3584, 256>>>(alpha, beta, m, d_row_ptr, d_csr_col_index,
+                                                                             d_csr_value, d_x, d_y);
+  } else {
+    native_thread_row<<<1, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
+  }
+  return;
 }
