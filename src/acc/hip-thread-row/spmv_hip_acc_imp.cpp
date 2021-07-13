@@ -68,34 +68,31 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
   for (I i = N * g_wf_id; i < wf_rounds; i += N * global_wf_num) {
     // each wavefront process `N * WF_SIZE` rows.
     // In a wavefront, read data from row g_wf_id to g_wf_id + N*WF_SIZE.
-    const I wf_row_start_id = min(i * WF_SIZE, m);
+    const I wf_row_start_id = min(i * WF_SIZE, m - 1);
     const I wf_row_end_id = min((i + 1) * WF_SIZE, m);
-    // fixme: if the last row is located in the last wavefront,
-    //   and the last wavefront only include the last row.
-    if (wf_row_start_id < wf_row_end_id) { // if `if` branch is hit, then we have wf_row_start_id < m
-      const I wf_start_index = row_ptr[wf_row_start_id];
-      const I wf_end_index = row_ptr[wf_row_end_id];
-      for (I j = wf_start_index + tid_in_wf; j < wf_end_index; j += WF_SIZE) {
-        const T local_val = csr_val[j] * x[csr_col_inx[j]];
-        // sum += local_val;
-        _wf_shared_val[j - wf_start_index] = local_val;
-      }
-
-      // reduction
-      // todo: multiples rows per thread support in reduction
-      const I reduce_row_id = wf_row_start_id + tid_in_wf;
-      if (reduce_row_id < m) {
-        const I reduce_start_index = row_ptr[reduce_row_id] - wf_start_index;
-        const I reduce_end_index = row_ptr[reduce_row_id + 1] - wf_start_index;
-
-        T sum = static_cast<T>(0);
-        for (I k = reduce_start_index; k < reduce_end_index; k++) {
-          sum += _wf_shared_val[k];
-        }
-
-        y[reduce_row_id] = alpha * sum + beta * y[reduce_row_id];
-      }
+    // we have: wf_row_start_id < wf_row_end_id and wf_row_start_id < m.
+    const I wf_start_index = row_ptr[wf_row_start_id];
+    const I wf_end_index = row_ptr[wf_row_end_id];
+    for (I j = wf_start_index + tid_in_wf; j < wf_end_index; j += WF_SIZE) {
+      const T local_val = csr_val[j] * x[csr_col_inx[j]];
+      // sum += local_val;
+      _wf_shared_val[j - wf_start_index] = local_val;
     }
+
+    // reduction
+    // todo: multiples rows per thread support in reduction
+    // The last row may be reduced and stored more than once by threads in the last wavefront,
+    // but it does not matter.
+    const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
+    const I reduce_start_index = row_ptr[reduce_row_id] - wf_start_index;
+    const I reduce_end_index = row_ptr[reduce_row_id + 1] - wf_start_index;
+
+    T sum = static_cast<T>(0);
+    for (I k = reduce_start_index; k < reduce_end_index; k++) {
+      sum += _wf_shared_val[k];
+    }
+
+    y[reduce_row_id] = alpha * sum + beta * y[reduce_row_id];
   }
 }
 
