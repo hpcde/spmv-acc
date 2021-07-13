@@ -109,12 +109,14 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
     const I reduce_start_index = row_ptr[reduce_row_id] - wf_start_index;
     const I reduce_end_index = row_ptr[reduce_row_id + 1] - wf_start_index;
 
+    const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
     T sum = static_cast<T>(0);
     for (I k = reduce_start_index; k < reduce_end_index; k++) {
       sum += _wf_shared_val[k];
     }
 
-    y[reduce_row_id] = alpha * sum + beta * y[reduce_row_id];
+    const T y_result = alpha * sum + beta * y_local;
+    __builtin_nontemporal_store(y_result, y + reduce_row_id);
   }
 }
 
