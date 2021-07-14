@@ -73,9 +73,16 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
     // In a wavefront, read data from row g_wf_id to g_wf_id + N*WF_SIZE.
     const I wf_row_start_id = min(i * WF_SIZE, m - 1);
     const I wf_row_end_id = min((i + 1) * WF_SIZE, m);
+
     // we have: wf_row_start_id < wf_row_end_id and wf_row_start_id < m.
-    const I wf_start_index = row_ptr[wf_row_start_id];
-    const I wf_end_index = row_ptr[wf_row_end_id];
+    const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
+    const I thread_row_start = row_ptr[reduce_row_id];
+    const I thread_row_end = row_ptr[reduce_row_id + 1];
+
+    // thread 0 broadcast to other threads.
+    const I wf_start_index = __shfl(thread_row_start, 0);
+    // thread 63 broadcast to other threads).
+    const I wf_end_index = __shfl(thread_row_end, WF_SIZE - 1);
 
 #ifndef THREAD_ROW_GLOBAL_LOAD_X2
     for (I j = wf_start_index + tid_in_wf; j < wf_end_index; j += WF_SIZE) {
@@ -101,15 +108,14 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
     }
 #endif
 
+    const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
     // reduction
     // todo: multiples rows per thread support in reduction
+
     // The last row may be reduced and stored more than once by threads in the last wavefront,
     // but it does not matter.
-    const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
-    const I reduce_start_index = row_ptr[reduce_row_id] - wf_start_index;
-    const I reduce_end_index = row_ptr[reduce_row_id + 1] - wf_start_index;
-
-    const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
+    const I reduce_start_index = thread_row_start - wf_start_index;
+    const I reduce_end_index = thread_row_end - wf_start_index;
     T sum = static_cast<T>(0);
     for (I k = reduce_start_index; k < reduce_end_index; k++) {
       sum += _wf_shared_val[k];
@@ -125,7 +131,7 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
   const int avg_nnz_per_row = d_row_ptr[m] / m;
   if (avg_nnz_per_row <= 4) {
     constexpr int MAX_ROW_NNZ = 5; // 5 is up bound.
-    (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<64 * 60, 256>>>(alpha, beta, m, d_row_ptr,
+    (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<53 * 60, 256>>>(alpha, beta, m, d_row_ptr,
                                                                                 d_csr_col_index, d_csr_value, d_x, d_y);
   } else {
     native_thread_row<<<1, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
