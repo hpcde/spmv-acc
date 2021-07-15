@@ -9,4 +9,5 @@ set(ACC_HEADER_FILES ${ACC_HEADER_FILES}
 
 set(ACC_SOURCE_FILES ${ACC_SOURCE_FILES}
         ${CURRENT_ACC_HIP_SOURCE_DIR}/thread_row.cpp
+        ${CURRENT_ACC_HIP_SOURCE_DIR}/native_thread_row.cpp
         )
