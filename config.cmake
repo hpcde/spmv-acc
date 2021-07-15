@@ -50,12 +50,6 @@ else ()
     MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
 endif ()
 
-# set directory postfix for strategy source files.
-if (KERNEL_STRATEGY_LOWER MATCHES "default")
-    set(KERNEL_STRATEGY_SRC_DIR_POSTFIX "")
-else ()
-    string(REPLACE "_" "-" KERNEL_STRATEGY_SRC_DIR_POSTFIX "-${KERNEL_STRATEGY_LOWER}")
-endif ()
 
 # check WF_REDUCE
 string(TOLOWER ${WF_REDUCE} WF_REDUCE_LOWER)
@@ -68,8 +62,16 @@ endif ()
 
 if (HIP_ENABLE_FLAG)
     set(SPMV_BIN_NAME spmv-hip)
+    set(SPMV_KERNEL_LIB_NAME spmv-acc-kernels)
+    # add linked libs
+    set(ACC_LIBS ${ACC_LIBS} ${SPMV_KERNEL_LIB_NAME})
 else ()
     set(SPMV_BIN_NAME spmv-cpu)
+endif ()
+
+# add lib rocsparse if using device verification.
+if (DEVICE_SIDE_VERIFY_FLAG)
+    set(ACC_LIBS ${ACC_LIBS} rocsparse)
 endif ()
 
 if (DEVICE_SIDE_VERIFY_FLAG AND (NOT HIP_ENABLE_FLAG))

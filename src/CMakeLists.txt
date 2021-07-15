@@ -15,14 +15,14 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 # set variable ACC_FILES for architecture source files.
 # set variable ACC_LIBS to link if some architecture is enabled.
-include(acc/acc_libs.cmake)
+add_subdirectory(acc)
 
 # make lib
-add_executable(${SPMV_BIN_NAME} ${HEADER_FILES} ${SOURCE_FILES} ${ACC_FILES})
+add_executable(${SPMV_BIN_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 target_include_directories(
         ${SPMV_BIN_NAME}
         PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_CURRENT_BINARY_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:include>
 )
 

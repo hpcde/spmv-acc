@@ -24,10 +24,10 @@ endif ()
 
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/building_config.h.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/building_config.h"
+        "${PROJECT_BINARY_DIR}/generated/building_config.h"
 )
 
 # install the generated file
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/building_config.h"
+install(FILES "${PROJECT_BINARY_DIR}/generated/building_config.h"
         DESTINATION "include"
         )
