@@ -77,8 +77,3 @@ __global__ void spmv_line_kernel(int m, const T alpha, const T beta, const I *ro
 
 #define LINE_KERNEL_WRAPPER(N)                                                                                         \
   (spmv_line_kernel<N, 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
-
-void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
-                 const double *value, const double *x, double *y) {
-  LINE_KERNEL_WRAPPER(5);
-}

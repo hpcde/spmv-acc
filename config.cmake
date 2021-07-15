@@ -31,32 +31,6 @@ if (NOT AVAILABLE_CU MATCHES "^[0-9]+$")
     MESSAGE(FATAL_ERROR "`AVAILABLE_CU` must be a number.")
 endif ()
 
-# check strategies
-string(TOLOWER ${KERNEL_STRATEGY} KERNEL_STRATEGY_LOWER)
-if ((KERNEL_STRATEGY_LOWER MATCHES "default") OR (KERNEL_STRATEGY_LOWER MATCHES "thread_row")
-        OR (KERNEL_STRATEGY_LOWER MATCHES "wf_row"))
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "block_row_ordinary")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "light")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "vector_row")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "line")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "flat")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-else ()
-    MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
-endif ()
-
-# set directory postfix for strategy source files.
-if (KERNEL_STRATEGY_LOWER MATCHES "default")
-    set(KERNEL_STRATEGY_SRC_DIR_POSTFIX "")
-else ()
-    string(REPLACE "_" "-" KERNEL_STRATEGY_SRC_DIR_POSTFIX "-${KERNEL_STRATEGY_LOWER}")
-endif ()
-
 # check WF_REDUCE
 string(TOLOWER ${WF_REDUCE} WF_REDUCE_LOWER)
 if ((WF_REDUCE_LOWER MATCHES "default") OR (WF_REDUCE_LOWER MATCHES "lds")
@@ -68,8 +42,16 @@ endif ()
 
 if (HIP_ENABLE_FLAG)
     set(SPMV_BIN_NAME spmv-hip)
+    set(SPMV_KERNEL_LIB_NAME spmv-acc-kernels)
+    # add linked libs
+    set(ACC_LIBS ${ACC_LIBS} ${SPMV_KERNEL_LIB_NAME})
 else ()
     set(SPMV_BIN_NAME spmv-cpu)
+endif ()
+
+# add lib rocsparse if using device verification.
+if (DEVICE_SIDE_VERIFY_FLAG)
+    set(ACC_LIBS ${ACC_LIBS} rocsparse)
 endif ()
 
 if (DEVICE_SIDE_VERIFY_FLAG AND (NOT HIP_ENABLE_FLAG))

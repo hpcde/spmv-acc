@@ -11,8 +11,9 @@
 const unsigned blocks = 64;
 const unsigned threadPerBlock = 256;
 
-__global__ void device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
-                                       const int *colindex, const double *value, const double *x, double *y) {
+__global__ void block_row_device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n,
+                                                 const int *rowptr, const int *colindex, const double *value,
+                                                 const double *x, double *y) {
 
   __shared__ double sum_row[threadPerBlock];
   double sum_thread = 0.0;
@@ -63,7 +64,7 @@ __global__ void device_sparse_spmv_acc(int trans, const int alpha, const int bet
   }
 }
 
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                 const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
-  device_sparse_spmv_acc<<<64, 256>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
+void block_row_sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
+                           const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
+  block_row_device_sparse_spmv_acc<<<64, 256>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
 }

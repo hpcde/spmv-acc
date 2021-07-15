@@ -13,6 +13,29 @@ if (DEVICE_SIDE_VERIFY_FLAG)
     set(gpu ON)
 endif ()
 
+# verify kernel strategies
+string(TOLOWER ${KERNEL_STRATEGY} KERNEL_STRATEGY_LOWER)
+if (KERNEL_STRATEGY_LOWER MATCHES "default")
+    set(KERNEL_STRATEGY_DEFAULT ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "thread_row")
+    set(KERNEL_STRATEGY_THREAD_ROW ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "wf_row")
+    set(KERNEL_STRATEGY_WAVEFRONT_ROW ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "block_row_ordinary")
+    set(KERNEL_STRATEGY_BLOCK_ROW_ORDINARY ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "light")
+    set(KERNEL_STRATEGY_LIGHT ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "vector_row")
+    set(KERNEL_STRATEGY_VECTOR_ROW ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "line")
+    set(KERNEL_STRATEGY_LINE ON)
+elseif (KERNEL_STRATEGY_LOWER MATCHES "flat")
+    set(KERNEL_STRATEGY_FLAT ON)
+else ()
+    MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
+endif ()
+MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
+
 
 if (WF_REDUCE_LOWER MATCHES "default")
     set(WF_REDUCE_DEFAULT ON)
@@ -24,10 +47,10 @@ endif ()
 
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/building_config.h.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/building_config.h"
+        "${PROJECT_BINARY_DIR}/generated/building_config.h"
 )
 
 # install the generated file
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/building_config.h"
+install(FILES "${PROJECT_BINARY_DIR}/generated/building_config.h"
         DESTINATION "include"
         )

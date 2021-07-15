@@ -13,19 +13,6 @@
 #include "../common/global_mem_ops.hpp"
 #include "thread_row_config.h"
 
-__global__ void native_thread_row(int trans, const double alpha, const double beta, int m, int n, const int *rowptr,
-                                  const int *colindex, const double *value, const double *x, double *y) {
-  int thread_id = threadIdx.x + blockDim.x * blockIdx.x;
-  const int next_row_step = blockDim.x * gridDim.x;
-  double y0 = 0.0;
-  for (int i = thread_id; i < m; i += next_row_step) {
-    y0 = 0.0;
-    for (int j = rowptr[i]; j < rowptr[i + 1]; j++) {
-      y0 += value[j] * x[colindex[j]];
-    }
-    y[i] = alpha * y0 + beta * y[i];
-  }
-}
 
 /**
  * another thread row strategy with different data loading method.
@@ -126,15 +113,3 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
   }
 }
 
-void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *d_row_ptr,
-                 const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y) {
-  const int avg_nnz_per_row = d_row_ptr[m] / m;
-  if (avg_nnz_per_row <= 4) {
-    constexpr int MAX_ROW_NNZ = 5; // 5 is up bound.
-    (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<53 * 60, 256>>>(alpha, beta, m, d_row_ptr,
-                                                                                d_csr_col_index, d_csr_value, d_x, d_y);
-  } else {
-    native_thread_row<<<1, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
-  }
-  return;
-}
