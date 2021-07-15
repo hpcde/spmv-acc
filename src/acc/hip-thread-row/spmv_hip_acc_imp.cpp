@@ -10,6 +10,9 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
+#include "../common/global_mem_ops.hpp"
+#include "thread_row_config.h"
+
 __global__ void native_thread_row(int trans, const double alpha, const double beta, int m, int n, const int *rowptr,
                                   const int *colindex, const double *value, const double *x, double *y) {
   int thread_id = threadIdx.x + blockDim.x * blockIdx.x;
@@ -64,34 +67,62 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
   // In each loop, each thread process N rows.
   const I wf_rounds = m / WF_SIZE + (m % (WF_SIZE) == 0 ? 0 : 1);
 
+  constexpr int N_UNROLLING_SHIFT = 1;
   for (I i = N * g_wf_id; i < wf_rounds; i += N * global_wf_num) {
     // each wavefront process `N * WF_SIZE` rows.
     // In a wavefront, read data from row g_wf_id to g_wf_id + N*WF_SIZE.
     const I wf_row_start_id = min(i * WF_SIZE, m - 1);
     const I wf_row_end_id = min((i + 1) * WF_SIZE, m);
+
     // we have: wf_row_start_id < wf_row_end_id and wf_row_start_id < m.
-    const I wf_start_index = row_ptr[wf_row_start_id];
-    const I wf_end_index = row_ptr[wf_row_end_id];
+    const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
+    const I thread_row_start = row_ptr[reduce_row_id];
+    const I thread_row_end = row_ptr[reduce_row_id + 1];
+
+    // thread 0 broadcast to other threads.
+    const I wf_start_index = __shfl(thread_row_start, 0);
+    // thread 63 broadcast to other threads).
+    const I wf_end_index = __shfl(thread_row_end, WF_SIZE - 1);
+
+#ifndef THREAD_ROW_GLOBAL_LOAD_X2
     for (I j = wf_start_index + tid_in_wf; j < wf_end_index; j += WF_SIZE) {
       const T local_val = csr_val[j] * x[csr_col_inx[j]];
       // sum += local_val;
       _wf_shared_val[j - wf_start_index] = local_val;
     }
+#endif
+#ifdef THREAD_ROW_GLOBAL_LOAD_X2
+    const int n_lds_load = wf_end_index - wf_start_index;
+    const int unrolling_loop_end = wf_start_index + ((n_lds_load >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
+    for (I j = wf_start_index + 2 * tid_in_wf; j < unrolling_loop_end; j += 2 * WF_SIZE) {
+      dbl_x2 dbl_v_x2;
+      int_x2 int_v_x2;
+      global_load(static_cast<const void *>(csr_val + j), dbl_v_x2);
+      global_load_int(static_cast<const void *>(csr_col_inx + j), int_v_x2);
+      _wf_shared_val[j - wf_start_index] = dbl_v_x2.a * x[int_v_x2.a];
+      _wf_shared_val[j - wf_start_index + 1] = dbl_v_x2.b * x[int_v_x2.b];
+    }
+    for (int j = unrolling_loop_end + tid_in_wf; j < wf_end_index; j += WF_SIZE) {
+      const T local_val = csr_val[j] * x[csr_col_inx[j]];
+      _wf_shared_val[j - wf_start_index] = local_val;
+    }
+#endif
 
+    const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
     // reduction
     // todo: multiples rows per thread support in reduction
+
     // The last row may be reduced and stored more than once by threads in the last wavefront,
     // but it does not matter.
-    const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
-    const I reduce_start_index = row_ptr[reduce_row_id] - wf_start_index;
-    const I reduce_end_index = row_ptr[reduce_row_id + 1] - wf_start_index;
-
+    const I reduce_start_index = thread_row_start - wf_start_index;
+    const I reduce_end_index = thread_row_end - wf_start_index;
     T sum = static_cast<T>(0);
     for (I k = reduce_start_index; k < reduce_end_index; k++) {
       sum += _wf_shared_val[k];
     }
 
-    y[reduce_row_id] = alpha * sum + beta * y[reduce_row_id];
+    const T y_result = alpha * sum + beta * y_local;
+    __builtin_nontemporal_store(y_result, y + reduce_row_id);
   }
 }
 
@@ -100,8 +131,8 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
   const int avg_nnz_per_row = d_row_ptr[m] / m;
   if (avg_nnz_per_row <= 4) {
     constexpr int MAX_ROW_NNZ = 5; // 5 is up bound.
-    (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<3584, 256>>>(alpha, beta, m, d_row_ptr, d_csr_col_index,
-                                                                             d_csr_value, d_x, d_y);
+    (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<53 * 60, 256>>>(alpha, beta, m, d_row_ptr,
+                                                                                d_csr_col_index, d_csr_value, d_x, d_y);
   } else {
     native_thread_row<<<1, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
   }
