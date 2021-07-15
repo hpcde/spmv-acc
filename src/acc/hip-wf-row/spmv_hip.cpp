@@ -10,18 +10,16 @@
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
 #include "building_config.h"
-#include "wavefront_row_default.hpp"
-#include "wavefront_row_lds.hpp"
-#include "wavefront_row_reg.hpp"
+#include "spmv_hip.h"
 
 typedef int type_index;
 typedef double type_values;
 
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                 const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
+void wf_row_sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
+                        const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
 #if defined WF_REDUCE_DEFAULT
   (device_spmv_wf_row_default<256, 64, int, int, double>)<<<128, 256>>>(hm, halpha, hbeta, hrowptr, hcolindex, hvalue,
-      hx, hy);
+                                                                        hx, hy);
   // or:
   //  hipLaunchKernelGGL((device_spmv_wf_row_default<256, 64, int, int, double>), 64, 256, 0, 0, hm, halpha, hbeta,
   //     hrowptr, hcolindex, hvalue, hx, hy);

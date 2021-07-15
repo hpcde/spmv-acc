@@ -50,12 +50,15 @@ foreach (X_STRATEGY IN LISTS ENABLED_STRATEGIES)
     if (NOT EXISTS "${ACC_SRC_PATH}" OR NOT IS_DIRECTORY "${ACC_SRC_PATH}")
         message(FATAL_ERROR "Architecture source files directory not found: ${ACC_SRC_PATH}")
     else ()
-        MESSAGE(STATUS "Arch source files is ${ACC_SRC_PATH}")
+        MESSAGE(STATUS "Add arch source files in ${ACC_SRC_PATH}")
         include(${ACC_SRC_PATH}/source_list.cmake) # set ${ACC_HEADER_FILES} and ${ACC_SOURCE_FILES} here.
     endif ()
 endforeach ()
 
-set(ACC_HEADER_FILES ${ACC_HEADER_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/api/types.h)
+set(ACC_HEADER_FILES ${ACC_HEADER_FILES}
+        api/types.h
+        api/spmv.h
+        )
 
 # build static lib
 if (HIP_ENABLE_FLAG)

@@ -13,7 +13,6 @@
 #include "../common/global_mem_ops.hpp"
 #include "../common/utils.h"
 #include "building_config.h"
-#include "opt_double_buffer.hpp"
 
 constexpr int N_UNROLLING = 2;
 constexpr int N_UNROLLING_SHIFT = 1;
@@ -171,24 +170,3 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
 
 #define VECTOR_KERNEL_WRAPPER(N)                                                                                       \
   (spmv_vector_row_kernel<N, (64 / N), 64, 512, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
-
-
-void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
-                 const double *value, const double *x, double *y) {
-  //  const int avg_eles_per_row = ceil(rowptr[m] + 0.0 / m);
-  const int avg_eles_per_row = rowptr[m] / m;
-
-  if (avg_eles_per_row <= 4) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(2);
-  } else if (avg_eles_per_row <= 8) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(4);
-  } else if (avg_eles_per_row <= 16) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(8);
-  } else if (avg_eles_per_row <= 32) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(16);
-  } else if (avg_eles_per_row <= 64) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(32);
-  } else {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(64);
-  }
-}
