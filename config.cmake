@@ -31,26 +31,6 @@ if (NOT AVAILABLE_CU MATCHES "^[0-9]+$")
     MESSAGE(FATAL_ERROR "`AVAILABLE_CU` must be a number.")
 endif ()
 
-# check strategies
-string(TOLOWER ${KERNEL_STRATEGY} KERNEL_STRATEGY_LOWER)
-if ((KERNEL_STRATEGY_LOWER MATCHES "default") OR (KERNEL_STRATEGY_LOWER MATCHES "thread_row")
-        OR (KERNEL_STRATEGY_LOWER MATCHES "wf_row"))
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "block_row_ordinary")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "light")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "vector_row")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "line")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-elseif (KERNEL_STRATEGY_LOWER MATCHES "flat")
-    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-else ()
-    MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
-endif ()
-
-
 # check WF_REDUCE
 string(TOLOWER ${WF_REDUCE} WF_REDUCE_LOWER)
 if ((WF_REDUCE_LOWER MATCHES "default") OR (WF_REDUCE_LOWER MATCHES "lds")
