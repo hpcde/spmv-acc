@@ -8,6 +8,10 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+template <int VECTOR_SIZE, int WF_SIZE, typename T>
+__global__ void native_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
+                                         const int *csr_col_ind, const T *csr_val, const T *x, T *y);
+
 template <int VECTOR_SIZE, int WF_VECTORS, int WF_SIZE, int BLOCKS, typename T>
 __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
                                        const int *csr_col_ind, const T *csr_val, const T *x, T *y);
@@ -29,5 +33,6 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int 
 
 #include "opt_double_buffer.hpp"
 #include "vector_row.inl"
+#include "vector_row_native.hpp"
 
 #endif // SPMV_ACC_VECTOR_ROW_H

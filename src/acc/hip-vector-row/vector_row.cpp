@@ -10,16 +10,16 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int 
   const int avg_eles_per_row = rowptr[m] / m;
 
   if (avg_eles_per_row <= 4) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(2);
+    NATIVE_VECTOR_KERNEL_WRAPPER(2);
   } else if (avg_eles_per_row <= 8) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(4);
+    NATIVE_VECTOR_KERNEL_WRAPPER(4);
   } else if (avg_eles_per_row <= 16) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(8);
+    VECTOR_KERNEL_WRAPPER(8);
   } else if (avg_eles_per_row <= 32) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(16);
+    NATIVE_VECTOR_KERNEL_WRAPPER(16);
   } else if (avg_eles_per_row <= 64) {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(32);
+    NATIVE_VECTOR_KERNEL_WRAPPER(32);
   } else {
-    VECTOR_KERNEL_WRAPPER_DB_BUFFER(64);
+    NATIVE_VECTOR_KERNEL_WRAPPER(64);
   }
 }
