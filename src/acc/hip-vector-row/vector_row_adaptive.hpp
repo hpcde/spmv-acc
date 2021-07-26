@@ -57,12 +57,45 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
   const int wf_id = global_thread_id / WF_SIZE;        // global wavefront id
   const int wf_num = gridDim.x * blockDim.x / WF_SIZE; // total wavefront on device
 
-  // make sure wf_num is DATA_BLOCKS*k.
-  const int b_wf_num = wf_num / DATA_BLOCKS; // wavefront number for the data block
-  const int data_block_i = wf_id / b_wf_num; // index of current data block (ith data block)
-  const int b_wf_id = wf_id % b_wf_num;      // relative wavefront id in the data block
-  const int b_thread_id = global_thread_id - data_block_i * b_wf_num * WF_SIZE; // relative thread id in the data block.
-  const int b_threads = b_wf_num * WF_SIZE;                                     // threads for current data block.
+  // make sure wf_num is L*k.
+  // e.g. divide into 2 blocks
+  constexpr int S_LEN = DATA_BLOCKS + 1;
+  const int S[S_LEN] = {0, 3, 16}; // 3:13
+  constexpr int L = 16;
+  const int wfs_in_chunk = wf_num / L;
+  const int chunk_id = wf_id / wfs_in_chunk;
+
+  int data_block_i = 0;           // index of current data block (ith data block)
+  int b_wf_num = 0;               // wavefront number for the data block
+  int b_wf_id = wf_id % b_wf_num; // relative wavefront id in the data block
+  int b_thread_id = 0;            // relative thread id in the data block.
+  int b_threads = 0;              // threads for current data block.
+  if (chunk_id < S[1]) {
+    data_block_i = 0;
+    b_wf_num = wfs_in_chunk * (S[1] - S[0]);
+    b_wf_id = wf_id - 0;
+    b_threads = b_wf_num * WF_SIZE;
+    b_thread_id = global_thread_id - 0;
+  } else if (chunk_id < S[2]) {
+    data_block_i = 1;
+    b_wf_num = wfs_in_chunk * (S[2] - S[1]);
+    b_wf_id = wf_id - wfs_in_chunk * (S[1] - S[0]);
+    b_threads = b_wf_num * WF_SIZE;
+    b_thread_id = global_thread_id - wfs_in_chunk * (S[1] - S[0]) * WF_SIZE;
+  } // or just using `#program unroll`
+  /*else if (chunk_id < S[3]) {
+    data_block_i = 2;
+    b_wf_num = wfs_in_chunk * (S[3] - S[2]);
+    b_wf_id = wf_id - wfs_in_chunk * (S[2] - S[1]);
+    b_threads = b_wf_num * WF_SIZE;
+    b_thread_id = global_thread_id - wfs_in_chunk * (S[2] - S[1]) * WF_SIZE;
+  } else if (chunk_id < S[4]) {
+    data_block_i = 3;
+    b_wf_num = wfs_in_chunk * (S[3] - S[2]);
+    b_wf_id = wf_id - wfs_in_chunk * (S[2] - S[1]);
+    b_threads = b_wf_num * WF_SIZE;
+    b_thread_id = global_thread_id - wfs_in_chunk * (S[2] - S[1]) * WF_SIZE;
+  } */
 
   const int rows_cur_block = m / DATA_BLOCKS + (data_block_i < m % DATA_BLOCKS ? 1 : 0);
   const int block_row_start =

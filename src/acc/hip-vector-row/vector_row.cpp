@@ -9,6 +9,8 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int 
   //  const int avg_eles_per_row = ceil(rowptr[m] + 0.0 / m);
   const int avg_eles_per_row = rowptr[m] / m;
 
+  // ADAPTIVE_VECTOR_KERNEL_WRAPPER(2);
+  // return;
   if (avg_eles_per_row <= 4) {
     NATIVE_VECTOR_KERNEL_WRAPPER(2);
   } else if (avg_eles_per_row <= 8) {
