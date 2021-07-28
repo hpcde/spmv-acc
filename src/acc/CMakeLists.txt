@@ -1,6 +1,7 @@
 # all enabled strategies
 set(ENABLED_STRATEGIES
         default
+        adaptive
         block_row_ordinary
         flat
         light

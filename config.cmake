@@ -9,6 +9,7 @@ set(AVAILABLE_CU "60" CACHE STRING "available Compute Units per GPU")
 set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # options are:
 # - DEFAULT: default strategy. The source files are saved in 'acc/hip'.
+# - ADAPTIVE: mixed adaptive method. The source files are saved in 'acc/hip-adaptive'.
 # - THREAD_ROW: each thread process one row. The source files are saved in 'acc/hip-thread-row'
 # - BLOCK_ROW_ORDINARY: each block process one row with ordinary method. The source files are saved in 'acc/hip-block-row-ordinary'
 # - WF_ROW: each wavefront process one row. The source files are saved in 'acc/hip-wf-row'
