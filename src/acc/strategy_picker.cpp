@@ -5,6 +5,7 @@
 #include "api/spmv.h"
 #include "building_config.h"
 
+#include "hip-adaptive/adaptive.h"
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
 #include "hip-flat/spmv_hip_acc_imp.h"
 #include "hip-light/spmv_hip_acc_imp.h"
@@ -18,6 +19,10 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
                  const double *value, const double *x, double *y) {
 #ifdef KERNEL_STRATEGY_DEFAULT
   default_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+#endif
+
+#ifdef KERNEL_STRATEGY_ADAPTIVE
+  adaptive_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_BLOCK_ROW_ORDINARY

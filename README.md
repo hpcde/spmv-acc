@@ -34,16 +34,42 @@ cmake --build ./build-hip-wf-row
 ### Add a new kernel strategy
 A **kernel strategy** is an algorithm for calculating SpMV on device side.  
 You can specific another kernel strategy (algorithm) by following rules:
-1. Edit [config.cmake](config.cmake) to add a kernel strategy checking (e.g. add a strategy named `awesome_spmv`).
-```diff
-+elseif (KERNEL_STRATEGY_LOWER MATCHES "awesome_spmv")
-+    MESSAGE(STATUS "current kernel strategy is: ${KERNEL_STRATEGY}")
-else ()
-    MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
-endif ()
-```
-2. Create a new directory named `hip-awesome-spmv` (replace '_' in strategy name to '-') under `src/acc` directory 
+1. Edit [src/configure.cmake](src/configure.cmake) to add a kernel strategy checking (e.g. add a strategy named `awesome_spmv`).
+   ```diff
+   +elseif (KERNEL_STRATEGY_LOWER MATCHES "awesome_spmv")
+   +    set(KERNEL_STRATEGY_AWESOME_SPMV ON)
+   else ()
+       MESSAGE(FATAL_ERROR "unsupported kernel strategy ${KERNEL_STRATEGY}")
+   endif ()
+   ```
+2. Edit [src/building_config.h.in](src/building_config.h.in) for generating C/C++ **Macro** defines of the corresponding strategy.
+   ```diff
+   #cmakedefine KERNEL_STRATEGY_DEFAULT
+   +#cmakedefine KERNEL_STRATEGY_AWESOME_SPMV
+   ```
+3. Edit file `src/acc/CMakeLists.txt` and add the kernel strategy name, then CMake can find the source files of the kernel strategy.
+   e.g.,
+   ```diff
+   # all enabled strategies
+   set(ENABLED_STRATEGIES
+       default
+   +   awesome_spmv
+   ```
+4. Create a new directory named `hip-awesome-spmv` (replace '_' in strategy name to '-') under `src/acc` directory 
    and place your code for the new strategy to this directory.
 
-3. Add file `source_list.cmake` to directory `src/acc/hip-awesome-spmv` to include the source files of the new strategy.
+5. Add file `source_list.cmake` to directory `src/acc/hip-awesome-spmv` to include the source files of the new strategy.
     Please refer to file `src/acc/hip/source_list.cmake` for more details.
+
+6. Edit file `src/acc/strategy_picker.cpp` to call the entry function of the corresponding strategy.
+   e.g.,
+   ```diff
+   void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
+                    const double *value, const double *x, double *y) {
+   #ifdef KERNEL_STRATEGY_DEFAULT
+   default_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+   #endif
+   +#ifdef KERNEL_STRATEGY_AWESOME_SPMV
+   +awesome_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+   +#endif
+   ```

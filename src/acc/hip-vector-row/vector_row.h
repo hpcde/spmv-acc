@@ -30,10 +30,15 @@ __global__ void spmv_vector_row_kernel_double_buffer_legacy(int m, const T alpha
 
 template <int DATA_BLOCKS, int WF_SIZE, typename T>
 __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
-                                           const int *csr_col_ind, const T *csr_val, const T *x, T *y);
+                                           const int *csr_col_ind, const T *csr_val, const T *x, T *y,
+                                           const int block_bp);
 
 void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                          const int *colindex, const double *value, const double *x, double *y);
+
+void adaptive_vec_row_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha,
+                                  const int beta, int m, int n, const int *rowptr, const int *colindex,
+                                  const double *value, const double *x, double *y);
 
 #include "opt_double_buffer.hpp"
 #include "vector_row.inl"
