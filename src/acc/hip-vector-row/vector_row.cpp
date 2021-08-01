@@ -9,8 +9,6 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int 
   //  const int avg_eles_per_row = ceil(rowptr[m] + 0.0 / m);
   const int avg_eles_per_row = rowptr[m] / m;
 
-  // ADAPTIVE_VECTOR_KERNEL_WRAPPER(2);
-  // return;
   if (avg_eles_per_row <= 4) {
     NATIVE_VECTOR_KERNEL_WRAPPER(2);
   } else if (avg_eles_per_row <= 8) {
@@ -24,4 +22,13 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int 
   } else {
     NATIVE_VECTOR_KERNEL_WRAPPER(64);
   }
+}
+
+void adaptive_vec_row_sparse_spmv(const int weight_block_0, const int weight_block_1, int trans, const int alpha,
+                                  const int beta, int m, int n, const int *rowptr, const int *colindex,
+                                  const double *value, const double *x, double *y) {
+  const int avg_eles_per_row = rowptr[m] / m;
+  const int bp = static_cast<int>(round((16.0 * weight_block_0) / (weight_block_0 + weight_block_1)));
+  const int rescaled_bp = std::min(16 - 1, std::max(1, bp)); // up and low boundary.
+  ADAPTIVE_VECTOR_KERNEL_WRAPPER(2, rescaled_bp); // N is data blocks.
 }

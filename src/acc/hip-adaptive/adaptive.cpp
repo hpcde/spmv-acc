@@ -20,13 +20,16 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
   const int bp_3 = row_ptr[m];
 
   const int avg_nnz_per_row = bp_3 / m;
-  const int nnz_block_0 = bp_1 / (m / 2);
-  const int nnz_block_1 = (bp_3 - bp_1) / (m / 2);
+  const int nnz_block_0 = bp_1 - 0;
+  const int nnz_block_1 = bp_3 - bp_1;
 
   // 1. divided into 2 data blocks if 2 data blocks have large difference.
-  if (nnz_block_0 > nnz_block_1 && nnz_block_0 / nnz_block_1 >= 4) {
-    // todo: vector-row based data blocks dividing
-    // return;
+  if ((nnz_block_1 > nnz_block_0 && nnz_block_1 / nnz_block_0 >= 4) ||
+      (nnz_block_0 > nnz_block_1 && nnz_block_0 / nnz_block_1 >= 4)) {
+    // vector-row based data blocks dividing
+    // use nnz as weight of each block
+    adaptive_vec_row_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    return;
   }
 
   // 2. otherwise, use picker strategy by average nnz per row.

@@ -51,7 +51,8 @@ __device__ __forceinline__ void adaptive_vec_kernel_core(const int b_wf_id, cons
 
 template <int DATA_BLOCKS, int WF_SIZE, typename T>
 __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
-                                           const int *csr_col_ind, const T *csr_val, const T *x, T *y) {
+                                           const int *csr_col_ind, const T *csr_val, const T *x, T *y,
+                                           const int block_bp) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int wf_thread_id = global_thread_id % WF_SIZE; // local thread id in current wavefront
   const int wf_id = global_thread_id / WF_SIZE;        // global wavefront id
@@ -60,7 +61,7 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
   // make sure wf_num is L*k.
   // e.g. divide into 2 blocks
   constexpr int S_LEN = DATA_BLOCKS + 1;
-  const int S[S_LEN] = {0, 3, 16}; // 3:13
+  const int S[S_LEN] = {0, block_bp, 16}; // block_bp: 16-block_bp
   constexpr int L = 16;
   const int wfs_in_chunk = wf_num / L;
   const int chunk_id = wf_id / wfs_in_chunk;
@@ -121,7 +122,7 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
   }
 }
 
-#define ADAPTIVE_VECTOR_KERNEL_WRAPPER(N)                                                                              \
-  (adaptive_vector_row_kernel<N, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
+#define ADAPTIVE_VECTOR_KERNEL_WRAPPER(N, BP)                                                                          \
+  (adaptive_vector_row_kernel<N, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y, BP);
 
 #endif // SPMV_ACC_VECTOR_ROW_ADAPTIVE_HPP
