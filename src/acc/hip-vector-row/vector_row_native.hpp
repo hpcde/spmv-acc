@@ -48,8 +48,32 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
       sum += __shfl_down(sum, i, VECTOR_SIZE);
     }
 
-    if (vector_thread_id == 0) {
-      y[row] = device_fma(beta, y[row], alpha * sum);
+    const int tid_in_wf = global_thread_id % WF_SIZE;
+    const int wf_id = global_thread_id / WF_SIZE;
+    const int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
+
+    typedef union dbl_b32 {
+      double val;
+      uint32_t b32[2];
+    } dbl_b32_t;
+    dbl_b32_t vec_sum;
+    dbl_b32_t recv_sum;
+    vec_sum.val = sum;
+
+    int src_tid = tid_in_wf * VECTOR_SIZE + wf_id * WF_SIZE; // each vector's thread-0 in current wavefront
+    if (tid_in_wf < WF_VECTORS) { // load each vector's sum to the first WF_VECTORS threads in a wavefront
+      recv_sum.b32[0] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[0]);
+      recv_sum.b32[1] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[1]);
+    } else if (tid_in_wf % VECTOR_SIZE == 0) { // enable each thread in permute op
+      recv_sum.b32[0] = __hip_ds_bpermute(4 * global_thread_id, vec_sum.b32[0]);
+      recv_sum.b32[1] = __hip_ds_bpermute(4 * global_thread_id, vec_sum.b32[1]);
+    }
+
+    __syncthreads();
+
+    int vec_row = row - tid_in_wf / VECTOR_SIZE + tid_in_wf;
+    if (tid_in_wf < WF_VECTORS && vec_row < m) {
+      y[vec_row] = device_fma(beta, y[vec_row], alpha * recv_sum.val);
     }
   }
 }
