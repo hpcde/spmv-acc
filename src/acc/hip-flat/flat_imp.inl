@@ -50,9 +50,12 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
   I bp_index = block_id;
   // each block process THREADS * R elements.
   for (int k = nnz_per_block * block_id; k < last_element_index; k += BLOCKS * nnz_per_block) {
-    for (I i = tid_in_block; i < nnz_per_block; i += THREADS) {
-      const I index = min(k + i, last_element_index - 1);
-      shared_val[i] = csr_val[index] * x[csr_col_ind[index]];
+    __syncthreads();
+#pragma unroll
+    for (int i = 0; i < R; i++) {
+      const I shared_inx = tid_in_block + i * THREADS;
+      const I index = min(k + shared_inx, last_element_index - 1);
+      shared_val[shared_inx] = csr_val[index] * x[csr_col_ind[index]];
     }
     __syncthreads();
 
@@ -81,7 +84,6 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
       atomicAdd(y + reduce_row_id, alpha * sum);
       // y[reduce_row_id] = device_fma(beta, y[reduce_row_id], alpha * sum);
     }
-    __syncthreads();
     bp_index += BLOCKS;
   }
 }
