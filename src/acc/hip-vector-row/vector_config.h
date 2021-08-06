@@ -9,4 +9,6 @@
 
 // #define ASYNC_LOAD // asynchronously load data from device memory.
 
+#define MEMORY_ACCESS_Y_COALESCING
+
 #endif // SPMV_ACC_VEOTR_ROW_CONFIG_H

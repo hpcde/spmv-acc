@@ -5,6 +5,40 @@
 #ifndef SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 #define SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 
+#include "vector_config.h"
+
+typedef union dbl_b32 {
+  double val;
+  uint32_t b32[2];
+} dbl_b32_t;
+
+template <int VECTOR_SIZE, int WF_SIZE, typename T>
+__device__ __forceinline__ void
+store_y_with_coalescing(const int gid, const int tid_in_wf, const int wf_id, const int row, const int m, const T alpha,
+                        const T beta, const T sum, const T *__restrict__ y_in, T *__restrict__ y_out) {
+  constexpr int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
+
+  dbl_b32_t vec_sum;
+  dbl_b32_t recv_sum;
+  vec_sum.val = sum;
+
+  int src_tid = tid_in_wf * VECTOR_SIZE + wf_id * WF_SIZE; // each vector's thread-0 in current wavefront
+  if (tid_in_wf < WF_VECTORS) { // load each vector's sum to the first WF_VECTORS threads in a wavefront
+    recv_sum.b32[0] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[0]);
+    recv_sum.b32[1] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[1]);
+  } else if (tid_in_wf % VECTOR_SIZE == 0) { // enable each thread in permute op
+    recv_sum.b32[0] = __hip_ds_bpermute(4 * gid, vec_sum.b32[0]);
+    recv_sum.b32[1] = __hip_ds_bpermute(4 * gid, vec_sum.b32[1]);
+  }
+
+  __syncthreads();
+
+  int vec_row = row - tid_in_wf / VECTOR_SIZE + tid_in_wf;
+  if (tid_in_wf < WF_VECTORS && vec_row < m) {
+    y_out[vec_row] = device_fma(beta, y_in[vec_row], alpha * recv_sum.val);
+  }
+}
+
 /**
  * We solve SpMV with vector method.
  * In this method, wavefront can be divided into several groups (wavefront must be divided with no remainder).
@@ -34,6 +68,9 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
   const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
   const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
 
+  const int tid_in_wf = global_thread_id % WF_SIZE;
+  const int wf_id = global_thread_id / WF_SIZE;
+
   for (int row = vector_id; row < m; row += vector_num) {
     const int row_start = row_offset[row];
     const int row_end = row_offset[row + 1];
@@ -48,33 +85,15 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
       sum += __shfl_down(sum, i, VECTOR_SIZE);
     }
 
-    const int tid_in_wf = global_thread_id % WF_SIZE;
-    const int wf_id = global_thread_id / WF_SIZE;
-    const int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
-
-    typedef union dbl_b32 {
-      double val;
-      uint32_t b32[2];
-    } dbl_b32_t;
-    dbl_b32_t vec_sum;
-    dbl_b32_t recv_sum;
-    vec_sum.val = sum;
-
-    int src_tid = tid_in_wf * VECTOR_SIZE + wf_id * WF_SIZE; // each vector's thread-0 in current wavefront
-    if (tid_in_wf < WF_VECTORS) { // load each vector's sum to the first WF_VECTORS threads in a wavefront
-      recv_sum.b32[0] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[0]);
-      recv_sum.b32[1] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[1]);
-    } else if (tid_in_wf % VECTOR_SIZE == 0) { // enable each thread in permute op
-      recv_sum.b32[0] = __hip_ds_bpermute(4 * global_thread_id, vec_sum.b32[0]);
-      recv_sum.b32[1] = __hip_ds_bpermute(4 * global_thread_id, vec_sum.b32[1]);
+#ifdef MEMORY_ACCESS_Y_COALESCING
+    store_y_with_coalescing<VECTOR_SIZE, WF_SIZE, T>(global_thread_id, tid_in_wf, wf_id, row, m, alpha, beta, sum, y,
+                                                     y);
+#endif
+#ifndef MEMORY_ACCESS_Y_COALESCING
+    if (vector_thread_id == 0) {
+      y[row] = device_fma(beta, y[row], alpha * sum);
     }
-
-    __syncthreads();
-
-    int vec_row = row - tid_in_wf / VECTOR_SIZE + tid_in_wf;
-    if (tid_in_wf < WF_VECTORS && vec_row < m) {
-      y[vec_row] = device_fma(beta, y[vec_row], alpha * recv_sum.val);
-    }
+#endif
   }
 }
 
