@@ -7,11 +7,45 @@
 
 #include "vector_config.h"
 
+// memory coalescing of loading and storing vector y at block level.
+template <int THREADS, int VECTOR_SIZE, int WF_SIZE, typename T>
+__device__ __forceinline__ void block_store_y_with_coalescing(const int tid_in_wf, const int gid, const int row,
+                                                              const int m, const T alpha, const T beta, const T sum,
+                                                              const T *__restrict__ y_in, T *__restrict__ y_out,
+                                                              T *__restrict__ lds_y) {
+  constexpr int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
+  constexpr int BLOCK_VECTORS = THREADS / VECTOR_SIZE;
+
+  const int wf_id_in_block = (gid % THREADS) / WF_SIZE;      // wavefront id in current block
+  const int vec_id_in_block = (gid % THREADS) / VECTOR_SIZE; // vector id in current block
+  const int tid_in_block = (gid % THREADS);                  // thread id in current block
+
+  const int vec_row = row - tid_in_block / VECTOR_SIZE + tid_in_block;
+
+  T y_local;
+  if (tid_in_block < BLOCK_VECTORS && vec_row < m) {
+    y_local = y_in[vec_row];
+  }
+
+  if (tid_in_wf % VECTOR_SIZE == 0) {
+    lds_y[vec_id_in_block] = sum;
+  }
+
+  __syncthreads();
+
+  if (tid_in_block < BLOCK_VECTORS && vec_row < m) {
+    const T local_sum = lds_y[tid_in_block];
+    y_out[vec_row] = device_fma(beta, y_local, alpha * local_sum);
+  }
+}
+
 typedef union dbl_b32 {
   double val;
   uint32_t b32[2];
 } dbl_b32_t;
 
+
+// memory coalescing of loading and storing vector y at wavefront level.
 template <int VECTOR_SIZE, int WF_SIZE, typename T>
 __device__ __forceinline__ void
 store_y_with_coalescing(const int gid, const int tid_in_wf, const int wf_id, const int row, const int m, const T alpha,
@@ -48,6 +82,7 @@ store_y_with_coalescing(const int gid, const int tid_in_wf, const int wf_id, con
  * which also means one wavefront with multiple vectors can compute multiple rows.
  *
  * @tparam VECTOR_SIZE threads in one vector
+ * @tparam THREADS threads in one block
  * @tparam WF_SIZE threads in one wavefront
  * @tparam T type of data in matrix A, vector x, vector y and alpha, beta.
  * @param m rows in matrix A
@@ -60,7 +95,7 @@ store_y_with_coalescing(const int gid, const int tid_in_wf, const int wf_id, con
  * @param y vector y
  * @return
  */
-template <int VECTOR_SIZE, int WF_SIZE, typename T>
+template <int VECTOR_SIZE, int THREADS, int WF_SIZE, typename T>
 __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
                                          const int *csr_col_ind, const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
@@ -70,6 +105,8 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
 
   const int tid_in_wf = global_thread_id % WF_SIZE;
   const int wf_id = global_thread_id / WF_SIZE;
+
+  __shared__ T lds_y[THREADS / VECTOR_SIZE];
 
   for (int row = vector_id; row < m; row += vector_num) {
     const int row_start = row_offset[row];
@@ -86,8 +123,10 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
     }
 
 #ifdef MEMORY_ACCESS_Y_COALESCING
-    store_y_with_coalescing<VECTOR_SIZE, WF_SIZE, T>(global_thread_id, tid_in_wf, wf_id, row, m, alpha, beta, sum, y,
-                                                     y);
+    block_store_y_with_coalescing<THREADS, VECTOR_SIZE, WF_SIZE, T>(tid_in_wf, global_thread_id, row, m, alpha, beta,
+                                                                    sum, y, y, lds_y);
+//    store_y_with_coalescing<VECTOR_SIZE, WF_SIZE, T>(global_thread_id, tid_in_wf, wf_id, row, m, alpha, beta, sum, y,
+//                                                   y);
 #endif
 #ifndef MEMORY_ACCESS_Y_COALESCING
     if (vector_thread_id == 0) {
@@ -98,6 +137,6 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
 }
 
 #define NATIVE_VECTOR_KERNEL_WRAPPER(N)                                                                                \
-  (native_vector_row_kernel<N, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
+  (native_vector_row_kernel<N, 256, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
 
 #endif // SPMV_ACC_VECTOR_ROW_NATIVE_HPP
