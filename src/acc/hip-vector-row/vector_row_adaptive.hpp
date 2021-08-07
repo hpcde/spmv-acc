@@ -9,15 +9,20 @@
 #include <hip/hip_runtime_api.h>
 
 #include "../common/utils.h"
+#include "vector_config.h"
+#include "vector_row_native.hpp"
 
-template <int VECTOR_SIZE, int WF_SIZE, typename I, typename T>
+template <int VECTOR_SIZE, int THREADS, int WF_SIZE, typename I, typename T>
 __device__ __forceinline__ void adaptive_vec_kernel_core(const int b_wf_id, const int b_thread_id, const int b_threads,
                                                          const I block_start_row, const I block_end_row, const T alpha,
                                                          const T beta, const I *row_offset, const I *csr_col_ind,
                                                          const T *csr_val, const T *x, T *y) {
   const int b_vec_id = b_thread_id / VECTOR_SIZE;
   const int b_vec_num = b_threads / VECTOR_SIZE;
+  const int tid_in_wf = b_thread_id % WF_SIZE;
   const int vector_thread_id = b_thread_id % VECTOR_SIZE;
+
+  __shared__ T lds_y[THREADS / VECTOR_SIZE];
 
   for (int row = block_start_row + b_vec_id; row < block_end_row; row += b_vec_num) {
     const int row_start = row_offset[row];
@@ -28,28 +33,40 @@ __device__ __forceinline__ void adaptive_vec_kernel_core(const int b_wf_id, cons
       asm_v_fma_f64(csr_val[i], device_ldg(x + csr_col_ind[i]), sum);
     }
 
+#ifndef ADAPTIVE_Y_MEMORY_COALESCING
     // preload y value.
     T y_local = static_cast<T>(0);
     if (vector_thread_id == 0) {
       y_local = y[row];
     }
+#endif
 
     // reduce inside a vector
     for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
       sum += __shfl_down(sum, i, VECTOR_SIZE);
     }
 
+#ifdef ADAPTIVE_Y_MEMORY_COALESCING
+    // note: for block level memory coalescing, the blocks number must be 16n (where n is integer).
+    block_store_y_with_coalescing<THREADS, VECTOR_SIZE, WF_SIZE, T>(tid_in_wf, b_thread_id, row, block_end_row, alpha,
+                                                                    beta, sum, y, y, lds_y);
+//    store_y_with_coalescing<VECTOR_SIZE, WF_SIZE, T>(b_thread_id, tid_in_wf, b_wf_id, row, block_end_row, alpha, beta,
+//                                                     sum, y, y);
+#endif
+#ifndef ADAPTIVE_Y_MEMORY_COALESCING
     if (vector_thread_id == 0) {
       y[row] = device_fma(beta, y_local, alpha * sum);
     }
+#endif
   }
 }
 
 #define ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(N)                                                                         \
-  adaptive_vec_kernel_core<N, WF_SIZE, int, T>(b_wf_id, b_thread_id, b_threads, block_row_start, block_row_end, alpha, \
-                                               beta, row_offset, csr_col_ind, csr_val, x, y);
+  adaptive_vec_kernel_core<N, THREADS, WF_SIZE, int, T>(b_wf_id, b_thread_id, b_threads, block_row_start,              \
+                                                        block_row_end, alpha, beta, row_offset, csr_col_ind, csr_val,  \
+                                                        x, y);
 
-template <int DATA_BLOCKS, int WF_SIZE, typename T>
+template <int DATA_BLOCKS, int THREADS, int WF_SIZE, typename T>
 __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
                                            const int *csr_col_ind, const T *csr_val, const T *x, T *y,
                                            const int block_bp) {
@@ -123,6 +140,6 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
 }
 
 #define ADAPTIVE_VECTOR_KERNEL_WRAPPER(N, BP)                                                                          \
-  (adaptive_vector_row_kernel<N, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y, BP);
+  (adaptive_vector_row_kernel<N, 256, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y, BP);
 
 #endif // SPMV_ACC_VECTOR_ROW_ADAPTIVE_HPP

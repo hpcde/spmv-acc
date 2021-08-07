@@ -5,6 +5,74 @@
 #ifndef SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 #define SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 
+#include "vector_config.h"
+
+// memory coalescing of loading and storing vector y at block level.
+template <int THREADS, int VECTOR_SIZE, int WF_SIZE, typename T>
+__device__ __forceinline__ void block_store_y_with_coalescing(const int tid_in_wf, const int gid, const int row,
+                                                              const int m, const T alpha, const T beta, const T sum,
+                                                              const T *__restrict__ y_in, T *__restrict__ y_out,
+                                                              T *__restrict__ lds_y) {
+  constexpr int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
+  constexpr int BLOCK_VECTORS = THREADS / VECTOR_SIZE;
+
+  const int wf_id_in_block = (gid % THREADS) / WF_SIZE;      // wavefront id in current block
+  const int vec_id_in_block = (gid % THREADS) / VECTOR_SIZE; // vector id in current block
+  const int tid_in_block = (gid % THREADS);                  // thread id in current block
+
+  const int vec_row = row - tid_in_block / VECTOR_SIZE + tid_in_block;
+
+  T y_local;
+  if (tid_in_block < BLOCK_VECTORS && vec_row < m) {
+    y_local = y_in[vec_row];
+  }
+
+  if (tid_in_wf % VECTOR_SIZE == 0) {
+    lds_y[vec_id_in_block] = sum;
+  }
+
+  __syncthreads();
+
+  if (tid_in_block < BLOCK_VECTORS && vec_row < m) {
+    const T local_sum = lds_y[tid_in_block];
+    y_out[vec_row] = device_fma(beta, y_local, alpha * local_sum);
+  }
+}
+
+typedef union dbl_b32 {
+  double val;
+  uint32_t b32[2];
+} dbl_b32_t;
+
+
+// memory coalescing of loading and storing vector y at wavefront level.
+template <int VECTOR_SIZE, int WF_SIZE, typename T>
+__device__ __forceinline__ void
+store_y_with_coalescing(const int gid, const int tid_in_wf, const int wf_id, const int row, const int m, const T alpha,
+                        const T beta, const T sum, const T *__restrict__ y_in, T *__restrict__ y_out) {
+  constexpr int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
+
+  dbl_b32_t vec_sum;
+  dbl_b32_t recv_sum;
+  vec_sum.val = sum;
+
+  int src_tid = tid_in_wf * VECTOR_SIZE + wf_id * WF_SIZE; // each vector's thread-0 in current wavefront
+  if (tid_in_wf < WF_VECTORS) { // load each vector's sum to the first WF_VECTORS threads in a wavefront
+    recv_sum.b32[0] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[0]);
+    recv_sum.b32[1] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[1]);
+  } else if (tid_in_wf % VECTOR_SIZE == 0) { // enable each thread in permute op
+    recv_sum.b32[0] = __hip_ds_bpermute(4 * gid, vec_sum.b32[0]);
+    recv_sum.b32[1] = __hip_ds_bpermute(4 * gid, vec_sum.b32[1]);
+  }
+
+  __syncthreads();
+
+  int vec_row = row - tid_in_wf / VECTOR_SIZE + tid_in_wf;
+  if (tid_in_wf < WF_VECTORS && vec_row < m) {
+    y_out[vec_row] = device_fma(beta, y_in[vec_row], alpha * recv_sum.val);
+  }
+}
+
 /**
  * We solve SpMV with vector method.
  * In this method, wavefront can be divided into several groups (wavefront must be divided with no remainder).
@@ -14,6 +82,7 @@
  * which also means one wavefront with multiple vectors can compute multiple rows.
  *
  * @tparam VECTOR_SIZE threads in one vector
+ * @tparam THREADS threads in one block
  * @tparam WF_SIZE threads in one wavefront
  * @tparam T type of data in matrix A, vector x, vector y and alpha, beta.
  * @param m rows in matrix A
@@ -26,13 +95,18 @@
  * @param y vector y
  * @return
  */
-template <int VECTOR_SIZE, int WF_SIZE, typename T>
+template <int VECTOR_SIZE, int THREADS, int WF_SIZE, typename T>
 __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, const int *row_offset,
                                          const int *csr_col_ind, const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int vector_thread_id = global_thread_id % VECTOR_SIZE; // local thread id in current vector
   const int vector_id = global_thread_id / VECTOR_SIZE;        // global vector id
   const int vector_num = gridDim.x * blockDim.x / VECTOR_SIZE; // total vectors on device
+
+  const int tid_in_wf = global_thread_id % WF_SIZE;
+  const int wf_id = global_thread_id / WF_SIZE;
+
+  __shared__ T lds_y[THREADS / VECTOR_SIZE];
 
   for (int row = vector_id; row < m; row += vector_num) {
     const int row_start = row_offset[row];
@@ -48,13 +122,21 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
       sum += __shfl_down(sum, i, VECTOR_SIZE);
     }
 
+#ifdef MEMORY_ACCESS_Y_COALESCING
+    block_store_y_with_coalescing<THREADS, VECTOR_SIZE, WF_SIZE, T>(tid_in_wf, global_thread_id, row, m, alpha, beta,
+                                                                    sum, y, y, lds_y);
+//    store_y_with_coalescing<VECTOR_SIZE, WF_SIZE, T>(global_thread_id, tid_in_wf, wf_id, row, m, alpha, beta, sum, y,
+//                                                   y);
+#endif
+#ifndef MEMORY_ACCESS_Y_COALESCING
     if (vector_thread_id == 0) {
       y[row] = device_fma(beta, y[row], alpha * sum);
     }
+#endif
   }
 }
 
 #define NATIVE_VECTOR_KERNEL_WRAPPER(N)                                                                                \
-  (native_vector_row_kernel<N, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
+  (native_vector_row_kernel<N, 256, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
 
 #endif // SPMV_ACC_VECTOR_ROW_NATIVE_HPP
