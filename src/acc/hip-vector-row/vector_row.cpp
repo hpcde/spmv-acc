@@ -14,7 +14,7 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int 
   } else if (avg_eles_per_row <= 8) {
     NATIVE_VECTOR_KERNEL_WRAPPER(4);
   } else if (avg_eles_per_row <= 16) {
-    VECTOR_KERNEL_WRAPPER(8);
+    NATIVE_VECTOR_KERNEL_WRAPPER(8);
   } else if (avg_eles_per_row <= 32) {
     NATIVE_VECTOR_KERNEL_WRAPPER(16);
   } else if (avg_eles_per_row <= 64) {
