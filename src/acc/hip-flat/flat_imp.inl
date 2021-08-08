@@ -15,9 +15,10 @@
 /**
  * We solve SpMV with flat method.
  *
- * @tparam ROW_SIZE the max nnz in one row.
  * @tparam WF_SIZE threads in one wavefront
+ * @tparam R rounds, process R*THREADS elements in each loop.
  * @tparam BLOCKS total blocks on one GPU (blocks in one grid).
+ * @tparam THREADS threads in each block.
  * @tparam I type of data in matrix index
  * @tparam T type of data in matrix A, vector x, vector y and alpha, beta.
  * @param m rows in matrix A
@@ -84,6 +85,17 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
       atomicAdd(y + reduce_row_id, alpha * sum);
       // y[reduce_row_id] = device_fma(beta, y[reduce_row_id], alpha * sum);
     }
+    reduce_row_id += THREADS;
+    for (; reduce_row_id < reduce_end_row_id; reduce_row_id += THREADS) {
+      T sum = static_cast<T>(0);
+      const I reduce_start_inx = max(0, row_offset[reduce_row_id] - bp_index * nnz_per_block);
+      const I reduce_end_inx = min(nnz_per_block, row_offset[reduce_row_id + 1] - bp_index * nnz_per_block);
+      for (int i = reduce_start_inx; i < reduce_end_inx; i++) {
+        sum += shared_val[i];
+      }
+      atomicAdd(y + reduce_row_id, alpha * sum);
+    }
+
     bp_index += BLOCKS;
   }
 }
