@@ -35,13 +35,12 @@ template <int WF_SIZE, int R, int BLOCKS, int THREADS, typename I, typename T>
 __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
                                  const I *__restrict__ break_points, const I *__restrict__ csr_col_ind,
                                  const T *__restrict__ csr_val, const T *__restrict__ x, T *__restrict__ y) {
-  const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
+  const int global_thread_id = threadIdx.x + THREADS * blockIdx.x;
   constexpr int global_threads_num = BLOCKS * THREADS;
 
   const int wf_id_in_block = blockIdx.x / WF_SIZE;         // wavefront id in block
   const int block_id = blockIdx.x;                         // block id
-  const int threads_in_block = blockDim.x;                 // threads in one block
-  const int tid_in_block = threadIdx.x % threads_in_block; // thread id in one block
+  const int tid_in_block = threadIdx.x % THREADS; // thread id in one block
 
   constexpr unsigned int shared_len = THREADS * R; // 64 * 1024 / (BLOCKS / 64) / sizeof(T); // nnz per block
   __shared__ T shared_val[shared_len];
@@ -127,5 +126,5 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
 }
 
 #define FLAT_KERNEL_WRAPPER(R, BLOCKS, THREADS)                                                                        \
-  (spmv_flat_kernel<64, R, BLOCKS, THREADS, int, double>)<<<BLOCKS, THREADS>>>(m, alpha, beta, rowptr, break_points,   \
-                                                                               colindex, value, x, y)
+  (spmv_flat_kernel<64, R, BLOCKS, THREADS, int, double>)<<<(BLOCKS), (THREADS)>>>(                                    \
+      m, alpha, beta, rowptr, break_points, colindex, value, x, y)
