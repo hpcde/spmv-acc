@@ -25,5 +25,6 @@ void thread_row_sparse_spmv(int trans, const int alpha, const int beta, int m, i
                             const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y);
 
 #include "thread_row.inl"
+#include "thread_row_x_remap.inl"
 
 #endif // SPMV_ACC_THREAD_ROW_H
