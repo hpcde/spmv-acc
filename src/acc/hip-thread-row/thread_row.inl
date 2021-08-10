@@ -39,8 +39,11 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
   for (I i = N * g_wf_id; i < wf_rounds; i += N * global_wf_num) {
     // each wavefront process `N * WF_SIZE` rows.
     // In a wavefront, read data from row g_wf_id to g_wf_id + N*WF_SIZE.
-    const I wf_row_start_id = min(i * WF_SIZE, m - 1);
-    const I wf_row_end_id = min((i + 1) * WF_SIZE, m);
+    if (i * WF_SIZE >= m) {
+      return;
+    }
+    const I wf_row_start_id = i * WF_SIZE;
+    const I wf_row_end_id = min((i + N) * WF_SIZE, m);
 
     // we have: wf_row_start_id < wf_row_end_id and wf_row_start_id < m.
     const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
