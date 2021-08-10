@@ -14,16 +14,19 @@
 
 /**
  * another thread row strategy implementation with different data loading method.
- * In this method, memory access of vector x is remapped.
+ * In this method, memory access of vector x is remapped in column-first mode.
  *
- * @tparam ROWS_PER_WF each wavefront may process 64*N rows.
+ * @tparam N each wavefront may process 64*N rows. Currently, it must be 1.
+ * @tparam MAX_ROW_NNZ max non-zeros per row in the algorithm.
+ *   If some row have nnz larger than @tparam MAX_ROW_NNZ/ it can fallback to native thread row method.
  * @tparam WF_SIZE threads number in a wavefront
  * @tparam BLOCKS total blocks in system.
  * @tparam THREADS threads number in block.
  *
  * @tparam I index type
  * @tparam T data type. (e.g matrix value, vector x, y)
- * @param alpha, beta alpha and beta value
+ *
+ * @param alpha, beta: the alpha and beta value
  * @param m row number in matrix A.
  * @param row_ptr row offset pointer in CSR format.
  * @param csr_col_inx column index pointer in CSR format.
