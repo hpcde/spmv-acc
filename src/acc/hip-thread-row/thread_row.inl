@@ -14,25 +14,6 @@
 #include "thread_row_config.h"
 
 
-/**
- * another thread row strategy with different data loading method.
- *
- * @tparam ROWS_PER_WF each wavefront may process 64*N rows.
- * @tparam WF_SIZE threads number in a wavefront
- * @tparam BLOCKS total blocks in system.
- * @tparam THREADS threads number in block.
- *
- * @tparam I index type
- * @tparam T data type. (e.g matrix value, vector x, y)
- * @param alpha, beta alpha and beta value
- * @param m row number in matrix A.
- * @param row_ptr row offset pointer in CSR format.
- * @param csr_col_inx column index pointer in CSR format.
- * @param csr_val matrix value in CSR format.
- * @param x vector x for @param alpha * A*x
- * @param y result vector for y = alpha*A*x + beta*y.
- * @return
- */
 template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
 __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,
                                   const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
@@ -58,8 +39,11 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
   for (I i = N * g_wf_id; i < wf_rounds; i += N * global_wf_num) {
     // each wavefront process `N * WF_SIZE` rows.
     // In a wavefront, read data from row g_wf_id to g_wf_id + N*WF_SIZE.
-    const I wf_row_start_id = min(i * WF_SIZE, m - 1);
-    const I wf_row_end_id = min((i + 1) * WF_SIZE, m);
+    if (i * WF_SIZE >= m) {
+      return;
+    }
+    const I wf_row_start_id = i * WF_SIZE;
+    const I wf_row_end_id = min((i + N) * WF_SIZE, m);
 
     // we have: wf_row_start_id < wf_row_end_id and wf_row_start_id < m.
     const I reduce_row_id = min(wf_row_start_id + tid_in_wf, m - 1);
@@ -112,4 +96,3 @@ __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const 
     __builtin_nontemporal_store(y_result, y + reduce_row_id);
   }
 }
-
