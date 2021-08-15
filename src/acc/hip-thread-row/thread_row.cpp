@@ -21,6 +21,11 @@ void thread_row_sparse_spmv(int trans, const int alpha, const int beta, int m, i
     (kernel_thread_row_v2<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<BLOCKS, 256>>>(
         alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
 #endif
+#ifdef OPT_THREAD_ROW_BLOCK_LOAD_X2
+    constexpr int BLOCKS = 112 * AVAILABLE_CU;
+    (kernel_thread_row_block_level<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<BLOCKS, 256>>>(
+        alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
+#endif
   } else {
     native_thread_row<<<128, 1024>>>(trans, alpha, beta, m, n, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
   }

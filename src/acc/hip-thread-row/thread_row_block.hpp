@@ -25,7 +25,6 @@ __global__ void kernel_thread_row_block_level(const T alpha, const T beta, const
 
   constexpr int shared_len = N * THREADS * MAX_ROW_NNZ;
   __shared__ T _shared_val[shared_len];
-
   // In each loop, each thread process N rows.
   const I wf_rounds = m / THREADS + (m % THREADS == 0 ? 0 : 1);
 
@@ -47,10 +46,31 @@ __global__ void kernel_thread_row_block_level(const T alpha, const T beta, const
     const I block_end_index = row_ptr[block_row_end_id];     // __shfl(thread_row_end, WF_SIZE - 1);
 
     __syncthreads();
+#ifndef THREAD_ROW_GLOBAL_LOAD_X2
     for (I j = block_start_index + tid_in_block; j < block_end_index; j += THREADS) {
       const T local_val = csr_val[j] * x[csr_col_inx[j]];
       _shared_val[j - block_start_index] = local_val;
     }
+#endif
+#ifdef THREAD_ROW_GLOBAL_LOAD_X2
+    {
+      const int n_lds_load = block_end_index - block_start_index;
+      const int unrolling_loop_end = block_start_index + ((n_lds_load >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
+      for (I j = block_start_index + 2 * tid_in_block; j < unrolling_loop_end; j += 2 * THREADS) {
+        // int_x2 int_v_x2;
+        // dbl_x2 dbl_v_x2;
+        // global_load(static_cast<const void *>(csr_val + j), dbl_v_x2);
+        // global_load_int(static_cast<const void *>(csr_col_inx + j), int_v_x2);
+        // _shared_val[j - block_start_index] = dbl_v_x2.a * x[int_v_x2.a];
+        // _shared_val[j - block_start_index + 1] = dbl_v_x2.b * x[int_v_x2.b];
+        _shared_val[j - block_start_index] = csr_val[j] * x[csr_col_inx[j]];
+        _shared_val[j - block_start_index + 1] = csr_val[j + 1] * x[csr_col_inx[j + 1]];
+      }
+      for (I j = unrolling_loop_end + tid_in_block; j < block_end_index; j += THREADS) {
+        _shared_val[j - block_start_index] = csr_val[j] * x[csr_col_inx[j]];
+      }
+    }
+#endif
     __syncthreads();
 
     const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
