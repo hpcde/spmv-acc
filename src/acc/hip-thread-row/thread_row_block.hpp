@@ -35,12 +35,7 @@ __global__ void kernel_thread_row_block_level(const T alpha, const T beta, const
       return;
     }
     const I block_row_start_id = i * THREADS;
-    const I block_row_end_id = min((i + 1) * THREADS, m);
-
-    // we have: block_row_start_id < block_row_end_id and block_row_start_id < m.
-    const I reduce_row_id = min(block_row_start_id + tid_in_block, m - 1);
-    const I thread_row_start = row_ptr[reduce_row_id];
-    const I thread_row_end = row_ptr[reduce_row_id + 1];
+    const I block_row_end_id = min((i + N) * THREADS, m);
 
     const I block_start_index = row_ptr[block_row_start_id]; // __shfl(thread_row_start, 0);
     const I block_end_index = row_ptr[block_row_end_id];     // __shfl(thread_row_end, WF_SIZE - 1);
@@ -72,21 +67,36 @@ __global__ void kernel_thread_row_block_level(const T alpha, const T beta, const
     }
 #endif
     __syncthreads();
-
-    const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
+    T y_local[N];
+    T y_result[N];
+    for (I j = 0; j < N; j++) {
+      const I reduce_row_id = min(block_row_start_id + j * THREADS + tid_in_block, m - 1);
+      y_local[j] = __builtin_nontemporal_load(y + reduce_row_id);
+    }
+    // const T y_local = __builtin_nontemporal_load(y + reduce_row_id);
 
     // reduction
     // The last row may be reduced and stored more than once by threads in the last wavefront,
     // but it does not matter.
-    const I reduce_start_index = thread_row_start - block_start_index;
-    const I reduce_end_index = thread_row_end - block_start_index;
-    T sum = static_cast<T>(0);
-    for (I k = reduce_start_index; k < reduce_end_index; k++) {
-      sum += _shared_val[k];
+    for (I j = 0; j < N; j++) {
+      // we have: block_row_start_id < block_row_end_id and block_row_start_id < m.
+      const I reduce_row_id = min(block_row_start_id + j * THREADS + tid_in_block, m - 1);
+      const I thread_row_start = row_ptr[reduce_row_id];
+      const I thread_row_end = row_ptr[reduce_row_id + 1];
+      const I reduce_start_index = thread_row_start - block_start_index;
+      const I reduce_end_index = thread_row_end - block_start_index;
+      T sum = static_cast<T>(0);
+      for (I k = reduce_start_index; k < reduce_end_index; k++) {
+        sum += _shared_val[k];
+      }
+      y_result[j] = alpha * sum + beta * y_local[j];
+      // const T y_result = alpha * sum + beta * y_local;
+      // __builtin_nontemporal_store(y_result, y + reduce_row_id);
     }
-
-    const T y_result = alpha * sum + beta * y_local;
-    __builtin_nontemporal_store(y_result, y + reduce_row_id);
+    for (I j = 0; j < N; j++) {
+      const I reduce_row_id = min(block_row_start_id + j * THREADS + tid_in_block, m - 1);
+      __builtin_nontemporal_store(y_result[j], y + reduce_row_id);
+    }
   }
 }
 
