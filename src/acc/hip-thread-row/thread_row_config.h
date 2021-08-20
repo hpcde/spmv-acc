@@ -14,6 +14,7 @@
 // otherwise, the mode is row-first.
 // #define OPT_THREAD_ROW_REMAP_VEC_X
 
-#define OPT_THREAD_ROW_BLOCK_LOAD_X2
+// thread row at block level
+#define OPT_THREAD_ROW_BLOCK_LEVEL
 
 #endif // SPMV_ACC_THREAD_ROW_CONFIG_H
