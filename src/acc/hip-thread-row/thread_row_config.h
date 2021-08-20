@@ -12,6 +12,9 @@
 // Thus, it is better to access vector x with column first mode.
 // If the macro below is enabled, the memory accessing mode of vector x is column-first,
 // otherwise, the mode is row-first.
-#define OPT_THREAD_ROW_REMAP_VEC_X
+// #define OPT_THREAD_ROW_REMAP_VEC_X
+
+// thread row at block level
+#define OPT_THREAD_ROW_BLOCK_LEVEL
 
 #endif // SPMV_ACC_THREAD_ROW_CONFIG_H

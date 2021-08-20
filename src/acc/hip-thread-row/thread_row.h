@@ -14,7 +14,12 @@ __global__ void native_thread_row(int trans, const double alpha, const double be
 template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
 __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,
                                   const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
-                                  const T *__restrict__ x, T *__restrict__ y);
+                                  const T *__restrict__ x, T *__restrict__ y_in, T *__restrict__ y_out);
+
+template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
+__global__ void kernel_thread_row_block_level(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,
+                                              const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
+                                              const T *__restrict__ x, T *__restrict__ y);
 
 template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
 __global__ void kernel_thread_row_v2(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,
@@ -25,6 +30,7 @@ void thread_row_sparse_spmv(int trans, const int alpha, const int beta, int m, i
                             const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y);
 
 #include "thread_row.inl"
+#include "thread_row_block.hpp"
 #include "thread_row_x_remap.inl"
 
 #endif // SPMV_ACC_THREAD_ROW_H
