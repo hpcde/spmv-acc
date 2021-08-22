@@ -73,10 +73,8 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
       const int n_lds_load = block_end_index - block_start_index;
       const int unrolling_loop_end = block_start_index + ((n_lds_load >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
       for (I j = block_start_index + 2 * tid_in_block; j < unrolling_loop_end; j += 2 * THREADS) {
-        int_x2 int_v_x2;
-        global_load_int(static_cast<const void *>(csr_col_inx + j), int_v_x2);
-        _shared_val[j - block_start_index] = int_v_x2.a;
-        _shared_val[j - block_start_index + 1] = int_v_x2.b;
+        _shared_val[j - block_start_index] = csr_col_inx[j];
+        _shared_val[j - block_start_index + 1] = csr_col_inx[j + 1];
       }
       for (I j = unrolling_loop_end + tid_in_block; j < block_end_index; j += THREADS) {
         _shared_val[j - block_start_index] = csr_col_inx[j];
@@ -107,11 +105,8 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
       const int n_lds_load = block_end_index - block_start_index;
       const int unrolling_loop_end = block_start_index + ((n_lds_load >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
       for (I j = block_start_index + 2 * tid_in_block; j < unrolling_loop_end; j += 2 * THREADS) {
-        dbl_x2 dbl_v_x2;
-        global_load(static_cast<const void *>(csr_val + j), dbl_v_x2);
-        asm volatile("s_waitcnt vmcnt(0)");
-        _shared_val[j - block_start_index] = dbl_v_x2.a;
-        _shared_val[j - block_start_index + 1] = dbl_v_x2.b;
+        _shared_val[j - block_start_index] = csr_val[j];
+        _shared_val[j - block_start_index + 1] = csr_val[j + 1];
       }
       for (I j = unrolling_loop_end + tid_in_block; j < block_end_index; j += THREADS) {
         _shared_val[j - block_start_index] = csr_val[j];
