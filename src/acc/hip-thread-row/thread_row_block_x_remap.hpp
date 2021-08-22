@@ -22,9 +22,11 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
 
   const int g_block_id = t_id / THREADS;
   const int tid_in_block = t_id % THREADS;
+  const int tid_in_wf = t_id % WF_SIZE;
 
   constexpr int shared_len = N * THREADS * MAX_ROW_NNZ;
   __shared__ T _shared_val[shared_len];
+  __shared__ I _shared_block_row_start, _shared_block_row_end;
   // In each loop, each thread process N rows.
   const I wf_rounds = m / THREADS + (m % THREADS == 0 ? 0 : 1);
 
@@ -42,10 +44,25 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
     const I thread_row_start = row_ptr[reduce_row_id];
     const I thread_row_end = row_ptr[reduce_row_id + 1];
 
-    const I block_start_index = row_ptr[block_row_start_id]; // __shfl(thread_row_start, 0);
-    const I block_end_index = row_ptr[block_row_end_id];     // __shfl(thread_row_end, WF_SIZE - 1);
-
+    // load the row start and row end in current block.
+    // The first thread and the last thread in current block write data into LDS;
+    if (tid_in_block == 0) {
+      _shared_block_row_start = thread_row_start;
+    }
+    if (tid_in_block == THREADS - 1) {
+      _shared_block_row_end = thread_row_end;
+    }
     __syncthreads();
+
+    // then the first thread in wavefront read the data and broadcast to other threads in wavefront.
+    I block_start_index_tmp, block_end_index_tmp;
+    if (tid_in_wf == 0) {
+      block_start_index_tmp = _shared_block_row_start;
+      block_end_index_tmp = _shared_block_row_end;
+    }
+    const I block_start_index = __shfl(block_start_index_tmp, 0, WF_SIZE);
+    const I block_end_index = __shfl(block_end_index_tmp, 0, WF_SIZE);
+
 #ifndef THREAD_ROW_GLOBAL_LOAD_X2
     for (I j = block_start_index + tid_in_block; j < block_end_index; j += THREADS) {
       _shared_val[j - block_start_index] = csr_col_inx[j];
