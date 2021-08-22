@@ -16,11 +16,15 @@ void thread_row_sparse_spmv(int trans, const int alpha, const int beta, int m, i
     constexpr int BLOCKS = 112 * AVAILABLE_CU;
     (kernel_thread_row_block_level<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<BLOCKS, 256>>>(
         alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
-#elif defined OPT_THREAD_ROW_REMAP_VEC_X // thread-row wavefront level with x remapping
+#elif defined OPT_THREAD_ROW_REMAP_VEC_X_BLOCK_LEVEL // thread-row block level with x remapping
+    constexpr int BLOCKS = 112 * AVAILABLE_CU;
+    (kernel_thread_row_block_v2<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<BLOCKS, 256>>>(
+        alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
+#elif defined OPT_THREAD_ROW_REMAP_VEC_X             // thread-row wavefront level with x remapping
     constexpr int BLOCKS = 112 * AVAILABLE_CU;
     (kernel_thread_row_v2<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<BLOCKS, 256>>>(
         alpha, beta, m, d_row_ptr, d_csr_col_index, d_csr_value, d_x, d_y);
-#else                                    // thread-row wavefront level
+#else                                                // thread-row wavefront level
     // fallback to normal one.
     constexpr int BLOCKS = 53 * AVAILABLE_CU;
     (kernel_thread_row<1, MAX_ROW_NNZ, 64, 256, int, double>)<<<BLOCKS, 256>>>(alpha, beta, m, d_row_ptr,
