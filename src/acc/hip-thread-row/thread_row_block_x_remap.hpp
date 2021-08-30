@@ -93,7 +93,7 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
         _thread_local_x_vec[j] = x[thread_col_inx];
       }
     }
-    __syncthreads();
+
     // step3: load matrix value to LDS
 #ifndef THREAD_ROW_GLOBAL_LOAD_X2
     for (I j = block_start_index + tid_in_block; j < block_end_index; j += THREADS) {
