@@ -45,6 +45,34 @@ flat_reduce_in_vector(const int n_reduce_rows_num, const int tid_in_block, const
   }
 }
 
+template <typename I, typename T, int NNZ_PER_BLOCK, int THREADS>
+__device__ __forceinline__ void flat_reduce_direct(const int tid_in_block, const int bp_index,
+                                                   const I reduce_start_row_id, const I reduce_end_row_id,
+                                                   const T alpha, const I *__restrict__ row_offset,
+                                                   const T *__restrict__ _lds_shared_data, T *__restrict__ y) {
+  I reduce_row_id = reduce_start_row_id + tid_in_block;
+  if (reduce_row_id < reduce_end_row_id) {
+    T sum = static_cast<T>(0);
+    // what if it has a very long row? which means `reduce_start_row_id == reduce_end_row_id`.
+    const I reduce_start_inx = max(0, row_offset[reduce_row_id] - bp_index * NNZ_PER_BLOCK);
+    const I reduce_end_inx = min(NNZ_PER_BLOCK, row_offset[reduce_row_id + 1] - bp_index * NNZ_PER_BLOCK);
+    for (int i = reduce_start_inx; i < reduce_end_inx; i++) {
+      sum += _lds_shared_data[i];
+    }
+    atomicAdd(y + reduce_row_id, alpha * sum);
+  }
+  reduce_row_id += THREADS;
+  for (; reduce_row_id < reduce_end_row_id; reduce_row_id += THREADS) {
+    T sum = static_cast<T>(0);
+    const I reduce_start_inx = max(0, row_offset[reduce_row_id] - bp_index * NNZ_PER_BLOCK);
+    const I reduce_end_inx = min(NNZ_PER_BLOCK, row_offset[reduce_row_id + 1] - bp_index * NNZ_PER_BLOCK);
+    for (int i = reduce_start_inx; i < reduce_end_inx; i++) {
+      sum += _lds_shared_data[i];
+    }
+    atomicAdd(y + reduce_row_id, alpha * sum);
+  }
+}
+
 constexpr int FLAT_REDUCE_METHOD = 0;
 
 /**
@@ -111,32 +139,12 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
     if (FLAT_REDUCE_METHOD == 0) {
       const I n_reduce_rows_num = reduce_end_row_id - reduce_start_row_id;
       (flat_reduce_in_vector<I, T, nnz_per_block, THREADS, 2>)(n_reduce_rows_num, tid_in_block, bp_index,
-                                                                reduce_start_row_id, reduce_end_row_id, alpha,
-                                                                row_offset, shared_val, y);
+                                                               reduce_start_row_id, reduce_end_row_id, alpha,
+                                                               row_offset, shared_val, y);
     } else {
       // direct reduction
-      I reduce_row_id = reduce_start_row_id + tid_in_block;
-      if (reduce_row_id < reduce_end_row_id) {
-        T sum = static_cast<T>(0);
-        // what if it has a very long row? which means `reduce_start_row_id == reduce_end_row_id`.
-        const I reduce_start_inx = max(0, row_offset[reduce_row_id] - bp_index * nnz_per_block);
-        const I reduce_end_inx = min(nnz_per_block, row_offset[reduce_row_id + 1] - bp_index * nnz_per_block);
-        for (int i = reduce_start_inx; i < reduce_end_inx; i++) {
-          sum += shared_val[i];
-        }
-        atomicAdd(y + reduce_row_id, alpha * sum);
-        // y[reduce_row_id] = device_fma(beta, y[reduce_row_id], alpha * sum);
-      }
-      reduce_row_id += THREADS;
-      for (; reduce_row_id < reduce_end_row_id; reduce_row_id += THREADS) {
-        T sum = static_cast<T>(0);
-        const I reduce_start_inx = max(0, row_offset[reduce_row_id] - bp_index * nnz_per_block);
-        const I reduce_end_inx = min(nnz_per_block, row_offset[reduce_row_id + 1] - bp_index * nnz_per_block);
-        for (int i = reduce_start_inx; i < reduce_end_inx; i++) {
-          sum += shared_val[i];
-        }
-        atomicAdd(y + reduce_row_id, alpha * sum);
-      }
+      (flat_reduce_direct<I, T, nnz_per_block, THREADS>)(tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id,
+                                                         alpha, row_offset, shared_val, y);
     }
 
     bp_index += BLOCKS;
