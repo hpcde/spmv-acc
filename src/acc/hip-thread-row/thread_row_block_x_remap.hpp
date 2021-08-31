@@ -15,8 +15,8 @@
 // calculate in a block with vector x remapping
 template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
 __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,
-                                              const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
-                                              const T *__restrict__ x, T *__restrict__ y) {
+                                           const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
+                                           const T *__restrict__ x, T *__restrict__ y) {
   int t_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int global_threads_num = blockDim.x * gridDim.x;
 
@@ -36,6 +36,7 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
     if (i * THREADS >= m) {
       return;
     }
+
     const I block_row_start_id = i * THREADS;
     const I block_row_end_id = min((i + 1) * THREADS, m);
 
@@ -123,7 +124,8 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
     const I reduce_start_index = thread_row_start - block_start_index;
     const I reduce_end_index = thread_row_end - block_start_index;
     T sum = static_cast<T>(0);
-    #pragma unroll
+
+#pragma unroll
     for (I j = 0; j < MAX_ROW_NNZ; j++) {
       const I col_addr = reduce_start_index + j;
       if (col_addr < reduce_end_index) {
@@ -262,4 +264,4 @@ __global__ void kernel_thread_row_block_v3(const T alpha, const T beta, const I 
   __builtin_nontemporal_store(y_result, y + reduce_row_id);
 }
 
-#endif // SPMV_ACC_THREAD_ROW_BLOCK_HPP
+#endif // SPMV_ACC_THREAD_ROW_BLOCK_X_REMAP_HPP
