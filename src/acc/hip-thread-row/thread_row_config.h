@@ -20,8 +20,11 @@ constexpr int THREAD_ROW_OPT_LEVEL_BLOCK = 2;
 // thread row at block level with vector x remapping
 constexpr int THREAD_ROW_OPT_LEVEL_BLOCK_VEC_X = 3;
 
-// the thread row optimization level
-constexpr int THREAD_ROW_OPT_LEVEL = THREAD_ROW_OPT_LEVEL_BLOCK_VEC_X;
+// thread row at block level with vector x remapping.
+// but the block number is set to be `ceil(m/THREADS)`, where `THREADS` is thread number in HIP Block.
+constexpr int THREAD_ROW_OPT_LEVEL_BLOCK_VEC_X_SINGLE = 4;
 
+// the thread row optimization level
+constexpr int THREAD_ROW_OPT_LEVEL = THREAD_ROW_OPT_LEVEL_BLOCK_VEC_X_SINGLE;
 
 #endif // SPMV_ACC_THREAD_ROW_CONFIG_H
