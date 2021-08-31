@@ -2,6 +2,84 @@
 ## [Unreleased]
 
 
+<a name="v0.4.0"></a>
+## [v0.4.0] - 2021-08-31
+### Build
+- **cmake:** gen strategy config from cmake and apply strategy via the macro in generated header
+- **cmake:** enable to build all strategies code via cmake script
+
+### Chore
+- **changelog:** update CHANGELOG.md for v0.3.0
+- **examples:** reorder the case in alphabetical order and correct cases information
+- **kernel-thread-row:** improved code comments of kernel function `kernel_thread_row_v2`
+
+### Docs
+- **changelog:** update change log for v0.4.0
+- **develop:** update document of adding a new kernel strategy in README.md
+
+### Feat
+- **kernel-adaptive:** add config for the new kernel strategy `adaptive`
+- **kernel-adaptive:** apply matrix data dividing based vector-row if it is available
+- **kernel-adaptive:** add basic implementation of adaptive method (no data blocks dividing)
+- **kernel-thread-row:** remove useless `__syncthreads` in kernel func `kernel_thread_row_block_v2`
+- **kernel-thread-row:** call kernel func `kernel_thread_row_block_v2`(x remapping at block level)
+- **kernel-thread-row:** apply vector x reampping when macro `OPT_THREAD_ROW_REMAP_VEC_X` is defined
+- **kernel-thread-row:** add another block level imp: one thread only process a row in its lifetime
+- **kernel-thread-row:** add another imp of "thread-row" strategy with calculation in block level
+- **kernel-vector-row:** adaptive kernel: apply different `VECTOR_SIZE` to data blocks of matrix A
+
+### Fix
+- **kernel-flat:** fix incorrect results when reduction size is larger than threads number in block
+- **kernel-thread-row:** correct the limit of "template param N can only be 1" at block level
+- **kernel-vector-row:** fix the wrong kernel func called in native vector-row while VECTOR_SIZE is 8
+
+### Merge
+- Merge pull request [#4](https://git.hpcer.dev/PRA/spmv-acc/issues/4) from hpcde/fix-flat-and-vector-row-bugs
+- Merge branch 'cmake-enable-build-all-strategies' into 'main'
+- **kernel-adaptive:** Merge pull request [#1](https://git.hpcer.dev/PRA/spmv-acc/issues/1) from hpcde/feature-kernel-adaptive into branch main
+- **kernel-flat:** Merge pull request [#2](https://git.hpcer.dev/PRA/spmv-acc/issues/2) from hpcde/opt-on-kernel-flat
+- **kernel-thread-row:** Merge pull request [#9](https://git.hpcer.dev/PRA/spmv-acc/issues/9) from hpcde/feat-thread-row-single
+- **kernel-thread-row:** Merge pull request [#6](https://git.hpcer.dev/PRA/spmv-acc/issues/6) from hpcde/opt-thread-row-in-block-level
+- **kernel-thread-row:** Merge pull request [#8](https://git.hpcer.dev/PRA/spmv-acc/issues/8) from hpcde/opt-thread-row-tune-kernel-config
+- **kernel-thread-row:** Merge pull request [#7](https://git.hpcer.dev/PRA/spmv-acc/issues/7) from hpcde/opt-thread-row-in-block-level-x-remap
+- **kernel-vector-row:** Merge branch 'enhance-vector-row' into feature-kernel-adaptive
+- **kernel-vector-row:** Merge pull request [#3](https://git.hpcer.dev/PRA/spmv-acc/issues/3) from hpcde/opt-vector-row-access-y-coalescing
+- **kernel-vector-row:** Merge branch 'enhance-vector-row' into 'main'
+- **thread-row:** Merge pull request [#5](https://git.hpcer.dev/PRA/spmv-acc/issues/5) from hpcde/opt-thread-row-remap-vec_x
+
+### Perf
+- **kernel-flat:** move barrier __syncthreads() ahead(moved to the place before loading matrix data)
+- **kernel-flat:** apply loop unrolling to data loading of csr matrix and x vector
+- **kernel-thread-row:** tune the BLOCK dim of thread-row at block level(with x remapping) to 512
+- **kernel-thread-row:** use LDS and __shfl to load start/end row index of block to threads in block
+- **kernel-thread-row:** make the memory accessing mode of $x$ as column-first mode at block level
+- **kernel-thread-row:** apply global_load_dwordx4/x2 to load 2 double/int to LDS at block level
+- **kernel-thread-row:** tune grid dim for native thread-row and optimization "vec x remapping"
+- **kernel-thread-row:** break the row-loop if the start row index is larger/equal than matrix rows
+- **kernel-thread-row:** use native C++ code, instead of asssembly, to load 2 matrix values into LDS
+- **kernel-thread-row:** tune kernel config of thread-row at block level to <<<7010, 512>>>
+- **kernel-thread-row:** add a new kernel func for remapping memory access pattern of vector $x$
+- **kernel-vector-row:** memory coalescing of loading and storing y from vectors
+- **kernel-vector-row:** memory access coalescing at block level when loading and storing vector y
+- **kernel-vector-row:** add vector y memory coalescing support for adaptive vector-row strategy
+- **kernel-vector-row:** simple load-balance of wavefronts number on data blocks
+
+### Refactor
+- functions renaming to solve signature conflict when building all strategies into one lib
+- **kernel-flat:** use template param `THRAEDS`, instead of blockDim.x, as threads num in block
+- **kernel-thread-row:** refactor macro control on different optimization kernels in thread-row
+- **kernel-thread-row:** move kernel func `kernel_thread_row_v2` to file thread_row_x_remap.inl
+- **kernel-thread-row:** mv kernel native_thread_row to native_thread_row.cpp to fix build error
+- **kernel-thread-row:** use constexpr to replace C macro for thread-row optimization selection
+- **kernel-vector-row:** extract the imp of y memory coalescing to `store_y_with_coalescing`
+
+### Revert
+- **kernel-vector-row:** recover the missing native vector-row method
+
+### Style
+- **kernel-thread-row:** code format of file `thread_row_block_x_remap.hpp`
+
+
 <a name="v0.3.0"></a>
 ## [v0.3.0] - 2021-07-15
 ### Build
@@ -240,7 +318,8 @@
 - **kernel-wf-row-reg:** removed unused code
 
 
-[Unreleased]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.3.0...HEAD
+[Unreleased]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.4.0...HEAD
+[v0.4.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.4...v0.3.0
 [v0.2.4]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.3...v0.2.4
 [v0.2.3]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.2...v0.2.3
