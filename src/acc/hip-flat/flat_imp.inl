@@ -10,6 +10,8 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+#include "flat_config.h"
+#include "flat_reduce.hpp"
 #include "../common/utils.h"
 
 template <typename I, typename T, int NNZ_PER_BLOCK, int THREADS, int VECTOR_SIZE>
@@ -90,7 +92,6 @@ __device__ __forceinline__ void flat_reduce_direct(const int tid_in_block, const
   }
 }
 
-constexpr int FLAT_REDUCE_METHOD = 0;
 
 /**
  * We solve SpMV with flat method.
@@ -153,11 +154,17 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
     }
 
     // reduce and store result to memory
-    if (FLAT_REDUCE_METHOD == 0) {
+    if (FLAT_REDUCE_OPTION == FLAT_REDUCE_OPTION_VEC) {
       const I n_reduce_rows_num = reduce_end_row_id - reduce_start_row_id;
       (flat_reduce_in_vector<I, T, nnz_per_block, THREADS, 2>)(n_reduce_rows_num, tid_in_block, bp_index,
                                                                reduce_start_row_id, reduce_end_row_id, alpha,
                                                                row_offset, shared_val, y);
+    } else if (FLAT_REDUCE_OPTION == FLAT_REDUCE_OPTION_VEC_MEM_COALESCING) {
+      const I n_reduce_rows_num = reduce_end_row_id - reduce_start_row_id;
+      (flat_reduce_in_vector_with_mem_coalescing<I, T, nnz_per_block, THREADS, 4>)(n_reduce_rows_num, tid_in_block,
+                                                                                   bp_index, reduce_start_row_id,
+                                                                                   reduce_end_row_id, alpha, row_offset,
+                                                                                   shared_val, y);
     } else {
       // direct reduction
       (flat_reduce_direct<I, T, nnz_per_block, THREADS>)(tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id,
