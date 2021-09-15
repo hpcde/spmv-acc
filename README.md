@@ -9,7 +9,8 @@ HIP acceleration for SpMV solver.
 - [CMake](https://cmake.org): version 3.6 or higher.
 
 ### Build steps
-- Build and verify on GPU side (make sure lib `rocsparse` is loaded):
+- Build and verify on GPU side. 
+(Note: make sure lib `rocsparse` is loaded and its version must be greater/equal than "1.19.4 for ROCm 4.1.0"):
 ```bash
 CC=clang CXX=hipcc cmake -DDEVICE_SIDE_VERIFY_FLAG=ON -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
 cmake --build ./build-hip
@@ -23,11 +24,11 @@ cmake --build ./build-hip
 ./build-hip/bin/spmv-hip examples/data/rajat03.csr
 ```
 
-- Build by specifying a kernel strategy (e.g., use strategy `WF_ROW`):
+- Build by specifying a kernel strategy (e.g., use strategy `Adaptive`):
 ```bash
-CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=WF_ROW -DCMAKE_BUILD_TYPE=Release -B./build-hip-wf-row -S./
-cmake --build ./build-hip-wf-row
-./build-hip-wf-row/bin/spmv-hip examples/data/rajat03.csr
+CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=ADAPTIVE -DCMAKE_BUILD_TYPE=Release -B./build-hip-adaptive -S./
+cmake --build ./build-hip-adaptive
+./build-hip-adaptive/bin/spmv-hip examples/data/rajat03.csr
 ```
 
 ## For Developers
