@@ -73,3 +73,22 @@ if (HIP_ENABLE_FLAG)
             $<INSTALL_INTERFACE:include>
     )
 endif ()
+
+##########################
+##### install files
+##########################
+# install bin and libs
+install(TARGETS ${SPMV_KERNEL_LIB_NAME}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+
+# install header.
+install(DIRECTORY "./"
+        DESTINATION "include"
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*.inl"
+        )

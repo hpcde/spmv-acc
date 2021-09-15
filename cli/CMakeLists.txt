@@ -49,11 +49,3 @@ install(TARGETS ${SPMV_CLI_NAME}
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
-
-# install header.
-install(DIRECTORY "./"
-        DESTINATION "include"
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        )
