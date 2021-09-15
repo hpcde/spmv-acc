@@ -11,6 +11,10 @@
 #include <string>
 #include <vector>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "csr.hpp"
 
 template <typename I, typename T> class mtx_reader {
@@ -37,10 +41,13 @@ public:
    * fill the matrix using data in matrix file
    */
   void fill_mtx() {
+#ifndef _OPENMP
+    // If OpenMP is not enabled, set max vector capacity. otherwise, vector resize will be performed.
     csr_data.reserve(MAX_NNZ_LEN);
     csr_indices.reserve(MAX_NNZ_LEN);
     csr_indptr.reserve(MAX_VEC_LEN);
     dense_vector.reserve(MAX_VEC_LEN);
+#endif
 
     // set buffer for faster reading.
     char stream_buf[128 * 1024];
@@ -100,6 +107,39 @@ public:
 private:
   std::ifstream csr_mtx_file;
 
+#ifdef _OPENMP
+  // OpenMP version
+  template <typename M> void fast_parse_vector(char *buffer, std::vector<M> &data) {
+    int max_threads = omp_get_max_threads();
+    omp_set_num_threads(max_threads);
+    std::cout << "Parsing input using " << max_threads << " OpenMP thread(s)." << std::endl;
+
+    std::vector<char *> number_vec;
+    char *p;
+    p = strtok(buffer, " ");
+    while (p != NULL) {
+      number_vec.emplace_back(p);
+      p = strtok(NULL, " ");
+    }
+
+    const unsigned int N = number_vec.size();
+    data.resize(N);
+    char **number_ptr = number_vec.data();
+    M *data_ptr = data.data();
+
+#pragma omp parallel for shared(data_ptr, number_ptr, N) schedule(static)
+    for (int i = 0; i < N; ++i) {
+      bool isInt = std::is_same<T, int>::value;
+      if (isInt) {
+        data_ptr[i] = atoi(number_ptr[i]);
+      } else {
+        data_ptr[i] = atof(number_ptr[i]);
+      }
+    }
+  }
+#endif
+
+#ifndef _OPENMP
   template <typename M> void fast_parse_vector(char *buffer, std::vector<M> &data) {
     char *p;
     p = strtok(buffer, " ");
@@ -113,6 +153,7 @@ private:
       p = strtok(NULL, " ");
     }
   }
+#endif
 
   template <typename M> void parse_vector(const char *buffer, std::vector<M> &data) {
     std::istringstream iss(buffer);

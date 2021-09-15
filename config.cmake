@@ -1,6 +1,7 @@
 # enable to use hip to accelerate on GPU side, currently, it must be `ON`.
 option(HIP_ENABLE_FLAG "Enable HIP" ON)
 option(SPMV_BUILD_TOOLS "build tools" OFF)
+option(SPMV_OMP_ENABLED_FLAG "Enable OpenMP to parse input file" ON)
 
 # default: perform result verification on CPU side.
 # However, if it is set to `ON`, it will use device side verification.
