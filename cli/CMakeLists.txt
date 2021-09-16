@@ -1,6 +1,10 @@
 
 set(HEADER_FILES
         mtx_reader.hpp
+        csr.hpp
+        timer.h
+        utils.hpp
+        verification.h
         )
 
 set(SOURCE_FILES
@@ -28,15 +32,18 @@ target_link_libraries(
 
 # See https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
 if (SPMV_OMP_ENABLED_FLAG)
-    find_package(OpenMP REQUIRED)
-    if (NOT TARGET OpenMP::OpenMP_CXX)
-        find_package(Threads REQUIRED)
-        add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
-        set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
-        # Only works if the same flag is passed to the linker; use CMake 3.9+ otherwise (Intel, AppleClang)
-        set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
+    find_package(OpenMP)
+    if (TARGET OpenMP::OpenMP_CXX)
+        target_link_libraries(${SPMV_CLI_NAME} PUBLIC OpenMP::OpenMP_CXX)
+    else ()
+        if (${OPENMP_FOUND} OR ${OpenMP_C_FOUND})
+            set_target_properties(${SPMV_CLI_NAME} PROPERTIES COMPILE_FLAGS ${OpenMP_C_FLAGS})
+            set_target_properties(${SPMV_CLI_NAME} PROPERTIES LINK_FLAGS ${OpenMP_C_FLAGS})
+        else ()
+            message(FATAL_ERROR "OpenMP not found, but required OpenMP support.")
+        endif ()
     endif ()
-    target_link_libraries(${SPMV_CLI_NAME} PUBLIC OpenMP::OpenMP_CXX)
+    message(STATUS "Build ${SPMV_CLI_NAME} with OpenMP support.")
 endif ()
 
 
