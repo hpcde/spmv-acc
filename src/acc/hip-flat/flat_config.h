@@ -11,4 +11,6 @@ constexpr int FLAT_REDUCE_OPTION_DIRECT = 2;
 
 constexpr int FLAT_REDUCE_OPTION = FLAT_REDUCE_OPTION_VEC_MEM_COALESCING;
 
+const bool FLAT_ONE_PASS = true;
+
 #endif // SPMV_ACC_FLAT_CONFIG_H
