@@ -169,4 +169,4 @@ __global__ void spmv_vector_row_kernel(int m, const T alpha, const T beta, const
 }
 
 #define VECTOR_KERNEL_WRAPPER(N)                                                                                       \
-  (spmv_vector_row_kernel<N, (64 / N), 64, 512, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
+  (spmv_vector_row_kernel<N, (__WF_SIZE__ / N), __WF_SIZE__, 512, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)

@@ -7,8 +7,10 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+#include "building_config.h"
+
 #define LIGHT_KERNEL_CALLER(N)                                                                                         \
-  ((spmv_light_kernel<N, 64, double>) <<<256, 256>>> (m, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y))
+  ((spmv_light_kernel<N, __WF_SIZE__, double>) <<<256, 256>>> (m, alpha, beta, hip_row_counter, rowptr, colindex, value, x, y))
 
 void light_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                        const double *value, const double *x, double *y) {

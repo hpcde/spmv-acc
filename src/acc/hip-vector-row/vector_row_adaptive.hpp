@@ -12,6 +12,8 @@
 #include "vector_config.h"
 #include "vector_row_native.hpp"
 
+#include "building_config.h"
+
 template <int VECTOR_SIZE, int THREADS, int WF_SIZE, typename I, typename T>
 __device__ __forceinline__ void adaptive_vec_kernel_core(const int b_wf_id, const int b_thread_id, const int b_threads,
                                                          const I block_start_row, const I block_end_row, const T alpha,
@@ -140,6 +142,7 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
 }
 
 #define ADAPTIVE_VECTOR_KERNEL_WRAPPER(N, BP)                                                                          \
-  (adaptive_vector_row_kernel<N, 256, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y, BP);
+  (adaptive_vector_row_kernel<N, 256, __WF_SIZE__, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x,  \
+                                                                          y, BP);
 
 #endif // SPMV_ACC_VECTOR_ROW_ADAPTIVE_HPP

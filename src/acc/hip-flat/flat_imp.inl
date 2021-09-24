@@ -10,6 +10,8 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+#include "building_config.h"
+
 #include "flat_config.h"
 #include "flat_reduce.hpp"
 #include "../common/utils.h"
@@ -123,5 +125,5 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
 }
 
 #define FLAT_KERNEL_WRAPPER(R, BLOCKS, THREADS)                                                                        \
-  (spmv_flat_kernel<64, R, BLOCKS, THREADS, int, double>)<<<(BLOCKS), (THREADS)>>>(                                    \
+  (spmv_flat_kernel<__WF_SIZE__, R, BLOCKS, THREADS, int, double>)<<<(BLOCKS), (THREADS)>>>(                                    \
       m, alpha, beta, rowptr, break_points, colindex, value, x, y)

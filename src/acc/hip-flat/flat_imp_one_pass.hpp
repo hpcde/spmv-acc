@@ -7,6 +7,7 @@
 
 #include "flat_config.h"
 #include "flat_reduce.hpp"
+#include "building_config.h"
 
 #include "../common/global_mem_ops.hpp"
 #include "../common/utils.h"
@@ -72,7 +73,7 @@ __global__ void spmv_flat_one_pass_kernel(int m, const T alpha, const T beta, co
 }
 
 #define FLAT_KERNEL_ONE_PASS_WRAPPER(REDUCE_OPTION, R, BLOCKS, THREADS)                                                \
-  (spmv_flat_one_pass_kernel<REDUCE_OPTION, 64, R, THREADS, int, double>)<<<(BLOCKS), (THREADS)>>>(                    \
+  (spmv_flat_one_pass_kernel<REDUCE_OPTION, __WF_SIZE__, R, THREADS, int, double>)<<<(BLOCKS), (THREADS)>>>(           \
       m, alpha, beta, rowptr, break_points, colindex, value, x, y)
 
 #endif // SPMV_ACC_FLAT_IMP_ONE_PASS_HPP

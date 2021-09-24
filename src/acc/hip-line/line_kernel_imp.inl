@@ -10,8 +10,8 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
-#include "building_config.h"
 #include "../common/utils.h"
+#include "building_config.h"
 
 /**
  * We solve SpMV with line method, which is called CSR-Stream method in https://doi.org/10.1109/SC.2014.68.
@@ -76,4 +76,4 @@ __global__ void spmv_line_kernel(int m, const T alpha, const T beta, const I *ro
 }
 
 #define LINE_KERNEL_WRAPPER(N)                                                                                         \
-  (spmv_line_kernel<N, 64, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
+  (spmv_line_kernel<N, __WF_SIZE__, 512, int, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y)
