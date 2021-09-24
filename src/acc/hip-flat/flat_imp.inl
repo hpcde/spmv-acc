@@ -21,6 +21,8 @@
  *
  * @tparam WF_SIZE threads in one wavefront
  * @tparam R rounds, process R*THREADS elements in each loop.
+ * @tparam REDUCE_OPTION the sum reduction method: direct or vector or vector+mem_coalescing.
+ * @tparam REDUCE_VEC_SIZE threads number used for reducing sum of a row.
  * @tparam BLOCKS total blocks on one GPU (blocks in one grid).
  * @tparam THREADS threads in each block.
  * @tparam I type of data in matrix index
@@ -35,7 +37,7 @@
  * @param y vector y
  * @return
  */
-template <int WF_SIZE, int R, int BLOCKS, int THREADS, typename I, typename T>
+template <int WF_SIZE, int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS, typename I, typename T>
 __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
                                  const I *__restrict__ break_points, const I *__restrict__ csr_col_ind,
                                  const T *__restrict__ csr_val, const T *__restrict__ x, T *__restrict__ y) {
@@ -77,21 +79,20 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
     }
 
     // reduce and store result to memory
-    if (FLAT_REDUCE_OPTION == FLAT_REDUCE_OPTION_VEC) {
+    if (REDUCE_OPTION == FLAT_REDUCE_OPTION_VEC) {
       const I n_reduce_rows_num = reduce_end_row_id - reduce_start_row_id;
-      (flat_reduce_in_vector<I, T, nnz_per_block, THREADS, 2>)(n_reduce_rows_num, tid_in_block, bp_index,
-                                                               reduce_start_row_id, reduce_end_row_id, alpha,
-                                                               row_offset, shared_val, y);
-    } else if (FLAT_REDUCE_OPTION == FLAT_REDUCE_OPTION_VEC_MEM_COALESCING) {
+      flat_reduce_in_vector<I, T, nnz_per_block, THREADS, REDUCE_VEC_SIZE>(n_reduce_rows_num, tid_in_block, bp_index,
+                                                                           reduce_start_row_id, reduce_end_row_id,
+                                                                           alpha, row_offset, shared_val, y);
+    } else if (REDUCE_OPTION == FLAT_REDUCE_OPTION_VEC_MEM_COALESCING) {
       const I n_reduce_rows_num = reduce_end_row_id - reduce_start_row_id;
-      (flat_reduce_in_vector_with_mem_coalescing<I, T, nnz_per_block, THREADS, 4>)(n_reduce_rows_num, tid_in_block,
-                                                                                   bp_index, reduce_start_row_id,
-                                                                                   reduce_end_row_id, alpha, row_offset,
-                                                                                   shared_val, y);
+      flat_reduce_in_vector_with_mem_coalescing<I, T, nnz_per_block, THREADS, REDUCE_VEC_SIZE>(
+          n_reduce_rows_num, tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id, alpha, row_offset,
+          shared_val, y);
     } else {
       // direct reduction
-      (flat_reduce_direct<I, T, nnz_per_block, THREADS>)(tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id,
-                                                         alpha, row_offset, shared_val, y);
+      flat_reduce_direct<I, T, nnz_per_block, THREADS>(tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id,
+                                                       alpha, row_offset, shared_val, y);
     }
 
     bp_index += BLOCKS;
@@ -124,6 +125,6 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
   }
 }
 
-#define FLAT_KERNEL_WRAPPER(R, BLOCKS, THREADS)                                                                        \
-  (spmv_flat_kernel<__WF_SIZE__, R, BLOCKS, THREADS, int, double>)<<<(BLOCKS), (THREADS)>>>(                                    \
-      m, alpha, beta, rowptr, break_points, colindex, value, x, y)
+#define FLAT_KERNEL_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS)                                        \
+  (spmv_flat_kernel<__WF_SIZE__, R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS, int,                              \
+                    double>)<<<(BLOCKS), (THREADS)>>>(m, alpha, beta, rowptr, break_points, colindex, value, x, y)
