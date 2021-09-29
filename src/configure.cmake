@@ -47,6 +47,8 @@ elseif (WF_REDUCE_LOWER MATCHES "reg")
     set(WF_REDUCE_REG ON)
 endif ()
 
+set(__WF_SIZE__ ${WAVEFRONT_SIZE})
+
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/building_config.h.in"
         "${PROJECT_BINARY_DIR}/generated/building_config.h"

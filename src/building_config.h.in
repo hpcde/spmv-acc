@@ -13,6 +13,8 @@
 #cmakedefine ACCELERATE_ENABLED // is accelerate enabled.
 
 #cmakedefine AVAILABLE_CU @AVAILABLE_CU@
+#cmakedefine __WF_SIZE__ @__WF_SIZE__@
+constexpr int __WRAP_SIZE__ = __WF_SIZE__;
 
 #cmakedefine WF_REDUCE @WF_REDUCE@
 #cmakedefine WF_REDUCE_DEFAULT

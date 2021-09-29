@@ -7,6 +7,8 @@ option(SPMV_OMP_ENABLED_FLAG "Enable OpenMP to parse input file" OFF)
 # However, if it is set to `ON`, it will use device side verification.
 option(DEVICE_SIDE_VERIFY_FLAG "Verify result of device side" OFF)
 set(AVAILABLE_CU "60" CACHE STRING "available Compute Units per GPU")
+# threads number in a wavefront (which is usually 64 for AMD GPU and 32 for NVIDIA GPU)
+set(WAVEFRONT_SIZE "64" CACHE STRING "threads number in a wavefront")
 set(KERNEL_STRATEGY "DEFAULT" CACHE STRING "SpMV strategy")
 # options are:
 # - DEFAULT: default strategy. The source files are saved in 'acc/hip'.

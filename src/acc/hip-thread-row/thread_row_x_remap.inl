@@ -16,7 +16,7 @@
  * another thread row strategy implementation with different data loading method.
  * In this method, memory access of vector x is remapped in column-first mode.
  *
- * @tparam N each wavefront may process 64*N rows. Currently, it must be 1.
+ * @tparam N each wavefront may process __WF_SIZE__ * N rows. Currently, it must be 1.
  * @tparam MAX_ROW_NNZ max non-zeros per row in the algorithm.
  *   If some row have nnz larger than @tparam MAX_ROW_NNZ/ it can fallback to native thread row method.
  * @tparam WF_SIZE threads number in a wavefront

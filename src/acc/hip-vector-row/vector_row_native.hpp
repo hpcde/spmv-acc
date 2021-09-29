@@ -6,6 +6,7 @@
 #define SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 
 #include "vector_config.h"
+#include "building_config.h"
 
 // memory coalescing of loading and storing vector y at block level.
 template <int THREADS, int VECTOR_SIZE, int WF_SIZE, typename T>
@@ -137,6 +138,6 @@ __global__ void native_vector_row_kernel(int m, const T alpha, const T beta, con
 }
 
 #define NATIVE_VECTOR_KERNEL_WRAPPER(N)                                                                                \
-  (native_vector_row_kernel<N, 256, 64, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
+  (native_vector_row_kernel<N, 256, __WF_SIZE__, double>)<<<512, 256>>>(m, alpha, beta, rowptr, colindex, value, x, y);
 
 #endif // SPMV_ACC_VECTOR_ROW_NATIVE_HPP
