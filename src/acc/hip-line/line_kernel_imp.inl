@@ -10,8 +10,8 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
-#include "building_config.h"
 #include "../common/utils.h"
+#include "building_config.h"
 
 /**
  * We solve SpMV with line method, which is called CSR-Stream method in https://doi.org/10.1109/SC.2014.68.
