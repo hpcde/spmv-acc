@@ -20,17 +20,16 @@ __global__ void spmv_line_one_pass_kernel(int m, const T alpha, const T beta, co
   const int block_id = blockIdx.x;                                 // global block id
   const int block_thread_num = blockDim.x;                         // threads num in a block
   const int block_thread_id = global_thread_id % block_thread_num; // local thread id in current block
-  __shared__ T shared_val[ROW_SIZE * MAX_ROW_NNZ];
+  constexpr int shared_len = ROW_SIZE * MAX_ROW_NNZ;
+  __shared__ T shared_val[shared_len];
   const I block_row_begin = block_id * ROW_SIZE;
   const I block_row_end = min(block_row_begin + ROW_SIZE, m);
   // load val to lds parallel
   const I block_row_idx_begin = row_offset[block_row_begin];
   const I block_row_idx_end = row_offset[block_row_end];
-  const I row_val_idx = block_row_idx_begin + block_thread_id;
-  if (row_val_idx >= block_row_idx_end) {
-    return;
+  for (I i = block_row_idx_begin + block_thread_id; i < block_row_idx_end; i += block_thread_num) {
+    shared_val[i - block_row_idx_begin] = csr_val[i] * x[csr_col_ind[i]];
   }
-  shared_val[block_thread_id] = csr_val[row_val_idx] * x[csr_col_ind[row_val_idx]];
   __syncthreads();
   // `ROW_SIZE` must smaller than `block_thread_num`
   const I reduce_row_id = block_row_begin + block_thread_id;
