@@ -49,13 +49,13 @@ bool read_file(const char *path) {
 // cli sub commands
 enum class mode { nnz, dist, version, help };
 
-void csr_analyzing(const mode selected, const std::string &csr_path, const std::string &csr_parts);
+void csr_analyzing(const mode selected, const std::string &csr_path, const int csr_parts);
 
 int main(int argc, char **argv) {
   mode selected = mode::help;
 
   std::string csr_path;
-  std::string csr_parts;
+  int csr_parts = 0;
   auto mode_nnz = (clipp::command("nnz").set(selected, mode::nnz),
                    clipp::required("-i", "--input").label("--input") & clipp::value("csr file", csr_path),
                    clipp::option("-p", "--parts") & clipp::value("dividing parts", csr_parts))
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void csr_analyzing(const mode sub_cmd, const std::string &csr_path, const std::string &csr_parts) {
+void csr_analyzing(const mode sub_cmd, const std::string &csr_path, int csr_parts) {
   if (!read_file(csr_path.c_str())) {
     std::cerr << "reading file error." << std::endl;
     return;
@@ -125,13 +125,35 @@ void csr_analyzing(const mode sub_cmd, const std::string &csr_path, const std::s
 
   if (sub_cmd == mode::nnz) {
     bool is_first = true;
-    int last_row = 0;
+    if (csr_parts == 0) {
+      csr_parts = m; // if csr_parts is 0, it means dividing into m parts.
+    }
+    int part_nnz = m / csr_parts + (m % csr_parts == 0 ? 0 : 1); // rows for one part.
+
+    int pre_row_inx = 0;
+    int row_counter = 0;
+    int i = 0;
+
+    std::cout << "[part ID] [part nnz] [avg-nnz/row]"
+              << "\n";
     for (int row_offset : csr_indptr) {
       if (!is_first) {
-        std::cout << row_offset - last_row << std::endl;
+        row_counter++;
+        // output
+        if (row_counter == part_nnz) {
+          std::cout << i << " " << row_offset - pre_row_inx << " " << (row_offset - pre_row_inx + 0.0) / row_counter
+                    << std::endl;
+          pre_row_inx = row_offset;
+          row_counter = 0;
+          i++;
+        }
       }
-      last_row = row_offset;
       is_first = false;
+    }
+    if (i != csr_parts) {
+      // the last part.
+      std::cout << i << " " << csr_indptr[m] - pre_row_inx << " " << (csr_indptr[m] - pre_row_inx + 0.0) / row_counter
+                << std::endl;
     }
   }
 
