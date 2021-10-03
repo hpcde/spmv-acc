@@ -31,6 +31,7 @@ constexpr int __WRAP_SIZE__ = __WF_SIZE__;
 #cmakedefine KERNEL_STRATEGY_VECTOR_ROW
 #cmakedefine KERNEL_STRATEGY_LINE
 #cmakedefine KERNEL_STRATEGY_FLAT
+#cmakedefine KERNEL_STRATEGY_LINE_ENHANCE
 
 #cmakedefine ARCH_NAME @ARCH_NAME@
 #cmakedefine ARCH_HIP  // for hip env.

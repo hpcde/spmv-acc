@@ -9,6 +9,7 @@
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
 #include "hip-flat/spmv_hip_acc_imp.h"
 #include "hip-light/spmv_hip_acc_imp.h"
+#include "hip-line-enhance/line_enhance_spmv.h"
 #include "hip-line/line_strategy.h"
 #include "hip-thread-row/thread_row.h"
 #include "hip-vector-row/vector_row.h"
@@ -51,5 +52,9 @@ void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const
 
 #ifdef KERNEL_STRATEGY_WAVEFRONT_ROW
   wf_row_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+#endif
+
+#ifdef KERNEL_STRATEGY_LINE_ENHANCE
+  line_enhance_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
 #endif
 }
