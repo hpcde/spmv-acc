@@ -8,7 +8,7 @@
 #include "building_config.h"
 #include "line_enhance_reduce.hpp"
 
-template <int WF_SIZE, int ROWS_PER_BLOCK, int R, int THREADS, typename I, typename T>
+template <int REDUCE_OPTION, int WF_SIZE, int VEC_SIZE, int ROWS_PER_BLOCK, int R, int THREADS, typename I, typename T>
 __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
                                     const I *__restrict__ csr_col_ind, const T *__restrict__ csr_val,
                                     const T *__restrict__ x, T *__restrict__ y) {
@@ -24,8 +24,11 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
   const I block_row_idx_start = row_offset[block_row_begin];
   const I block_row_idx_end = row_offset[block_row_end];
 
+  // vector reduce, if VEC_SIZE is set to 1, it will be direct reduction.
+  const I vec_id_in_block = g_tid / VEC_SIZE % (THREADS / VEC_SIZE);
+  const I tid_in_vec = g_tid % VEC_SIZE;
   // load reduce row bound
-  const I reduce_row_id = block_row_begin + tid_in_block;
+  const I reduce_row_id = block_row_begin + vec_id_in_block;
   I reduce_row_idx_begin = 0;
   I reduce_row_idx_end = 0;
   if (reduce_row_id < block_row_end) {
@@ -55,17 +58,28 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
 
     __syncthreads();
     // reduce
-    if (DEFAULT_LE_REDUCE_OPTION == LE_REDUCE_OPTION_DIRECT) {
-      line_enhance_direct_reduce(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
-                                 block_round_inx_start, block_round_inx_end, shared_val, sum);
+    if (REDUCE_OPTION == LE_REDUCE_OPTION_DIRECT) {
+      line_enhance_direct_reduce<I, T>(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
+                                       block_round_inx_start, block_round_inx_end, shared_val, sum);
+    }
+    if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC) {
+      line_enhance_vec_reduce<I, T, VEC_SIZE>(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
+                                              block_round_inx_start, block_round_inx_end, shared_val, sum, tid_in_vec);
     }
   }
   // store result
-  if (reduce_row_id < block_row_end) {
-    y[reduce_row_id] = alpha * sum + y[reduce_row_id];
+  if (REDUCE_OPTION == LE_REDUCE_OPTION_DIRECT) {
+    if (reduce_row_id < block_row_end) {
+      y[reduce_row_id] = alpha * sum + y[reduce_row_id];
+    }
+  }
+  if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC) {
+    if (reduce_row_id < block_row_end && tid_in_vec == 0) {
+      y[reduce_row_id] = alpha * sum + y[reduce_row_id];
+    }
   }
 }
 
-#define LINE_ENHANCE_KERNEL_WRAPPER(ROWS_PER_BLOCK, R, BLOCKS, THREADS)                                                \
-  (line_enhance_kernel<__WF_SIZE__, ROWS_PER_BLOCK, R, THREADS, int, double>)<<<BLOCKS, THREADS>>>(                    \
+#define LINE_ENHANCE_KERNEL_WRAPPER(REDUCE, ROWS_PER_BLOCK, VEC_SIZE, R, BLOCKS, THREADS)                              \
+  (line_enhance_kernel<REDUCE, __WF_SIZE__, VEC_SIZE, ROWS_PER_BLOCK, R, THREADS, int, double>)<<<BLOCKS, THREADS>>>(  \
       m, alpha, beta, rowptr, colindex, value, x, y)
