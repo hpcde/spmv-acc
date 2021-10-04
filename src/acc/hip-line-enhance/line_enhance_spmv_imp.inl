@@ -6,6 +6,7 @@
 #include <hip/hip_runtime_api.h>
 
 #include "building_config.h"
+#include "line_enhance_reduce.hpp"
 
 template <int WF_SIZE, int ROWS_PER_BLOCK, int R, int THREADS, typename I, typename T>
 __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
@@ -54,14 +55,9 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
 
     __syncthreads();
     // reduce
-    if (reduce_row_id < block_row_end) {
-      if (reduce_row_idx_begin < block_round_inx_end && reduce_row_idx_end > block_round_inx_start) {
-        const I reduce_start = max(reduce_row_idx_begin, block_round_inx_start);
-        const I reduce_end = min(reduce_row_idx_end, block_round_inx_end);
-        for (I j = reduce_start; j < reduce_end; j++) {
-          sum += shared_val[j - block_round_inx_start];
-        }
-      }
+    if (DEFAULT_LE_REDUCE_OPTION == LE_REDUCE_OPTION_DIRECT) {
+      line_enhance_direct_reduce(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
+                                 block_round_inx_start, block_round_inx_end, shared_val, sum);
     }
   }
   // store result
