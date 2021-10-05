@@ -42,7 +42,7 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
   // 3. If non-zeros number of large enough, we use flat strategy.
   // The flat strategy has a data pre-processing kernel function,
   // which can not be applied to small data set.
-  if (bp_3 > (1 << 24)) { // 16,777,216
+  if (bp_3 > (1 << 23)) { // 2^23 = 8,388,608
     adaptive_flat_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
     return;
   }
