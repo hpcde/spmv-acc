@@ -59,6 +59,7 @@ void flat_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, 
 /**
  * set flat kernel template parameters adaptively.
  * currently, it only support adaptive template parameters on one-pass flat method.
+ * \note: if config item FLAT_ONE_PASS_ADAPTIVE is set to false, one-pass adaptive will be disabled.
  */
 void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha, const int beta,
                                int m, int n, const int *rowptr, const int *colindex, const double *value,
@@ -71,6 +72,14 @@ void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int
     constexpr int RED_OPT = FLAT_REDUCE_OPTION_VEC;
     flat_multi_pass_sparse_spmv<R, RED_OPT, 2, blocks, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
                                                                           value, x, y);
+    return;
+  }
+
+  if (!FLAT_ONE_PASS_ADAPTIVE) {
+    constexpr int RED_OPT = FLAT_REDUCE_OPTION_VEC;
+    constexpr int VEC_SIZE = 4;
+    flat_one_pass_sparse_spmv<R, RED_OPT, VEC_SIZE, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
+                                                                       value, x, y);
     return;
   }
 
