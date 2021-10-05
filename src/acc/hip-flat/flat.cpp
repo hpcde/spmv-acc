@@ -2,6 +2,8 @@
 // Created by genshen on 2021/7/15.
 //
 
+#include <iostream>
+
 #include "flat_config.h"
 #include "spmv_hip_acc_imp.h"
 
@@ -40,16 +42,61 @@ inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta
 
 void flat_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                       const double *value, const double *x, double *y) {
+  // divide the matrix into 2 blocks and calculate nnz for each block.
+  const int bp_1 = rowptr[m / 2];
+  const int bp_2 = rowptr[m];
+
+  const int nnz_block_0 = bp_1 - 0;
+  const int nnz_block_1 = bp_2 - bp_1;
+  adaptive_flat_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+}
+
+/**
+ * set flat kernel template parameters adaptively.
+ * currently, it only support adaptive template parameters on one-pass flat method.
+ * \note: if config item FLAT_ONE_PASS_ADAPTIVE is set to false, one-pass adaptive will be disabled.
+ */
+void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha, const int beta,
+                               int m, int n, const int *rowptr, const int *colindex, const double *value,
+                               const double *x, double *y) {
   constexpr int R = 2;
   constexpr int THREADS_PER_BLOCK = 512;
-  if (FLAT_ONE_PASS) {
-    constexpr int RED_OPT = FLAT_REDUCE_OPTION_VEC;
-    flat_one_pass_sparse_spmv<R, RED_OPT, 2, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex, value, x,
-                                                                y);
-  } else {
+  // for non one-pass.
+  if (!FLAT_ONE_PASS) {
     constexpr int blocks = 512;
     constexpr int RED_OPT = FLAT_REDUCE_OPTION_VEC;
     flat_multi_pass_sparse_spmv<R, RED_OPT, 2, blocks, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
+                                                                          value, x, y);
+    return;
+  }
+
+  if (!FLAT_ONE_PASS_ADAPTIVE) {
+    constexpr int RED_OPT = FLAT_REDUCE_OPTION_VEC;
+    constexpr int VEC_SIZE = 4;
+    flat_one_pass_sparse_spmv<R, RED_OPT, VEC_SIZE, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
+                                                                       value, x, y);
+    return;
+  }
+
+  // divide the matrix into 2 parts and get the max nnz per row of each part.
+  int avg_block_nnz_max = std::max(2 * nnz_block_0 / m, 2 * nnz_block_1 / m);
+  if (avg_block_nnz_max <= 32) {
+    // use single thread to reduce if average nnz of row is less than 32.
+    constexpr int REDUCE_OPT = FLAT_REDUCE_OPTION_DIRECT;
+    constexpr int VEC_SIZE = 1;
+    flat_one_pass_sparse_spmv<R, REDUCE_OPT, VEC_SIZE, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
+                                                                          value, x, y);
+  } else if (avg_block_nnz_max <= 64) {
+    constexpr int REDUCE_OPT = FLAT_REDUCE_OPTION_VEC;
+    // use more threads (4 threads) in vector to reduce if average nnz of row is larger than 32.
+    constexpr int VEC_SIZE = 4;
+    flat_one_pass_sparse_spmv<R, REDUCE_OPT, VEC_SIZE, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
+                                                                          value, x, y);
+  } else {
+    constexpr int REDUCE_OPT = FLAT_REDUCE_OPTION_VEC;
+    // use more threads (16 threads) in vector to reduce if average nnz of row is larger than 64.
+    constexpr int VEC_SIZE = 16;
+    flat_one_pass_sparse_spmv<R, REDUCE_OPT, VEC_SIZE, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, rowptr, colindex,
                                                                           value, x, y);
   }
 }
