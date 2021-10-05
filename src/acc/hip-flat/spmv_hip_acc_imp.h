@@ -22,6 +22,10 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
 void flat_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
                       const double *value, const double *x, double *y);
 
+void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha, const int beta,
+                               int m, int n, const int *rowptr, const int *colindex, const double *value,
+                               const double *x, double *y);
+
 #include "flat_imp.inl"
 
 #endif // SPMV_ACC_SPMV_HIP_ACC_IMP_FLAT_H
