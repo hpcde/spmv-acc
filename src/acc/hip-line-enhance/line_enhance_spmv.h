@@ -8,4 +8,10 @@
 void line_enhance_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
                               const int *colindex, const double *value, const double *x, double *y);
 
+/**
+ * set kernel template parameters adaptively by matrix characteristic.
+ */
+void adaptive_enhance_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr,
+                                  const int *colindex, const double *value, const double *x, double *y);
+
 #endif // SPMV_ACC_LINE_ENHANCE_SPMV_H
