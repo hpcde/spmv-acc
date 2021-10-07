@@ -6,6 +6,7 @@
 #include <hip/hip_runtime_api.h>
 
 #include "hip-flat/spmv_hip_acc_imp.h"
+#include "hip-line-enhance/line_enhance_spmv.h"
 #include "hip-thread-row/thread_row.h"
 #include "hip-line/line_strategy.h"
 #include "hip-vector-row/vector_row.h"
@@ -48,7 +49,13 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
     return;
   }
 
-  // 3. If non-zeros number of large enough, we use flat strategy.
+  // 3. If the matrix is short row (less than 30) or is small matrix
+  if (avg_nnz_per_row < 30 || bp_3 <= 0xC00000) { // 0xC00000 = 12,582,912
+    adaptive_enhance_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    return;
+  }
+
+  // 4. If non-zeros number of large enough, we use flat strategy.
   // The flat strategy has a data pre-processing kernel function,
   // which can not be applied to small data set.
   if (bp_3 > (1 << 23)) { // 2^23 = 8,388,608
@@ -56,7 +63,7 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
     return;
   }
 
-  // 4. use vector-row method for small data set.
+  // 5. use vector-row method for small data set.
   // todo: pass nnz/row.
-  vec_row_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+  line_enhance_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
 }
