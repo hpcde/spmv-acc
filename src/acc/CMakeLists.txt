@@ -9,6 +9,7 @@ set(ENABLED_STRATEGIES
         thread_row
         vector_row
         wf_row
+        line_enhance
         )
 
 # find HIP
