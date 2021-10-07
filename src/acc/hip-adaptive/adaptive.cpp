@@ -7,6 +7,7 @@
 
 #include "hip-flat/spmv_hip_acc_imp.h"
 #include "hip-thread-row/thread_row.h"
+#include "hip-line/line_strategy.h"
 #include "hip-vector-row/vector_row.h"
 
 void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *row_ptr,
@@ -32,10 +33,18 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
     return;
   }
 
-  // 2. otherwise, use picker strategy by average nnz per row.
+  // 2. otherwise, pick strategy by average nnz per row.
   if (avg_nnz_per_row <= 4) {
-    // use thread-row strategy.
-    thread_row_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    // use line strategy with one-pass support.
+    // we can also use thread-row strategy.
+    // thread_row_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    constexpr int HIP_THREADS = 256;
+    constexpr int R = 2;
+    constexpr int MAX_ROW_NNZ = 5;
+    const int ROW_NUM = HIP_THREADS / MAX_ROW_NNZ * R; // rows per block
+    const int HIP_BLOCKS = m / ROW_NUM + (m % ROW_NUM == 0 ? 0 : 1);
+    (spmv_line_one_pass_kernel<ROW_NUM, MAX_ROW_NNZ, int, double>)<<<HIP_BLOCKS, HIP_THREADS>>>(m, alpha, beta, row_ptr,
+                                                                                                col_index, value, x, y);
     return;
   }
 
