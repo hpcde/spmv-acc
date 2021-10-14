@@ -2,6 +2,19 @@
 
 HIP acceleration for SpMV solver.
 
+## Citing SpMV-acc
+Please cite SpMV-acc in your publications if it helps your research:
+```bib
+% this paper is under submitting.
+@article{spmv_2021,
+  author = {Chu, Genshen and He, Yuanjie and Hu, Changjun},
+  journal = {?},
+  title = {SpMV-acc: Hybrid Optimizations of Sparse Matrix-vector Multiplication on GPU},
+  volume = {?},
+  pages = {?},
+  year = {2021}
+}
+```
 ## Build
 ### Pre-requirements
 - [ROCM](https://rocmdocs.amd.com): version 3.x or higher. For example: `module load compiler/rocm/3.9.1`
