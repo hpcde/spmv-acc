@@ -1,14 +1,29 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v0.5.0"></a>
+## [v0.5.0] - 2021-10-15
+### Chore
+- add LICENSE file
+
+### Docs
+- **changelog:** update changelog for v0.5.0
+- **changelog:** update changelog
+- **readme:** add citing information
+
 ### Feat
 - **kernel-adaptive:** use adaptive line-enhance when the matrix is small or is short-row matrix
 - **kernel-adaptive:** apply line strategy(one-pass line) to short-row matrices in adaptive strategy
 - **kernel-line-enhance:** add adaptive line_enhance, which set kernel template parameters adaptively
 
 ### Merge
+- **kernel-adaptive:** Merge branch 'revert-adaptive-line-enhance-case' into branch main
 - **kernel-adaptive:** Merge pull request [#20](https://git.hpcer.dev/PRA/spmv-acc/issues/20) from hpcde/feature-adaptive-line-enhance
 - **kernel-adaptive:** Merge pull request [#19](https://git.hpcer.dev/PRA/spmv-acc/issues/19) from hpcde/feature-kernel-line-for-short-row-matrix
+
+### Revert
+- **kernel-adaptive:** don't use adaptive line-enhance if a large matrix has short rows
 
 
 <a name="stash_flat_preprocess"></a>
@@ -384,7 +399,8 @@
 - **kernel-wf-row-reg:** removed unused code
 
 
-[Unreleased]: https://git.hpcer.dev/PRA/spmv-acc/compare/stash_flat_preprocess...HEAD
+[Unreleased]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.5.0...HEAD
+[v0.5.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/stash_flat_preprocess...v0.5.0
 [stash_flat_preprocess]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.4.0...stash_flat_preprocess
 [v0.4.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.4...v0.3.0
