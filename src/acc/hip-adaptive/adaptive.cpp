@@ -50,7 +50,7 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
   }
 
   // 3. If the matrix is short row (less than 30) or is small matrix
-  if (avg_nnz_per_row < 30 || bp_3 <= 0xC00000) { // 0xC00000 = 12,582,912
+  if (bp_3 <= 0xC00000) { // 0xC00000 = 12,582,912
     adaptive_enhance_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
     return;
   }
