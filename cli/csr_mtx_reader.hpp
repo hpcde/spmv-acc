@@ -17,6 +17,11 @@
 
 #include "sparse_format.h"
 
+/**
+ * This class read csr format sparse matrix from file to memory.
+ * @tparam I type of integer
+ * @tparam T type of float number data
+ */
 template <typename I, typename T> class csr_mtx_reader {
 public:
   std::vector<T> csr_data;     // matrix data

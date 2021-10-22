@@ -1,6 +1,7 @@
 
 set(HEADER_FILES
         csr_mtx_reader.hpp
+        matrix_market_reader.hpp
         sparse_format.h
         timer.h
         utils.hpp

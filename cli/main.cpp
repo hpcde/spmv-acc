@@ -21,6 +21,7 @@
 #include "clipp.h"
 
 #include "csr_mtx_reader.hpp"
+#include "matrix_market_reader.hpp"
 #include "sparse_format.h"
 #include "timer.h"
 #include "utils.hpp"
@@ -52,11 +53,13 @@ int main(int argc, char **argv) {
 
     // don't allocate new memory, just reuse memory in file parsing.
     csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
+    create_host_data(h_csr, h_vectors);
   } else {
-    // todo: parse matrix market format
+    matrix_market_reader<int, dtype> mm_reader;
+    coo_mtx<int, dtype> coo_sparse = mm_reader.load_mat(mtx_path);
+    h_csr = coo_sparse.to_csr();
+    create_host_data(h_csr, h_vectors, true);
   }
-
-  create_host_data(h_csr, h_vectors);
 
   hipSetDevice(0);
   dtype *dev_x, *dev_y;
