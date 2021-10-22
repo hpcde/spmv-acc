@@ -8,7 +8,7 @@
 #include <iomanip>
 
 #include "building_config.h"
-#include "csr.hpp"
+#include "sparse_format.h"
 
 #define HIP_CHECK(stat)                                                                                                \
   {                                                                                                                    \

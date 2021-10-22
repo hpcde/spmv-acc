@@ -2,8 +2,8 @@
 // Created by chu genshen on 2021/9/14.
 //
 
-#ifndef SPMV_ACC_CSR_HPP
-#define SPMV_ACC_CSR_HPP
+#ifndef SPMV_ACC_CSR_H
+#define SPMV_ACC_CSR_H
 
 typedef double dtype;
 
@@ -20,4 +20,4 @@ public:
 
 typedef csr_mtx<int, dtype> type_csr;
 
-#endif // SPMV_ACC_CSR_HPP
+#endif // SPMV_ACC_CSR_H

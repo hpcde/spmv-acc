@@ -2,8 +2,8 @@
 // Created by chu genshen on 2021/9/14.
 //
 
-#ifndef SPMV_ACC_MTX_READER_HPP
-#define SPMV_ACC_MTX_READER_HPP
+#ifndef SPMV_ACC_CSR_MTX_READER_HPP
+#define SPMV_ACC_CSR_MTX_READER_HPP
 
 #include <fstream>
 #include <sstream>
@@ -15,9 +15,9 @@
 #include <omp.h>
 #endif
 
-#include "csr.hpp"
+#include "sparse_format.h"
 
-template <typename I, typename T> class mtx_reader {
+template <typename I, typename T> class csr_mtx_reader {
 public:
   std::vector<T> csr_data;     // matrix data
   std::vector<I> csr_indices;  // column index
@@ -30,7 +30,7 @@ public:
   /**
    * init matrix reader with file path.
    */
-  explicit mtx_reader(const std::string &file_path) {
+  explicit csr_mtx_reader(const std::string &file_path) {
     csr_mtx_file.open(file_path, std::ios::in);
     if (!(csr_mtx_file.good())) {
       throw std::runtime_error("Open file failed");
@@ -165,4 +165,4 @@ private:
   }
 };
 
-#endif // SPMV_ACC_MTX_READER_HPP
+#endif // SPMV_ACC_CSR_MTX_READER_HPP

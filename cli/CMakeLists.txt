@@ -1,7 +1,7 @@
 
 set(HEADER_FILES
-        mtx_reader.hpp
-        csr.hpp
+        csr_mtx_reader.hpp
+        sparse_format.h
         timer.h
         utils.hpp
         verification.h

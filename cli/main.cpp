@@ -18,8 +18,8 @@
 #include "api/types.h"
 #include "building_config.h"
 
-#include "csr.hpp"
-#include "mtx_reader.hpp"
+#include "csr_mtx_reader.hpp"
+#include "sparse_format.h"
 #include "timer.h"
 #include "utils.hpp"
 #include "verification.h"
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
   const std::string mtx_path = argv[1];
 
-  mtx_reader<int, dtype> csr_reader(mtx_path);
+  csr_mtx_reader<int, dtype> csr_reader(mtx_path);
   csr_reader.fill_mtx();
   csr_reader.close_stream();
 
