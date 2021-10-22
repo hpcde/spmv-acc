@@ -21,7 +21,7 @@ add_executable(${SPMV_CLI_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(
         ${SPMV_CLI_NAME}
         PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(
