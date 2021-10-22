@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <string>
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
@@ -17,6 +18,7 @@
 #include "api/spmv.h"
 #include "api/types.h"
 #include "building_config.h"
+#include "clipp.h"
 
 #include "csr_mtx_reader.hpp"
 #include "sparse_format.h"
@@ -25,25 +27,34 @@
 #include "verification.h"
 
 int main(int argc, char **argv) {
-  if (argc <= 1) {
-    std::cerr << "Error, csr matrix file path is not specified." << std::endl;
-    std::cerr << "Usage: " << argv[0] << " [csr path]" << std::endl;
+  std::string mtx_path = "", fmt = "csr";
+
+  auto cli =
+      (clipp::value("input file", mtx_path),
+       clipp::option("-f", "--format").doc("input matrix format, can be `csr` (default) or `mm` (matrix market)") &
+           clipp::value("format", fmt));
+
+  if (!parse(argc, argv, cli)) {
+    std::cout << clipp::make_man_page(cli, argv[0]);
     return 0;
   }
 
-  const std::string mtx_path = argv[1];
-
-  csr_mtx_reader<int, dtype> csr_reader(mtx_path);
-  csr_reader.fill_mtx();
-  csr_reader.close_stream();
-
   type_csr h_csr;
-  h_csr.rows = csr_reader.rows();
-  h_csr.cols = csr_reader.cols();
-  h_csr.nnz = csr_reader.nnz();
-
   host_vectors<dtype> h_vectors{};
-  csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
+  if (fmt == "csr") {
+    csr_mtx_reader<int, dtype> csr_reader(mtx_path);
+    csr_reader.fill_mtx();
+    csr_reader.close_stream();
+
+    h_csr.rows = csr_reader.rows();
+    h_csr.cols = csr_reader.cols();
+    h_csr.nnz = csr_reader.nnz();
+
+    // don't allocate new memory, just reuse memory in file parsing.
+    csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
+  } else {
+    // todo: parse matrix market format
+  }
 
   create_host_data(h_csr, h_vectors);
 
