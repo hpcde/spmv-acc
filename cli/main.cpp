@@ -27,6 +27,8 @@
 #include "utils.hpp"
 #include "verification.h"
 
+void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors);
+
 int main(int argc, char **argv) {
   std::string mtx_path = "", fmt = "csr";
 
@@ -52,15 +54,20 @@ int main(int argc, char **argv) {
     h_csr.nnz = csr_reader.nnz();
 
     // don't allocate new memory, just reuse memory in file parsing.
+    // array data in `h_csr` is keep in instance `csr_reader`.
     csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
     create_host_data(h_csr, h_vectors);
+    test_spmv(mtx_path, h_csr, h_vectors);
   } else {
     matrix_market_reader<int, dtype> mm_reader;
     coo_mtx<int, dtype> coo_sparse = mm_reader.load_mat(mtx_path);
     h_csr = coo_sparse.to_csr();
     create_host_data(h_csr, h_vectors, true);
+    test_spmv(mtx_path, h_csr, h_vectors);
   }
+}
 
+void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors) {
   hipSetDevice(0);
   dtype *dev_x, *dev_y;
   type_csr d_csr = create_device_data(h_csr, h_vectors.hX, h_vectors.temphY, dev_x, dev_y);
@@ -114,5 +121,5 @@ int main(int argc, char **argv) {
   verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
   std::cout << mtx_path << " elapsed time:" << timer1.time_use << "(us)" << std::endl;
 
-  return 0;
+  return;
 }
