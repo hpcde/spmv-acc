@@ -106,10 +106,12 @@ public:
       reserve *= 2;
     }
 
+    // the nnz passed to alloc can be larger than the real fact when the matrix is symmetric.
     res_matrix.alloc(num_rows, num_columns, reserve);
 
     // read data
     size_t read = 0;
+    size_t nnz_dia = 0;
     while (std::getline(fstream, line)) {
       ++line_counter;
       if (line[0] == '%') {
@@ -157,6 +159,9 @@ public:
       res_matrix.col_index[read] = c - 1;
       res_matrix.values[read] = value;
       ++read;
+      if ((symmetric || hermitian) && r == c) {
+        nnz_dia++;
+      }
       if ((symmetric || hermitian) && r != c) {
         res_matrix.row_index[read] = c - 1;
         res_matrix.col_index[read] = r - 1;
@@ -168,8 +173,9 @@ public:
     res_matrix.nnz = read;
 
     // assert read count.
-    if (read != num_non_zeroes) {
-      throw std::runtime_error("mismatch non-zeros number");
+    if (read + nnz_dia != reserve) {
+      throw std::runtime_error("mismatch non-zeros number, expect " + std::to_string(reserve) + ", but got " +
+                               std::to_string(read));
     }
 
     return res_matrix;
