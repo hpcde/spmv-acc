@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <string>
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
@@ -17,36 +18,56 @@
 #include "api/spmv.h"
 #include "api/types.h"
 #include "building_config.h"
+#include "clipp.h"
 
-#include "csr.hpp"
-#include "mtx_reader.hpp"
+#include "csr_mtx_reader.hpp"
+#include "matrix_market_reader.hpp"
+#include "sparse_format.h"
 #include "timer.h"
 #include "utils.hpp"
 #include "verification.h"
 
+void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors);
+
 int main(int argc, char **argv) {
-  if (argc <= 1) {
-    std::cerr << "Error, csr matrix file path is not specified." << std::endl;
-    std::cerr << "Usage: " << argv[0] << " [csr path]" << std::endl;
+  std::string mtx_path = "", fmt = "csr";
+
+  auto cli =
+      (clipp::value("input file", mtx_path),
+       clipp::option("-f", "--format").doc("input matrix format, can be `csr` (default) or `mm` (matrix market)") &
+           clipp::value("format", fmt));
+
+  if (!parse(argc, argv, cli)) {
+    std::cout << clipp::make_man_page(cli, argv[0]);
     return 0;
   }
 
-  const std::string mtx_path = argv[1];
-
-  mtx_reader<int, dtype> csr_reader(mtx_path);
-  csr_reader.fill_mtx();
-  csr_reader.close_stream();
-
   type_csr h_csr;
-  h_csr.rows = csr_reader.rows();
-  h_csr.cols = csr_reader.cols();
-  h_csr.nnz = csr_reader.nnz();
-
   host_vectors<dtype> h_vectors{};
-  csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
+  if (fmt == "csr") {
+    csr_mtx_reader<int, dtype> csr_reader(mtx_path);
+    csr_reader.fill_mtx();
+    csr_reader.close_stream();
 
-  create_host_data(h_csr, h_vectors);
+    h_csr.rows = csr_reader.rows();
+    h_csr.cols = csr_reader.cols();
+    h_csr.nnz = csr_reader.nnz();
 
+    // don't allocate new memory, just reuse memory in file parsing.
+    // array data in `h_csr` is keep in instance `csr_reader`.
+    csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
+    create_host_data(h_csr, h_vectors);
+    test_spmv(mtx_path, h_csr, h_vectors);
+  } else {
+    matrix_market_reader<int, dtype> mm_reader;
+    coo_mtx<int, dtype> coo_sparse = mm_reader.load_mat(mtx_path);
+    h_csr = coo_sparse.to_csr();
+    create_host_data(h_csr, h_vectors, true);
+    test_spmv(mtx_path, h_csr, h_vectors);
+  }
+}
+
+void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors) {
   hipSetDevice(0);
   dtype *dev_x, *dev_y;
   type_csr d_csr = create_device_data(h_csr, h_vectors.hX, h_vectors.temphY, dev_x, dev_y);
@@ -100,5 +121,5 @@ int main(int argc, char **argv) {
   verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
   std::cout << mtx_path << " elapsed time:" << timer1.time_use << "(us)" << std::endl;
 
-  return 0;
+  return;
 }

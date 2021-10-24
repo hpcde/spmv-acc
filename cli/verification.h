@@ -8,7 +8,7 @@
 #include <cmath>
 
 #include "building_config.h"
-#include "csr.hpp"
+#include "sparse_format.h"
 
 #ifdef gpu
 #include <hipsparse.h>

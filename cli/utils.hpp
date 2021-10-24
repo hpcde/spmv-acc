@@ -8,7 +8,7 @@
 #include <iomanip>
 
 #include "building_config.h"
-#include "csr.hpp"
+#include "sparse_format.h"
 
 #define HIP_CHECK(stat)                                                                                                \
   {                                                                                                                    \
@@ -60,11 +60,14 @@ template <typename T> struct host_vectors {
   T *hhY;    // store the correct results produced by host or device verification.
 };
 
-void create_host_data(type_csr _csr, host_vectors<dtype> &h_vecs) {
-  dtype *temp_csr_dense_vec = new dtype[_csr.cols];
-  memcpy(temp_csr_dense_vec, h_vecs.hX, _csr.cols * sizeof(double));
+void create_host_data(type_csr _csr, host_vectors<dtype> &h_vecs, bool overwrite_hx = false) {
+  dtype *temp_csr_dense_vec;
+  if (!overwrite_hx) {
+    temp_csr_dense_vec = new dtype[_csr.cols];
+    memcpy(temp_csr_dense_vec, h_vecs.hX, _csr.cols * sizeof(double)); // backup hX
+  }
 
-  generate_vector(_csr.cols, h_vecs.hX); // todo: remove
+  generate_vector(_csr.cols, h_vecs.hX);
   generate_vector(_csr.rows, h_vecs.temphY);
   generate_vector(_csr.rows, h_vecs.hY); //实际数据依然来自随机生成
   generate_vector(_csr.rows, h_vecs.hhY);
@@ -73,8 +76,10 @@ void create_host_data(type_csr _csr, host_vectors<dtype> &h_vecs) {
   memcpy(h_vecs.hY, h_vecs.temphY, _csr.rows * sizeof(double));
   memcpy(h_vecs.hhY, h_vecs.temphY, _csr.rows * sizeof(double));
 
-  memcpy(h_vecs.hX, temp_csr_dense_vec, _csr.cols * sizeof(double)); //外部读取数据覆盖hX
-  delete[] temp_csr_dense_vec;
+  if (!overwrite_hx) {
+    memcpy(h_vecs.hX, temp_csr_dense_vec, _csr.cols * sizeof(double)); //外部读取数据恢复 hX
+    delete[] temp_csr_dense_vec;
+  }
 }
 
 type_csr create_device_data(type_csr h_csr, dtype *hX, dtype *hY, dtype *&dX, dtype *&dY) {
