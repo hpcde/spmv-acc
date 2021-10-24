@@ -21,6 +21,14 @@ Please cite SpMV-acc in your publications if it helps your research:
 - [HIP](https://github.com/ROCm-Developer-Tools/HIP)
 - [CMake](https://cmake.org): version 3.6 or higher.
 
+### Download dependency
+Before building, we need to download [clipp](https://github.com/muellan/clipp) for command line arguments processing.
+```bash
+cd third-party
+./get_clipp.sh
+cd ../
+```
+
 ### Build steps
 - Build and verify on GPU side. 
 (Note: make sure lib `rocsparse` is loaded and its version must be greater/equal than "1.19.4 for ROCm 4.1.0"):
