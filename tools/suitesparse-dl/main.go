@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"sync"
@@ -76,6 +77,16 @@ func dl(mat MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync
 	terminalLock.Unlock()
 }
 
+var letterRunes = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
 func downloadFile(filepath string, url string) (err error) {
 	if _, err := os.Stat(filepath); err == nil {
 		return fmt.Errorf("file %s exists", filepath)
@@ -85,8 +96,9 @@ func downloadFile(filepath string, url string) (err error) {
 		return err
 	}
 
-	// Create the tar.gz file
-	out, err := os.Create(filepath)
+	// Create the temp file
+	tempFileName := filepath + ".tmp." + RandStringRunes(6)
+	out, err := os.Create(tempFileName)
 	if err != nil {
 		return err
 	}
@@ -108,6 +120,11 @@ func downloadFile(filepath string, url string) (err error) {
 	// Writer the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		return err
+	}
+
+	// rename temp file to tar.gz file
+	if err := os.Rename(tempFileName, filepath); err != nil {
 		return err
 	}
 
