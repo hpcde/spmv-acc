@@ -65,16 +65,20 @@ func dl(mat MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync
 	processbar.Title = "Downloading " + mat.Name
 	terminalLock.Unlock()
 
-	if err := downloadFile(DlRoot+mat.Name+".tar.gz", mat.DlLinks.MatrixMarket); err != nil {
+	if skipped, err := downloadFile(DlRoot+mat.Name+".tar.gz", mat.DlLinks.MatrixMarket); err != nil {
 		pterm.Error.Printf(err.Error())
 		// todo: stop the whole downloading task if it has error
 		return
+	} else {
+		terminalLock.Lock()
+		if skipped {
+			pterm.Warning.Printfln("Matrix %s skipped, maybe the matrix already exists.", mat.Name)
+		} else {
+			pterm.Success.Println("Downloaded matrix", mat.Name)
+		}
+		processbar.Increment()
+		terminalLock.Unlock()
 	}
-
-	terminalLock.Lock()
-	pterm.Success.Println("Downloaded matrix", mat.Name)
-	processbar.Increment()
-	terminalLock.Unlock()
 }
 
 var letterRunes = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -87,20 +91,20 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-func downloadFile(filepath string, url string) (err error) {
+func downloadFile(filepath string, url string) (skipped bool, err error) {
 	if _, err := os.Stat(filepath); err == nil {
-		return fmt.Errorf("file %s exists", filepath)
+		return true, nil // "file exists"
 	} else if errors.Is(err, os.ErrNotExist) {
 		// fall through
 	} else {
-		return err
+		return true, err
 	}
 
 	// Create the temp file
 	tempFileName := filepath + ".tmp." + RandStringRunes(6)
 	out, err := os.Create(tempFileName)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer out.Close()
 
@@ -108,25 +112,25 @@ func downloadFile(filepath string, url string) (err error) {
 	client := http.Client{} // {Timeout: 10 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer resp.Body.Close()
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
+		return false, fmt.Errorf("bad status: %s", resp.Status)
 	}
 
 	// Writer the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// rename temp file to tar.gz file
 	if err := os.Rename(tempFileName, filepath); err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return false, nil
 }
