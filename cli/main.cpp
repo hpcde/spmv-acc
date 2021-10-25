@@ -67,6 +67,23 @@ int main(int argc, char **argv) {
   }
 }
 
+/**
+ * @tparam T type of data
+ * @param m rows
+ * @param n cols
+ * @param nnz number of non-zeros
+ * @param time time in us
+ */
+template <typename T> void print_statistics(std::string name, int rows, int cols, int nnz, double time) {
+  int mem_bytes = static_cast<double>(sizeof(T) * (2 * rows + nnz) + sizeof(int) * (rows + 1 + nnz));
+  double bandwidth = (mem_bytes + 0.0) / (1024 * 1024 * 1024) / (time / 1e3 / 1e3);
+  double gflops = static_cast<double>(2 * nnz) / time / 1e3;
+
+  std::cout << "name: " << name << ", rows: " << rows << ", cols: " << cols << ", nnz: " << nnz
+            << ", nnz/row: " << (nnz + 0.0) / rows << ", GB/s: " << bandwidth << ", GFLOPS: " << gflops
+            << ", usec: " << time << std::endl;
+}
+
 void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors) {
   hipSetDevice(0);
   dtype *dev_x, *dev_y;
@@ -120,6 +137,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
 
   verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
   std::cout << mtx_path << " elapsed time:" << timer1.time_use << "(us)" << std::endl;
+  print_statistics<dtype>(mtx_path, h_csr.rows, h_csr.cols, h_csr.nnz, timer1.time_use);
 
   return;
 }
