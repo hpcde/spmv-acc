@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/pterm/pterm"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"sync"
+
+	"github.com/pterm/pterm"
 )
 
 const (
@@ -43,16 +44,26 @@ func main() {
 		var wg sync.WaitGroup
 		var terminalLock = &sync.RWMutex{}
 		dlTasks := make(chan bool, DlGoroutines)
+		stop := make(chan bool, DlGoroutines) // listen for stop chan signal
 		for _, mat := range matMates {
-			wg.Add(1)
-			dlTasks <- true
-			_mat := mat
-			go func() {
-				dl(_mat, processbar, terminalLock)
-				wg.Done()
-				<-dlTasks
-			}()
+			select {
+			case <-stop:
+				goto OutFor // break for loop
+			default:
+				wg.Add(1)
+				dlTasks <- true
+				_mat := mat
+				go func() {
+					err := dl(_mat, processbar, terminalLock)
+					<-dlTasks
+					wg.Done()
+					if err != nil {
+						stop <- true
+					}
+				}()
+			}
 		}
+	OutFor:
 		wg.Wait()
 		if _, err := processbar.Stop(); err != nil {
 			return
@@ -60,15 +71,15 @@ func main() {
 	}
 }
 
-func dl(mat MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync.RWMutex) {
+func dl(mat MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync.RWMutex) error {
 	terminalLock.Lock()
 	processbar.Title = "Downloading " + mat.Name
 	terminalLock.Unlock()
 
 	if skipped, err := downloadFile(DlRoot+mat.Name+".tar.gz", mat.DlLinks.MatrixMarket); err != nil {
 		pterm.Error.Printf(err.Error())
-		// todo: stop the whole downloading task if it has error
-		return
+		// stop the whole downloading task if it has error
+		return err
 	} else {
 		terminalLock.Lock()
 		if skipped {
@@ -78,6 +89,7 @@ func dl(mat MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync
 		}
 		processbar.Increment()
 		terminalLock.Unlock()
+		return nil
 	}
 }
 
