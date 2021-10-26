@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/genshen/cmds"
@@ -116,7 +117,7 @@ func dl_matrix(mat m.MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalL
 	processbar.Title = "Downloading " + mat.Name
 	terminalLock.Unlock()
 
-	if skipped, err := downloadFile(options.DownloadDir+mat.Name+".tar.gz", mat.DlLinks.MatrixMarket); err != nil {
+	if skipped, err := downloadFile(options.DownloadDir, mat.Name+".tar.gz", mat.NNZ, mat.DlLinks.MatrixMarket); err != nil {
 		pterm.Error.Printf(err.Error())
 		// stop the whole downloading task if it has error
 		return err
@@ -143,8 +144,43 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-func downloadFile(filepath string, url string) (skipped bool, err error) {
-	if _, err := os.Stat(filepath); err == nil {
+const (
+	Nk    = 1000
+	N10k  = 10 * 1000
+	N100k = 100 * 1000
+	NM    = 1000 * 1000
+	N10M  = 10 * 1000 * 1000
+	N100M = 100 * 1000 * 1000
+	NG    = 1000 * 1000 * 1000
+)
+
+// generate file path by number of non-zeros
+func filepathByNNz(basepath string, filename string, nnz int64) string {
+	var category string
+	if nnz < Nk {
+		category = "1k"
+	} else if nnz < N10k {
+		category = "10k"
+	} else if nnz < N100k {
+		category = "100k"
+	} else if nnz < NM {
+		category = "1M" // =106
+	} else if nnz < N10M {
+		category = "10M"
+	} else if nnz < N100M {
+		category = "100M"
+	} else if nnz < NG {
+		category = "1G" // =1e9
+	} else {
+		category = "10G"
+	}
+	return filepath.Join(basepath, category, filename)
+}
+
+func downloadFile(basepath string, filename string, nnz int64, url string) (skipped bool, err error) {
+	targetFilePath := filepathByNNz(basepath, filename, nnz)
+
+	if _, err := os.Stat(targetFilePath); err == nil {
 		return true, nil // "file exists"
 	} else if errors.Is(err, os.ErrNotExist) {
 		// fall through
@@ -153,7 +189,7 @@ func downloadFile(filepath string, url string) (skipped bool, err error) {
 	}
 
 	// Create the temp file
-	tempFileName := filepath + ".tmp." + RandStringRunes(6)
+	tempFileName := filepath.Join(basepath, filename+".tmp."+RandStringRunes(6))
 	out, err := os.Create(tempFileName)
 	if err != nil {
 		return false, err
@@ -180,7 +216,7 @@ func downloadFile(filepath string, url string) (skipped bool, err error) {
 	}
 
 	// rename temp file to tar.gz file
-	if err := os.Rename(tempFileName, filepath); err != nil {
+	if err := os.Rename(tempFileName, targetFilePath); err != nil {
 		return false, err
 	}
 

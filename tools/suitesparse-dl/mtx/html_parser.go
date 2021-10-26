@@ -112,8 +112,8 @@ func getLinkText(linkText string) string {
 	}
 }
 
-func parseInt(str string) int {
-	num, err := strconv.Atoi(strings.Replace(str, ",", "", -1))
+func parseInt(str string) int64 {
+	num, err := strconv.ParseInt(strings.Replace(str, ",", "", -1), 10, 64)
 	if err != nil {
 		log.Fatalln(err)
 		return 0
