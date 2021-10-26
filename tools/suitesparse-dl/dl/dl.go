@@ -28,15 +28,23 @@ var dlCommand = &cmds.Command{
 }
 
 const (
-	DlGoroutines int    = 4 // goroutines number for parallel downloading.
-	DlRoot       string = "dl/"
+	DefaultDlGoroutines int    = 4 // goroutines number for parallel downloading.
+	DefaultDlRoot       string = "dl/"
 )
 
+type dlOptions struct {
+	NGoroutines int    // goroutines number for parallel downloading.
+	DownloadDir string // director for storing result
+}
+
+var options dlOptions
 
 func init() {
 	dlCommand.Runner = &dl{}
 	fs := flag.NewFlagSet("dl", flag.ContinueOnError)
 	dlCommand.FlagSet = fs
+	dlCommand.FlagSet.StringVar(&options.DownloadDir, "dir", DefaultDlRoot, `director for storing matrices.`)
+	dlCommand.FlagSet.IntVar(&options.NGoroutines, "p", DefaultDlGoroutines, `goroutines for parallel downloading.`)
 	dlCommand.FlagSet.Usage = dlCommand.Usage // use default usage provided by cmds.Command.
 	cmds.AllCommands = append(cmds.AllCommands, dlCommand)
 }
@@ -63,7 +71,7 @@ func download() {
 		log.Fatal(err)
 		return
 	} else {
-		fmt.Printf("Downloading %d matrices using %d go goroutines", len(matMates), DlGoroutines)
+		fmt.Printf("Downloading %d matrices using %d go goroutines, saved at `%s`", len(matMates), options.NGoroutines, options.DownloadDir)
 
 		// set terminal processing bar
 		pterm.DefaultSection.Println("Download Matrices")
@@ -75,8 +83,8 @@ func download() {
 
 		var wg sync.WaitGroup
 		var terminalLock = &sync.RWMutex{}
-		dlTasks := make(chan bool, DlGoroutines)
-		stop := make(chan bool, DlGoroutines) // listen for stop chan signal
+		dlTasks := make(chan bool, options.NGoroutines)
+		stop := make(chan bool, options.NGoroutines) // listen for stop chan signal
 		for _, mat := range matMates {
 			select {
 			case <-stop:
@@ -108,7 +116,7 @@ func dl_matrix(mat m.MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalL
 	processbar.Title = "Downloading " + mat.Name
 	terminalLock.Unlock()
 
-	if skipped, err := downloadFile(DlRoot+mat.Name+".tar.gz", mat.DlLinks.MatrixMarket); err != nil {
+	if skipped, err := downloadFile(options.DownloadDir+mat.Name+".tar.gz", mat.DlLinks.MatrixMarket); err != nil {
 		pterm.Error.Printf(err.Error())
 		// stop the whole downloading task if it has error
 		return err
