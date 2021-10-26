@@ -1,4 +1,4 @@
-package main
+package mtx
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ const (
 	AttrsNumInMatrix int = 9
 )
 
-func sourceParse(reader io.Reader) ([]MatrixMeta, error) {
+func SourceParse(reader io.Reader) ([]MatrixMeta, error) {
 	doc, err := html.Parse(reader)
 	if err != nil {
 		return nil, err

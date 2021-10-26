@@ -1,8 +1,9 @@
-package main
+package dl
 
 import (
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,22 +13,53 @@ import (
 	"os"
 	"sync"
 
+	"github.com/genshen/cmds"
 	"github.com/pterm/pterm"
+
+	m "suitesparse-dl/mtx"
 )
+
+var dlCommand = &cmds.Command{
+	Name:        "dl",
+	Summary:     "download matrices",
+	Description: "download matrices from suitesparse",
+	CustomFlags: false,
+	HasOptions:  true,
+}
 
 const (
 	DlGoroutines int    = 4 // goroutines number for parallel downloading.
 	DlRoot       string = "dl/"
 )
 
-func main() {
+
+func init() {
+	dlCommand.Runner = &dl{}
+	fs := flag.NewFlagSet("dl", flag.ContinueOnError)
+	dlCommand.FlagSet = fs
+	dlCommand.FlagSet.Usage = dlCommand.Usage // use default usage provided by cmds.Command.
+	cmds.AllCommands = append(cmds.AllCommands, dlCommand)
+}
+
+type dl struct{}
+
+func (d *dl) PreRun() error {
+	return nil // if error != nil, function Run will be not execute.
+}
+
+func (d *dl) Run() error {
+	download()
+	return nil
+}
+
+func download() {
 	htmlBytes, err := ioutil.ReadFile("index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// parsing html file to get matrix metadata
-	if matMates, err := sourceParse(bytes.NewReader(htmlBytes)); err != nil {
+	if matMates, err := m.SourceParse(bytes.NewReader(htmlBytes)); err != nil {
 		log.Fatal(err)
 		return
 	} else {
@@ -54,7 +86,7 @@ func main() {
 				dlTasks <- true
 				_mat := mat
 				go func() {
-					err := dl(_mat, processbar, terminalLock)
+					err := dl_matrix(_mat, processbar, terminalLock)
 					<-dlTasks
 					wg.Done()
 					if err != nil {
@@ -71,7 +103,7 @@ func main() {
 	}
 }
 
-func dl(mat MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync.RWMutex) error {
+func dl_matrix(mat m.MatrixMeta, processbar *pterm.ProgressbarPrinter, terminalLock *sync.RWMutex) error {
 	terminalLock.Lock()
 	processbar.Title = "Downloading " + mat.Name
 	terminalLock.Unlock()

@@ -1,4 +1,4 @@
-package main
+package mtx
 
 type DlLinks struct {
 	Matlab           string // matlab format

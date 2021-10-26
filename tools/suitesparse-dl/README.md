@@ -10,7 +10,7 @@ go build
 ```bash
 curl "https://sparse.tamu.edu/?per_page=All" -o index.html
 mkdir dl
-./suitesparse-dl
+./suitesparse-dl dl
 ```
 
 ## Extract Matrix Market from .tar.gz
