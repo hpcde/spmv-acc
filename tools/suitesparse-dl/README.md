@@ -27,3 +27,31 @@ for tar_path in `cat tar_list.txt`; do
 done
 rm tar_list.txt
 ```
+
+## Special note for matrices with the same name
+The matrix name is not the unique key in SuiteSparse Matrix Collection.
+But suitsparse-dl use matrix name as filename (key).
+Thus, matrices with the same name will only be downloaded once when the name first apprears.
+In other words, if 2 or more matrices with the same name, we only download the first matrix, other matrices will be ignored.
+
+A workaround for this problem is: user can **manually** download the matrices with the same name and give them different filenames.
+
+The matrices with the same name are list as following:
+
+| Name         | IDs |
+| ------------ | --- |
+| nasa1824     | 363, 757  |
+| nasa2910     | 364, 759  |
+| nasa4704     | 365, 760  |
+| barth        | 754, 865  |
+| barth4       | 755, 866  |
+| barth5       | 756, 867  |
+| pwt          | 762, 880, 1273 |
+| shuttle_eddy | 763, 881  |
+| skirt        | 764, 882  |
+| copter2      | 1230, 1256|
+| ex3sta1      | 1379, 1709 (*) |
+| pf2177       | 1394, 1753 (*) |
+| fxm3_6       | 1380, 1805 (*) |
+| fxm4_6       | 1381, 1807 (*) |
+| football     | 1474, 2397 (*) |
