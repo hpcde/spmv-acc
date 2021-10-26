@@ -7,6 +7,7 @@ import (
 
 	"github.com/genshen/cmds"
 	_ "suitesparse-dl/dl"
+	_ "suitesparse-dl/fetch"
 )
 
 func main() {

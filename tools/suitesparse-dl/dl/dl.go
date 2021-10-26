@@ -1,7 +1,7 @@
 package dl
 
 import (
-	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -62,13 +62,16 @@ func (d *dl) Run() error {
 }
 
 func download() {
-	htmlBytes, err := ioutil.ReadFile("index.html")
+	jsonBytes, err := ioutil.ReadFile("metadata.json")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
-	// parsing html file to get matrix metadata
-	if matMates, err := m.SourceParse(bytes.NewReader(htmlBytes)); err != nil {
+	matMates := make([]m.MatrixMeta, 0, 0)
+
+	// parsing json file to get matrix metadata
+	if err := json.Unmarshal(jsonBytes, &matMates); err != nil {
 		log.Fatal(err)
 		return
 	} else {
