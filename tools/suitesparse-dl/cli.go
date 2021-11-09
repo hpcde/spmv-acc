@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/genshen/cmds"
+	_ "suitesparse-dl/batch-gen"
 	_ "suitesparse-dl/dl"
 	_ "suitesparse-dl/fetch"
 )

@@ -55,3 +55,30 @@ The matrices with the same name are list as following:
 | fxm3_6       | 1380, 1805 (*) |
 | fxm4_6       | 1381, 1807 (*) |
 | football     | 1474, 2397 (*) |
+
+## Generate a sbatch file for job submitting
+suitsparse-dl support to generate a sbatch file for job submitting 
+(e.g. the case of running benchmark on [slurm](https://slurm.schedmd.com/overview.html) Workload Manager system).
+
+You can run following command to generate a sbatch file:
+```bash
+./suitesparse-dl gen --data ./dl_mm --output spmv_batch.sh --tpl template.sh
+```
+where, `--data` point to the path of matrices, `--output` specific the output sbatch file and `--tpl` can specific the template file. 
+For information, can run `./suitesparse-dl gen -h`.  
+Note: `--data` is a path to parent directory of matrix directories,
+and the matrix directory (e.g. directory `08blocks`) should keep the same name as the matrix file name within it.
+Following shows an example of the layout of data directory `./dl_mm`.
+```log
+./dl_mm/
+├── 08blocks
+│         └── 08blocks.mtx
+├── adjnoun
+│         ├── adjnoun.mtx
+├── ash219
+│         └── ash219.mtx
+├── ash331
+│         └── ash331.mtx
+└── ash85
+          └── ash85.mtx
+```
