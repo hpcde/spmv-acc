@@ -15,8 +15,8 @@
 #include "line_config.h"
 
 template <int ROW_SIZE, int MAX_ROW_NNZ, typename I, typename T>
-__global__ void spmv_line_one_pass_kernel(int m, const T alpha, const T beta, const int *row_offset,
-                                          const int *csr_col_ind, const T *csr_val, const T *x, T *y) {
+__global__ void spmv_line_one_pass_kernel(int m, const T alpha, const T beta, const I *row_offset,
+                                          const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int block_id = blockIdx.x;                                 // global block id
   const int block_thread_num = blockDim.x;                         // threads num in a block
