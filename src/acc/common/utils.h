@@ -6,20 +6,33 @@
 #define SPMV_ACC_COMMON_UTILS_H
 
 #include <hip/hip_runtime.h>
+
 #include "building_config.h"
- 
+#ifdef __HIP_PLATFORM_NVCC__
+#include "platforms/cuda/cuda_utils.hpp"
+#endif
+
 #ifdef __HIP_PLATFORM_HCC__
 #include "../common/platforms/rocm/dpp_reduce.h"
+#endif
+
+#ifndef __HIP_PLATFORM_HCC__
+template <typename T> __forceinline__ __device__ T __builtin_nontemporal_load(const T *addr) { return *addr; }
+
+template <typename T> __forceinline__ __device__ void __builtin_nontemporal_store(const T &val, T *ptr) { *ptr = val; }
 #endif
 
 #define device_ldg(ptr) __ldg(ptr)
 
 #define device_fma(p, q, r) fma(p, q, r)
 
+#ifdef __HIP_PLATFORM_HCC__
 #define asm_v_fma_f64(p, q, r) asm volatile("v_fma_f64 %0, %1, %2, %3" : "=v"(r) : "v"(p), "v"(q), "v"(r));
+#endif // __HIP_PLATFORM_HCC__
 
-
-
+#ifndef __HIP_PLATFORM_HCC__
+#define asm_v_fma_f64(p, q, r) (r = device_fma(p, q, r));
+#endif // __HIP_PLATFORM_HCC__
 
 // register and __shfl_down based wavefront reduction
 #define SHFL_DOWN_WF_REDUCE(total_sum, local_sum)                                                                      \

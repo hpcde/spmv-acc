@@ -11,6 +11,7 @@
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
 #include "../common/global_mem_ops.h"
+#include "../common/utils.h"
 #include "thread_row_config.h"
 
 template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
