@@ -12,7 +12,7 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
-#include "../common/global_mem_ops.hpp"
+#include "../common/global_mem_ops.h"
 #include "../common/utils.h"
 
 #define N_UNROLLING 2

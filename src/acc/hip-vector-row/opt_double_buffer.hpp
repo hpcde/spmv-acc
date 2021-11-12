@@ -5,7 +5,7 @@
 #ifndef SPMV_ACC_VECTOR_ROW_OPT_DOUBLE_BUFFER_HPP
 #define SPMV_ACC_VECTOR_ROW_OPT_DOUBLE_BUFFER_HPP
 
-#include "../common/global_mem_ops.hpp"
+#include "../common/global_mem_ops.h"
 #include "../common/utils.h"
 
 #include "building_config.h"

@@ -2,8 +2,8 @@
 // Created by genshen on 2021/5/7.
 //
 
-#ifndef SPMV_ACC_GLOBAL_MEM_OPS_H
-#define SPMV_ACC_GLOBAL_MEM_OPS_H
+#ifndef SPMV_ACC_ROCM_GLOBAL_MEM_OPS_HPP
+#define SPMV_ACC_ROCM_GLOBAL_MEM_OPS_HPP
 
 typedef struct {
   double a;
@@ -44,4 +44,4 @@ __device__ __forceinline__ void global_load_intx2_async(const void *ptr, int_x2 
 
 __device__ __forceinline__ void s_waitcnt() { asm volatile("s_waitcnt vmcnt(0)"); }
 
-#endif // SPMV_ACC_GLOBAL_MEM_OPS_H
+#endif // SPMV_ACC_ROCM_GLOBAL_MEM_OPS_HPP
