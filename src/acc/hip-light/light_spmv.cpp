@@ -22,15 +22,15 @@ void light_sparse_spmv(int trans, const int alpha, const int beta, int m, int n,
 
   if (avg_eles_per_row <= 2) {
     LIGHT_KERNEL_CALLER(1);
-  } else if (avg_eles_per_row <= 4) {
+  } else if (avg_eles_per_row <= 4 || __WF_SIZE__ <= 2) {
     LIGHT_KERNEL_CALLER(2);
-  } else if (avg_eles_per_row <= 8) {
+  } else if (avg_eles_per_row <= 8 || __WF_SIZE__ <= 4) {
     LIGHT_KERNEL_CALLER(4);
-  } else if (avg_eles_per_row <= 16) {
+  } else if (avg_eles_per_row <= 16 || __WF_SIZE__ <= 8) {
     LIGHT_KERNEL_CALLER(8);
-  } else if (avg_eles_per_row <= 32) {
+  } else if (avg_eles_per_row <= 32 || __WF_SIZE__ <= 16) {
     LIGHT_KERNEL_CALLER(16);
-  } else if (avg_eles_per_row <= 64) {
+  } else if (avg_eles_per_row <= 64 || __WF_SIZE__ <= 32) {
     LIGHT_KERNEL_CALLER(32);
   } else {
     LIGHT_KERNEL_CALLER(64);
