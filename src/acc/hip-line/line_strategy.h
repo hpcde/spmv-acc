@@ -8,6 +8,8 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+#include "api/types.h"
+
 template <int ROW_SIZE, int WF_SIZE, int BLOCKS, typename I, typename T>
 __global__ void spmv_line_kernel(int m, const T alpha, const T beta, const I *row_offset, const I *csr_col_ind,
                                  const T *csr_val, const T *x, T *y);
@@ -16,8 +18,8 @@ template <int ROW_SIZE, int MAX_ROW_NNZ, typename I, typename T>
 __global__ void spmv_line_one_pass_kernel(int m, const T alpha, const T beta, const I *row_offset, const I *csr_col_ind,
                                           const T *csr_val, const T *x, T *y);
 
-void line_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
-                      const double *value, const double *x, double *y);
+void line_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+                      const double *x, double *y);
 
 #include "line_imp_one_pass.inl"
 #include "line_kernel_imp.inl"

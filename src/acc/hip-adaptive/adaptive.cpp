@@ -7,19 +7,24 @@
 
 #include "hip-flat/spmv_hip_acc_imp.h"
 #include "hip-line-enhance/line_enhance_spmv.h"
-#include "hip-thread-row/thread_row.h"
 #include "hip-line/line_strategy.h"
+#include "hip-thread-row/thread_row.h"
 #include "hip-vector-row/vector_row.h"
 
-void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *row_ptr,
-                          const int *col_index, const double *value, const double *x, double *y) {
+#include "../common/macros.h"
+
+void adaptive_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+                          const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
+  VAR_FROM_CSR_DESC(d_csr_desc);
+  const int n = d_csr_desc.cols;
+
   // 0. sampling and data block dividing.
   // If it need data block dividing, just use vector method,
   // but with different vector size for different data block.
-  const int bp_0 = row_ptr[m / 4];
-  const int bp_1 = row_ptr[m / 2];
-  const int bp_2 = row_ptr[3 * m / 4];
-  const int bp_3 = row_ptr[m];
+  const int bp_0 = h_csr_desc.row_ptr[m / 4];
+  const int bp_1 = h_csr_desc.row_ptr[m / 2];
+  const int bp_2 = h_csr_desc.row_ptr[3 * m / 4];
+  const int bp_3 = h_csr_desc.row_ptr[m];
 
   const int avg_nnz_per_row = bp_3 / m;
   const int nnz_block_0 = bp_1 - 0;
@@ -30,7 +35,7 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
       (nnz_block_0 > nnz_block_1 && nnz_block_0 / nnz_block_1 >= 4)) {
     // vector-row based data blocks dividing
     // use nnz as weight of each block
-    adaptive_vec_row_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    adaptive_vec_row_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, d_csr_desc, x, y);
     return;
   }
 
@@ -44,14 +49,14 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
     constexpr int MAX_ROW_NNZ = 5;
     const int ROW_NUM = HIP_THREADS / MAX_ROW_NNZ * R; // rows per block
     const int HIP_BLOCKS = m / ROW_NUM + (m % ROW_NUM == 0 ? 0 : 1);
-    (spmv_line_one_pass_kernel<ROW_NUM, MAX_ROW_NNZ, int, double>)<<<HIP_BLOCKS, HIP_THREADS>>>(m, alpha, beta, row_ptr,
-                                                                                                col_index, value, x, y);
+    (spmv_line_one_pass_kernel<ROW_NUM, MAX_ROW_NNZ, int, double>)<<<HIP_BLOCKS, HIP_THREADS>>>(m, alpha, beta, rowptr,
+                                                                                                colindex, value, x, y);
     return;
   }
 
   // 3. If the matrix is short row (less than 30) or is small matrix
   if (bp_3 <= 0xC00000) { // 0xC00000 = 12,582,912
-    adaptive_enhance_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    adaptive_enhance_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
     return;
   }
 
@@ -59,11 +64,10 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, int m, int
   // The flat strategy has a data pre-processing kernel function,
   // which can not be applied to small data set.
   if (bp_3 > (1 << 23)) { // 2^23 = 8,388,608
-    adaptive_flat_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+    adaptive_flat_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, d_csr_desc, x, y);
     return;
   }
 
   // 5. use vector-row method for small data set.
-  // todo: pass nnz/row.
-  line_enhance_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
+  line_enhance_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 }

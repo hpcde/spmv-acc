@@ -10,6 +10,7 @@
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
 #include "api/spmv.h"
+#include "spmv_hip_acc_imp.h"
 
 __global__ void default_device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n,
                                                const int *rowptr, const int *colindex, const double *value,
@@ -25,7 +26,10 @@ __global__ void default_device_sparse_spmv_acc(int trans, const int alpha, const
   }
 }
 
-void default_sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                           const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
-  default_device_sparse_spmv_acc<<<1, 256>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
+void default_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+                         const double *x, double *y) {
+  VAR_FROM_CSR_DESC(d_csr_desc);
+  const int n = d_csr_desc.cols;
+
+  default_device_sparse_spmv_acc<<<1, 256>>>(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
 }
