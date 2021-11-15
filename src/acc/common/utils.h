@@ -2,73 +2,73 @@
 // Created by genshen on 2021/4/18.
 //
 
-#ifndef SPMV_ACC_WF_ROW_UTILS_H
-#define SPMV_ACC_WF_ROW_UTILS_H
+#ifndef SPMV_ACC_COMMON_UTILS_H
+#define SPMV_ACC_COMMON_UTILS_H
 
 #include <hip/hip_runtime.h>
+
+#include "building_config.h"
+#ifdef __HIP_PLATFORM_NVCC__
+#include "platforms/cuda/cuda_utils.hpp"
+#endif
+
+#ifdef __HIP_PLATFORM_HCC__
+#include "../common/platforms/rocm/dpp_reduce.h"
+#endif
+
+#ifndef __HIP_PLATFORM_HCC__
+template <typename T> __forceinline__ __device__ T __builtin_nontemporal_load(const T *addr) { return *addr; }
+
+template <typename T> __forceinline__ __device__ void __builtin_nontemporal_store(const T &val, T *ptr) { *ptr = val; }
+#endif
 
 #define device_ldg(ptr) __ldg(ptr)
 
 #define device_fma(p, q, r) fma(p, q, r)
 
+#ifdef __HIP_PLATFORM_HCC__
 #define asm_v_fma_f64(p, q, r) asm volatile("v_fma_f64 %0, %1, %2, %3" : "=v"(r) : "v"(p), "v"(q), "v"(r));
+#endif // __HIP_PLATFORM_HCC__
 
-// __hip_move_dpp is already defined in hip_runtime.
-
-// DPP-based double wavefront reduction
-template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(double sum) {
-  typedef union dbl_b32 {
-    double val;
-    uint32_t b32[2];
-  } dbl_b32_t;
-  dbl_b32_t upper_sum;
-  dbl_b32_t temp_sum;
-  temp_sum.val = sum;
-
-  if (WFSIZE > 1) {
-    upper_sum.b32[0] = __hip_move_dpp(temp_sum.b32[0], 0x111, 0xf, 0xf, false);
-    upper_sum.b32[1] = __hip_move_dpp(temp_sum.b32[1], 0x111, 0xf, 0xf, false);
-    temp_sum.val += upper_sum.val;
-  }
-  if (WFSIZE > 2) {
-    upper_sum.b32[0] = __hip_move_dpp(temp_sum.b32[0], 0x112, 0xf, 0xf, false);
-    upper_sum.b32[1] = __hip_move_dpp(temp_sum.b32[1], 0x112, 0xf, 0xf, false);
-    temp_sum.val += upper_sum.val;
-  }
-  if (WFSIZE > 4) {
-    upper_sum.b32[0] = __hip_move_dpp(temp_sum.b32[0], 0x114, 0xf, 0xe, false);
-    upper_sum.b32[1] = __hip_move_dpp(temp_sum.b32[1], 0x114, 0xf, 0xe, false);
-    temp_sum.val += upper_sum.val;
-  }
-  if (WFSIZE > 8) {
-    upper_sum.b32[0] = __hip_move_dpp(temp_sum.b32[0], 0x118, 0xf, 0xc, false);
-    upper_sum.b32[1] = __hip_move_dpp(temp_sum.b32[1], 0x118, 0xf, 0xc, false);
-    temp_sum.val += upper_sum.val;
-  }
-  if (WFSIZE > 16) {
-    upper_sum.b32[0] = __hip_move_dpp(temp_sum.b32[0], 0x142, 0xa, 0xf, false);
-    upper_sum.b32[1] = __hip_move_dpp(temp_sum.b32[1], 0x142, 0xa, 0xf, false);
-    temp_sum.val += upper_sum.val;
-  }
-  if (WFSIZE > 32) {
-    upper_sum.b32[0] = __hip_move_dpp(temp_sum.b32[0], 0x143, 0xc, 0xf, false);
-    upper_sum.b32[1] = __hip_move_dpp(temp_sum.b32[1], 0x143, 0xc, 0xf, false);
-    temp_sum.val += upper_sum.val;
-  }
-  sum = temp_sum.val;
-  return sum;
-}
+#ifndef __HIP_PLATFORM_HCC__
+#define asm_v_fma_f64(p, q, r) (r = device_fma(p, q, r));
+#endif // __HIP_PLATFORM_HCC__
 
 // register and __shfl_down based wavefront reduction
 #define SHFL_DOWN_WF_REDUCE(total_sum, local_sum)                                                                      \
   {                                                                                                                    \
     total_sum += local_sum;                                                                                            \
-    total_sum += __shfl_down(total_sum, 32, 64);                                                                       \
-    total_sum += __shfl_down(total_sum, 16, 64);                                                                       \
-    total_sum += __shfl_down(total_sum, 8, 64);                                                                        \
-    total_sum += __shfl_down(total_sum, 4, 64);                                                                        \
-    total_sum += __shfl_down(total_sum, 2, 64);                                                                        \
-    total_sum += __shfl_down(total_sum, 1, 64);                                                                        \
+    if (__WF_SIZE__ > 32) {                                                                                            \
+      total_sum += __shfl_down(total_sum, 32, __WF_SIZE__);                                                            \
+    }                                                                                                                  \
+    if (__WF_SIZE__ > 16) {                                                                                            \
+      total_sum += __shfl_down(total_sum, 16, __WF_SIZE__);                                                            \
+    }                                                                                                                  \
+    if (__WF_SIZE__ > 8) {                                                                                             \
+      total_sum += __shfl_down(total_sum, 8, __WF_SIZE__);                                                             \
+    }                                                                                                                  \
+    if (__WF_SIZE__ > 4) {                                                                                             \
+      total_sum += __shfl_down(total_sum, 4, __WF_SIZE__);                                                             \
+    }                                                                                                                  \
+    if (__WF_SIZE__ > 2) {                                                                                             \
+      total_sum += __shfl_down(total_sum, 2, __WF_SIZE__);                                                             \
+    }                                                                                                                  \
+    if (__WF_SIZE__ > 1) {                                                                                             \
+      total_sum += __shfl_down(total_sum, 1, __WF_SIZE__);                                                             \
+    }                                                                                                                  \
   }
 
-#endif // SPMV_ACC_WF_ROW_UTILS_H
+template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(double sum) {
+#ifdef __HIP_PLATFORM_HCC__
+  return dpp_wf_reduce_sum(sum);
+#endif
+
+#ifndef __HIP_PLATFORM_HCC__
+  // fallback to shfl_down reduction.
+  double total_sum = static_cast<double>(0);
+  SHFL_DOWN_WF_REDUCE(total_sum, sum);
+  return total_sum;
+#endif
+}
+
+#endif // SPMV_ACC_COMMON_UTILS_H

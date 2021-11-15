@@ -58,9 +58,8 @@ template <typename T> void print_vector(vector<T> &vecTest) {
 }
 
 void read_file(char *path) {
-
   FILE *in = fopen(path, "r");
-  char buf[1024 * 1024 * 1024 * 5]; // 5g buff
+  char buf[1024L * 1024L * 1024L * 5L]; // 5g buff
   int line_num = 0;
   while (fgets(buf, sizeof(buf), in) != NULL) {
     // printf("%s\n\n", buf);

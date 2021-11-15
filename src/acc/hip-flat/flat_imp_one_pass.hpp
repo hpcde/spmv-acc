@@ -9,7 +9,7 @@
 #include "flat_reduce.hpp"
 #include "building_config.h"
 
-#include "../common/global_mem_ops.hpp"
+#include "../common/global_mem_ops.h"
 #include "../common/utils.h"
 
 template <int WF_SIZE, int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int THREADS, typename I, typename T>

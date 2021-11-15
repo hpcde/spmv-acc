@@ -10,9 +10,9 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h> // hipMalloc, hipMemcpy, etc.
 
-#include "../common/global_mem_ops.hpp"
+#include "../common/global_mem_ops.h"
+#include "../common/utils.h"
 #include "thread_row_config.h"
-
 
 template <int N, int MAX_ROW_NNZ, int WF_SIZE, int THREADS, typename I, typename T>
 __global__ void kernel_thread_row(const T alpha, const T beta, const I m, const I *__restrict__ row_ptr,

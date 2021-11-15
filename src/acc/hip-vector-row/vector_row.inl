@@ -10,7 +10,7 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
-#include "../common/global_mem_ops.hpp"
+#include "../common/global_mem_ops.h"
 #include "../common/utils.h"
 #include "building_config.h"
 

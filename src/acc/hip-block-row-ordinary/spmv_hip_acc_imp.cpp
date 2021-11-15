@@ -8,6 +8,8 @@
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
 
+#include "../common/macros.h"
+
 const unsigned blocks = 64;
 const unsigned threadPerBlock = 256;
 
@@ -64,7 +66,10 @@ __global__ void block_row_device_sparse_spmv_acc(int trans, const int alpha, con
   }
 }
 
-void block_row_sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *hrowptr,
-                           const int *hcolindex, const double *hvalue, const double *hx, double *hy) {
-  block_row_device_sparse_spmv_acc<<<64, 256>>>(htrans, halpha, hbeta, hm, hn, hrowptr, hcolindex, hvalue, hx, hy);
+void block_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+                           const double *x, double *y) {
+  VAR_FROM_CSR_DESC(d_csr_desc);
+  const int n = d_csr_desc.cols;
+
+  block_row_device_sparse_spmv_acc<<<64, 256>>>(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
 }

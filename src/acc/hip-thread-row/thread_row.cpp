@@ -5,11 +5,16 @@
 #include "thread_row.h"
 #include "building_config.h"
 #include "thread_row_config.h"
-#include "building_config.h"
 
-void thread_row_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *d_row_ptr,
-                            const int *d_csr_col_index, const double *d_csr_value, const double *d_x, double *d_y) {
-  const int avg_nnz_per_row = d_row_ptr[m] / m;
+void thread_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+                            const double *d_x, double *d_y) {
+  const int m = d_csr_desc.rows;
+  const int n = d_csr_desc.cols;
+  const int *d_row_ptr = d_csr_desc.row_ptr;
+  const int *d_csr_col_index = d_csr_desc.col_index;
+  const double *d_csr_value = d_csr_desc.values;
+
+  const int avg_nnz_per_row = d_csr_desc.nnz / m;
   if (avg_nnz_per_row <= 4) {
     constexpr int MAX_ROW_NNZ = 5; // 5 is up bound.
 

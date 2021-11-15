@@ -7,19 +7,13 @@
 
 #include <memory>
 
+#include "api/types.h"
+
 typedef double dtype;
 
 // CSR sparse matrix type
-template <typename I, typename T> class csr_mtx {
+template <typename I, typename T> class csr_mtx : public var_csr_desc<I, T> {
 public:
-  I rows = 0;
-  I cols = 0;
-  I nnz = 0;
-
-  I *row_ptr = nullptr; // todo: rename to row_offset
-  I *col_index = nullptr;
-  T *values = nullptr;
-
   void alloc(I _rows, I _cols, I _nnz) {
     this->nnz = _nnz;
     this->rows = _rows;

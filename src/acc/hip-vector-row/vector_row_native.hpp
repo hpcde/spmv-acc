@@ -5,8 +5,9 @@
 #ifndef SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 #define SPMV_ACC_VECTOR_ROW_NATIVE_HPP
 
-#include "vector_config.h"
+#include "../common/cross_lane_ops.h"
 #include "building_config.h"
+#include "vector_config.h"
 
 // memory coalescing of loading and storing vector y at block level.
 template <int THREADS, int VECTOR_SIZE, int WF_SIZE, typename T>
@@ -40,12 +41,6 @@ __device__ __forceinline__ void block_store_y_with_coalescing(const int tid_in_w
   }
 }
 
-typedef union dbl_b32 {
-  double val;
-  uint32_t b32[2];
-} dbl_b32_t;
-
-
 // memory coalescing of loading and storing vector y at wavefront level.
 template <int VECTOR_SIZE, int WF_SIZE, typename T>
 __device__ __forceinline__ void
@@ -53,20 +48,8 @@ store_y_with_coalescing(const int gid, const int tid_in_wf, const int wf_id, con
                         const T beta, const T sum, const T *__restrict__ y_in, T *__restrict__ y_out) {
   constexpr int WF_VECTORS = WF_SIZE / VECTOR_SIZE;
 
-  dbl_b32_t vec_sum;
   dbl_b32_t recv_sum;
-  vec_sum.val = sum;
-
-  int src_tid = tid_in_wf * VECTOR_SIZE + wf_id * WF_SIZE; // each vector's thread-0 in current wavefront
-  if (tid_in_wf < WF_VECTORS) { // load each vector's sum to the first WF_VECTORS threads in a wavefront
-    recv_sum.b32[0] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[0]);
-    recv_sum.b32[1] = __hip_ds_bpermute(4 * src_tid, vec_sum.b32[1]);
-  } else if (tid_in_wf % VECTOR_SIZE == 0) { // enable each thread in permute op
-    recv_sum.b32[0] = __hip_ds_bpermute(4 * gid, vec_sum.b32[0]);
-    recv_sum.b32[1] = __hip_ds_bpermute(4 * gid, vec_sum.b32[1]);
-  }
-
-  __syncthreads();
+  recv_sum.val = mv_to_front_lanes_f64<VECTOR_SIZE, WF_VECTORS, WF_SIZE>(sum, gid, tid_in_wf, wf_id);
 
   int vec_row = row - tid_in_wf / VECTOR_SIZE + tid_in_wf;
   if (tid_in_wf < WF_VECTORS && vec_row < m) {

@@ -81,8 +81,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   for (int i = 0; i < 10; ++i) {
     // call sparse spmv
     HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
-    sparse_spmv(operation, alpha, beta, d_csr.rows, d_csr.cols, d_csr.row_ptr, d_csr.col_index, d_csr.values, dev_x,
-                dev_y);
+    sparse_csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
   }
   hipDeviceSynchronize();
 
@@ -90,16 +89,14 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   timer1.start();
   // execute device SpMV
   for (int i = 0; i < 1; i++) {
-    sparse_spmv(operation, alpha, beta, d_csr.rows, d_csr.cols, d_csr.row_ptr, d_csr.col_index, d_csr.values, dev_x,
-                dev_y);
+    sparse_csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
     hipDeviceSynchronize();
   }
   timer1.stop();
 
   // device result check
   HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, h_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
-  sparse_spmv(operation, alpha, beta, d_csr.rows, d_csr.cols, d_csr.row_ptr, d_csr.col_index, d_csr.values, dev_x,
-              dev_y);
+  sparse_csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
   HIP_CHECK(hipMemcpy(h_vectors.hY, dev_y, d_csr.rows * sizeof(dtype), hipMemcpyDeviceToHost));
 
 #ifdef gpu

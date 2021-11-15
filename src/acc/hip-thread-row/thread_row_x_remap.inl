@@ -8,7 +8,7 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
-#include "../common/global_mem_ops.hpp"
+#include "../common/global_mem_ops.h"
 #include "../common/utils.h"
 #include "thread_row_config.h"
 
@@ -94,7 +94,7 @@ __global__ void kernel_thread_row_v2(const T alpha, const T beta, const I m, con
       for (I j = wf_start_index + 2 * tid_in_wf; j < unrolling_loop_end; j += 2 * WF_SIZE) {
         int_x2 int_v_x2;
         global_load_int(static_cast<const void *>(csr_col_inx + j), int_v_x2);
-        // asm volatile("s_waitcnt vmcnt(0)");
+        s_waitcnt();
         _wf_shared_indexes[j - wf_start_index] = int_v_x2.a;
         _wf_shared_indexes[j - wf_start_index + 1] = int_v_x2.b;
       }
@@ -128,8 +128,7 @@ __global__ void kernel_thread_row_v2(const T alpha, const T beta, const I m, con
       const int unrolling_loop_end = wf_start_index + ((n_lds_load >> N_UNROLLING_SHIFT) << N_UNROLLING_SHIFT);
       for (I j = wf_start_index + 2 * tid_in_wf; j < unrolling_loop_end; j += 2 * WF_SIZE) {
         dbl_x2 dbl_v_x2;
-        global_load(static_cast<const void *>(csr_val + j), dbl_v_x2);
-        asm volatile("s_waitcnt vmcnt(0)");
+        global_load_dblx2_and_wait(static_cast<const void *>(csr_val + j), dbl_v_x2);
         _wf_shared_val[j - wf_start_index] = dbl_v_x2.a;
         _wf_shared_val[j - wf_start_index + 1] = dbl_v_x2.b;
       }

@@ -126,15 +126,15 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
 
   // apply adaptive vector size.
   const int avg_nnz = (data_block_row_end - data_block_row_start) / (block_row_end - block_row_start);
-  if (avg_nnz <= 4) {
+  if (avg_nnz <= 4 || __WF_SIZE__ <= 2) {
     ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(2);
-  } else if (avg_nnz <= 8) {
+  } else if (avg_nnz <= 8 || __WF_SIZE__ <= 4) {
     ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(4);
-  } else if (avg_nnz <= 16) {
+  } else if (avg_nnz <= 16 || __WF_SIZE__ <= 8) {
     ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(8);
-  } else if (avg_nnz <= 32) {
+  } else if (avg_nnz <= 32 || __WF_SIZE__ <= 16) {
     ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(16);
-  } else if (avg_nnz <= 64) {
+  } else if (avg_nnz <= 64 || __WF_SIZE__ <= 32) {
     ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(32);
   } else {
     ADAPTIVE_VECTOR_KERNEL_CORE_WRAPPER(64);

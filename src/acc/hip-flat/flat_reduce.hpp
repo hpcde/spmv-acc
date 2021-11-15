@@ -5,6 +5,8 @@
 #ifndef SPMV_ACC_FLAT_REDUCE_HPP
 #define SPMV_ACC_FLAT_REDUCE_HPP
 
+#include "../common/utils.h"
+
 template <typename I, typename T, int NNZ_PER_BLOCK, int THREADS, int VECTOR_SIZE>
 __device__ __forceinline__ void
 flat_reduce_in_vector(const int n_reduce_rows_num, const int tid_in_block, const int bp_index,

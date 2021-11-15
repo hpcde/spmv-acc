@@ -16,45 +16,45 @@
 #include "hip-wf-row/spmv_hip.h"
 #include "hip/spmv_hip_acc_imp.h"
 
-void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
-                 const double *value, const double *x, double *y) {
+void sparse_csr_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+                     const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
 #ifdef KERNEL_STRATEGY_DEFAULT
-  default_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  default_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_ADAPTIVE
-  adaptive_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  adaptive_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_BLOCK_ROW_ORDINARY
-  block_row_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  block_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_FLAT
-  flat_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  flat_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_LIGHT
-  light_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  light_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_LINE
-  line_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_THREAD_ROW
-  thread_row_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  thread_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_VECTOR_ROW
-  vec_row_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  vec_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_WAVEFRONT_ROW
-  wf_row_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  wf_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_LINE_ENHANCE
-  line_enhance_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);
+  line_enhance_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 }

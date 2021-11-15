@@ -61,7 +61,7 @@ set(ACC_HEADER_FILES ${ACC_HEADER_FILES}
         api/types.h
         api/spmv.h
         )
-set(ACC_SOURCE_FILES ${ACC_SOURCE_FILES} strategy_picker.cpp)
+set(ACC_SOURCE_FILES ${ACC_SOURCE_FILES} api/spmv_imp.cpp strategy_picker.cpp)
 
 # build static lib
 if (HIP_ENABLE_FLAG)
