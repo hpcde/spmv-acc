@@ -8,9 +8,7 @@ set(HEADER_FILES
         verification.h
         )
 
-set(SOURCE_FILES
-        main.cpp
-        )
+set(SOURCE_FILES)
 
 set(SPMV_CLI_NAME spmv-cli)
 
@@ -18,15 +16,15 @@ set(SPMV_CLI_NAME spmv-cli)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-add_executable(${SPMV_CLI_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+add_library(${SPMV_CLI_LIB} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(
-        ${SPMV_CLI_NAME}
+        ${SPMV_CLI_LIB}
         PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(
-        ${SPMV_CLI_NAME}
+        ${SPMV_CLI_LIB}
         PUBLIC
         ${ACC_LIBS}
 )
@@ -47,12 +45,24 @@ if (SPMV_OMP_ENABLED_FLAG)
     message(STATUS "Build ${SPMV_CLI_NAME} with OpenMP support.")
 endif ()
 
+add_executable(${SPMV_CLI_NAME} main.cpp)
+target_include_directories(
+        ${SPMV_CLI_NAME}
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(
+        ${SPMV_CLI_NAME}
+        PUBLIC
+        ${SPMV_CLI_LIB}
+)
 
 ##########################
 ##### install files
 ##########################
 # install bin and libs
-install(TARGETS ${SPMV_CLI_NAME}
+install(TARGETS ${SPMV_CLI_NAME} ${SPMV_CLI_LIB}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib

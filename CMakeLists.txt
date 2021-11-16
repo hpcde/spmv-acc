@@ -7,6 +7,7 @@ include(config.cmake)
 
 add_subdirectory(src)
 add_subdirectory(cli)
+add_subdirectory(benchmark)
 
 if(SPMV_BUILD_TOOLS)
     add_subdirectory(tools)

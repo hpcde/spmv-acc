@@ -46,6 +46,7 @@ endif ()
 
 if (HIP_ENABLE_FLAG)
     set(SPMV_BIN_NAME spmv-hip)
+    set(SPMV_CLI_LIB sparse_cli)
     set(SPMV_KERNEL_LIB_NAME spmv-acc-kernels)
     # add linked libs
     set(ACC_LIBS ${ACC_LIBS} ${SPMV_KERNEL_LIB_NAME})
