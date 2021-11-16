@@ -8,7 +8,9 @@ set(HEADER_FILES
         verification.h
         )
 
-set(SOURCE_FILES)
+set(SOURCE_FILES
+        verification.cpp
+        )
 
 set(SPMV_CLI_NAME spmv-cli)
 
