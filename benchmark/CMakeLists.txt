@@ -22,6 +22,8 @@ target_link_libraries(
         ${SPMV_BENCHMARK_NAME}
         PUBLIC
         ${SPMV_CLI_LIB}
+        cudart
+        cusparse
 )
 
 ##########################
