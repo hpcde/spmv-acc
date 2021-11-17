@@ -73,6 +73,7 @@ template <class T> struct CsrSpMV {
 
     verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
     print_statistics<dtype>(mtx_path, h_csr.rows, h_csr.cols, h_csr.nnz, timer1.time_use);
+    destroy_device_data(d_csr, dev_x, dev_y);
   }
 };
 
