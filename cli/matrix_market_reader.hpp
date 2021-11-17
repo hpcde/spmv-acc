@@ -11,6 +11,10 @@
 #include <string>
 #include <vector>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "sparse_format.h"
 
 namespace {
@@ -41,6 +45,11 @@ struct mm_header {
   bool hermitian;
   bool complex;
   bool symmetric;
+};
+
+struct body_line {
+  std::size_t line_num;
+  std::string line;
 };
 
 /**
@@ -76,10 +85,33 @@ public:
     size_t read = 0;
     size_t nnz_dia = 0;
     std::string line;
+#ifndef _OPENMP
     while (std::getline(fstream, line)) {
       ++line_counter;
       this->parse_line(file, res_matrix, header, line, line_counter, nnz_dia, read);
     }
+#endif // _OPENMP
+#ifdef _OPENMP
+    int max_threads = omp_get_max_threads();
+    omp_set_num_threads(max_threads);
+    std::cout << "Parsing input using " << max_threads << " OpenMP thread(s)." << std::endl;
+
+    std::vector<body_line> mm_body_lines;
+    mm_body_lines.reserve(header.num_non_zeroes);
+    while (std::getline(fstream, line)) {
+      ++line_counter;
+      mm_body_lines.emplace_back(body_line{.line_num = line_counter, .line = line});
+    }
+
+    std::size_t N = mm_body_lines.size();
+    body_line *body_lines_data = mm_body_lines.data();
+#pragma omp parallel for shared(body_lines_data, read, N) reduction(+ : nnz_dia) schedule(static)
+    for (std::size_t i = 0; i < N; i++) {
+      const std::size_t line_num = body_lines_data[i].line_num;
+      const std::string local_line = body_lines_data[i].line;
+      parse_line(file, res_matrix, header, local_line, line_num, nnz_dia, read);
+    }
+#endif
 
     res_matrix.nnz = read;
 
@@ -155,8 +187,9 @@ private:
   /**
    * parse a line of matrix body
    */
-  void parse_line(std::string &file, coo_mtx<I, T> &res_matrix, mm_header header, const std::string &line,
-                  std::size_t &line_counter, std::size_t &nnz_dia, std::size_t &read) {
+  static void parse_line(const std::string &file, coo_mtx<I, T> &res_matrix, const mm_header header,
+                         const std::string &line, const std::size_t &line_counter, std::size_t &nnz_dia,
+                         std::size_t &read) {
     if (line[0] == '%') {
       return;
     }
@@ -198,18 +231,32 @@ private:
                                " in matrix market file \"" + file + "\"");
     }
 
-    res_matrix.row_index[read] = r - 1;
-    res_matrix.col_index[read] = c - 1;
-    res_matrix.values[read] = value;
-    ++read;
+    std::size_t index;
+#ifdef _OPENMP
+#pragma omp atomic capture
+#endif
+    {
+      index = read;
+      read++;
+    }
+    res_matrix.row_index[index] = r - 1;
+    res_matrix.col_index[index] = c - 1;
+    res_matrix.values[index] = value;
     if ((header.symmetric || header.hermitian) && r == c) {
       nnz_dia++;
     }
     if ((header.symmetric || header.hermitian) && r != c) {
-      res_matrix.row_index[read] = c - 1;
-      res_matrix.col_index[read] = r - 1;
-      res_matrix.values[read] = value;
-      ++read;
+      std::size_t index2;
+#ifdef _OPENMP
+#pragma omp atomic capture
+#endif
+      {
+        index2 = read;
+        read++;
+      }
+      res_matrix.row_index[index2] = c - 1;
+      res_matrix.col_index[index2] = r - 1;
+      res_matrix.values[index2] = value;
     }
   }
 };
