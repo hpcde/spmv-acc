@@ -6,8 +6,13 @@
 #define SPMV_ACC_SPARSE_FORMAT_H
 
 #include <memory>
+#include <vector>
+#include <algorithm>
 
 #include "api/types.h"
+#ifdef _OPENMP
+#include "sort_omp.hpp"
+#endif
 
 typedef double dtype;
 
@@ -35,6 +40,12 @@ template <typename I, typename T> struct Entry {
     }
     return c < other.c;
   }
+  bool operator>(const Entry &other) {
+    if (r != other.r) {
+      return r > other.r;
+    }
+    return c > other.c;
+  }
 };
 
 // COO sparse matrix type
@@ -59,7 +70,14 @@ public:
       entries.push_back(coo_entry{this->row_index[i], this->col_index[i], this->values[i]});
     }
     // sort by row id, then column id
+#ifdef _OPENMP
+    const int max_threads = omp_get_max_threads();
+    sort::quickSort_parallel<long, Entry<I, T>>(entries.data(), static_cast<long>(entries.size()),
+                                                static_cast<long>(max_threads));
+#endif
+#ifndef _OPENMP
     std::sort(std::begin(entries), std::end(entries));
+#endif
 
     csr.alloc(this->rows, this->cols, this->nnz);
     memset(csr.row_ptr, 0, (this->rows + 1) * sizeof(I));
