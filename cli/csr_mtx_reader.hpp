@@ -127,7 +127,7 @@ private:
       p = strtok(NULL, " ");
     }
 
-    const unsigned int N = number_vec.size();
+    unsigned int N = number_vec.size();
     data.resize(N);
     char **number_ptr = number_vec.data();
     M *data_ptr = data.data();
