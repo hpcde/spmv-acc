@@ -206,6 +206,62 @@ private:
     return std::static_cast<std::size_t>(body_length);
   }
 
+  static bool parse_line_value(char *line, const bool pattern, I &row, I &col, T &value) {
+    // trim prefix space
+    std::size_t str_idx = 0;
+    char *line_trimmed = line;
+    while (line[str_idx] != '\0') {
+      if (!isspace(line[str_idx])) {
+        line_trimmed = line + str_idx;
+        break;
+      }
+      str_idx++;
+    }
+    line = line_trimmed;
+
+    // split by whitespace
+    bool is_pre_char_whitespace = true;
+    char *p1 = NULL, *p2 = NULL, *p3 = NULL;
+    str_idx = 0;
+    int word_id = 0;
+    while (line[str_idx] != '\0') {
+      if (!isspace(line[str_idx])) {
+        if (is_pre_char_whitespace) {
+          if (word_id == 0) {
+            p1 = line + str_idx;
+          } else if (word_id == 1) {
+            p2 = line + str_idx;
+          } else if (word_id == 2) {
+            p3 = line + str_idx;
+          }
+          word_id++;
+          if (word_id == 3) {
+            break;
+          }
+        }
+        is_pre_char_whitespace = false;
+      } else {
+        is_pre_char_whitespace = true;
+      }
+      str_idx++;
+    }
+
+    // check splitting
+    if (p1 == NULL || p2 == NULL || (!pattern && p3 == NULL)) {
+      return false;
+    }
+
+    // parse a line for COO
+    row = atoi(p1);
+    col = atoi(p2);
+    if (pattern) {
+      value = 1;
+    } else {
+      value = atof(p3);
+    }
+    return true;
+  }
+
   /**
    * parse a line of matrix body
    */
@@ -215,34 +271,13 @@ private:
       return;
     }
 
-    std::istringstream liness(line);
-
-    // trim prefix space
-    do {
-      char ch;
-      liness.get(ch);
-      if (!isspace(ch)) {
-        liness.putback(ch);
-        break;
-      }
-    } while (!liness.eof());
-    if (liness.eof() || line.length() == 0) {
-      return;
-    }
-
-    // parse a line for COO
-    uint32_t r, c;
+    I r, c;
     T value;
-    liness >> r >> c;
-    if (header.pattern) {
-      value = 1;
-    } else {
-      liness >> value;
-    }
-    if (liness.fail()) {
+    if (!parse_line_value(line, header.pattern, r, c, value)) {
       throw std::runtime_error(std::string("Failed to read data at line ") + std::to_string(line_counter) +
                                " from matrix market file \"" + file + "\"");
     }
+
     if (r > header.num_rows) {
       throw std::runtime_error(std::string("Row index out of bounds at line  ") + std::to_string(line_counter) +
                                " in matrix market file \"" + file + "\"");
