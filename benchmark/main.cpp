@@ -97,6 +97,10 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   // cusparse
   CsrSpMV<CuSparseGeneral> cusparse_general;
   cusparse_general.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+
+  // cub
+  CsrSpMV<CubDeviceSpMV> cub_device_spmv;
+  cub_device_spmv.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 #endif
 
   destroy_device_data(d_csr, dev_x, dev_y);

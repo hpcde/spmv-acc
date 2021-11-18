@@ -1,3 +1,7 @@
+set(SPMV_BENCHMARK_CUB_LIB cubspmv)
+
+add_subdirectory(cub)
+
 set(HEADER_FILES
         )
 
@@ -22,15 +26,17 @@ target_link_libraries(
         ${SPMV_BENCHMARK_NAME}
         PUBLIC
         ${SPMV_CLI_LIB}
+        ${SPMV_BENCHMARK_CUB_LIB}
         cudart
         cusparse
 )
+
 
 ##########################
 ##### install files
 ##########################
 # install bin and libs
-install(TARGETS ${SPMV_BENCHMARK_NAME}
+install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib

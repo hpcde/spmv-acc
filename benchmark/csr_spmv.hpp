@@ -85,6 +85,7 @@ template <class T> struct CsrSpMV {
 
 // cuda
 #ifndef __HIP_PLATFORM_HCC__
+#include "cub_impl.inl"
 #include "cusparse_impl.inl"
 #endif
 
