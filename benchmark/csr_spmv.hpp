@@ -70,10 +70,10 @@ template <class T> struct CsrSpMV {
     // host side verification
     host_spmv(alpha, beta, h_csr.values, h_csr.row_ptr, h_csr.col_index, h_csr.rows, h_csr.cols, h_csr.nnz,
               h_vectors.hX, h_vectors.hhY);
-
-    verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
     print_statistics<dtype>(mtx_path, h_csr.rows, h_csr.cols, h_csr.nnz, timer1.time_use);
-    destroy_device_data(d_csr, dev_x, dev_y);
+    verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
+    memcpy(h_vectors.hhY, h_vectors.temphY, d_csr.rows * sizeof(dtype));
+    HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
   }
 };
 
