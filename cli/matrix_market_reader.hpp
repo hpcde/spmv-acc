@@ -81,14 +81,23 @@ public:
     // the nnz passed to alloc can be larger than the real fact when the matrix is symmetric.
     res_matrix.alloc(header.num_rows, header.num_columns, reserve);
 
-    // read data
+    // get length of file
+    const std::size_t body_length = this->body_length(fstream);
+    char *body_buffer = new char[body_length + 1];
+    body_buffer[body_length] = '\0'; // set a null character at the end
+    // read data of body as a block
+    fstream.read(body_buffer, body_length);
+    fstream.close();
+
     size_t read = 0;
     size_t nnz_dia = 0;
-    std::string line;
+
 #ifndef _OPENMP
-    while (std::getline(fstream, line)) {
+    char *p = strtok(body_buffer, "\n");
+    while (p != NULL) {
       ++line_counter;
-      this->parse_line(file, res_matrix, header, line, line_counter, nnz_dia, read);
+      parse_line(file, res_matrix, header, coo_lines_vec[i], line_counter, nnz_dia, read);
+      p = strtok(NULL, "\n");
     }
 #endif // _OPENMP
 #ifdef _OPENMP
@@ -96,23 +105,28 @@ public:
     omp_set_num_threads(max_threads);
     std::cout << "Parsing input using " << max_threads << " OpenMP thread(s)." << std::endl;
 
-    std::vector<body_line> mm_body_lines;
-    mm_body_lines.reserve(header.num_non_zeroes);
-    while (std::getline(fstream, line)) {
-      ++line_counter;
-      mm_body_lines.emplace_back(body_line{.line_num = line_counter, .line = line});
+    std::vector<char *> coo_lines_vec;
+    char *p;
+    p = strtok(body_buffer, "\n");
+    while (p != NULL) {
+      coo_lines_vec.emplace_back(p);
+      p = strtok(NULL, "\n");
     }
 
-    std::size_t N = mm_body_lines.size();
-    body_line *body_lines_data = mm_body_lines.data();
-#pragma omp parallel for shared(body_lines_data, read, N) reduction(+ : nnz_dia) schedule(static)
-    for (std::size_t i = 0; i < N; i++) {
-      const std::size_t line_num = body_lines_data[i].line_num;
-      const std::string local_line = body_lines_data[i].line;
-      parse_line(file, res_matrix, header, local_line, line_num, nnz_dia, read);
+    std::size_t N = coo_lines_vec.size();
+    char **body_lines_data = coo_lines_vec.data();
+#pragma omp parallel shared(body_lines_data, read, N) reduction(+ : nnz_dia)
+    {
+#pragma omp for schedule(static)
+      for (std::size_t i = 0; i < N; i++) {
+        const std::size_t line_num = line_counter + i + 1;
+        char *local_line = body_lines_data[i];
+        parse_line(file, res_matrix, header, local_line, line_num, nnz_dia, read);
+      }
     }
-#endif
+#endif // _OPENMP
 
+    delete[] body_buffer;
     res_matrix.nnz = read;
 
     // assert read count.
@@ -184,12 +198,19 @@ private:
     return header;
   }
 
+  std::size_t body_length(std::ifstream &fstream) {
+    const long body_pos = fstream.tellg();
+    fstream.seekg(0, fstream.end); // seek to end of file
+    const long body_length = std::static_cast<long>(fstream.tellg()) - body_pos;
+    fstream.seekg(body_pos, fstream.beg); // reset position
+    return std::static_cast<std::size_t>(body_length);
+  }
+
   /**
    * parse a line of matrix body
    */
-  static void parse_line(const std::string &file, coo_mtx<I, T> &res_matrix, const mm_header header,
-                         const std::string &line, const std::size_t &line_counter, std::size_t &nnz_dia,
-                         std::size_t &read) {
+  static void parse_line(const std::string &file, coo_mtx<I, T> &res_matrix, const mm_header header, char *line,
+                         const std::size_t &line_counter, std::size_t &nnz_dia, std::size_t &read) {
     if (line[0] == '%') {
       return;
     }
