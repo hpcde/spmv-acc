@@ -59,7 +59,7 @@ template <typename T> void print_vector(vector<T> &vecTest) {
 
 void read_file(char *path) {
   FILE *in = fopen(path, "r");
-  char buf[1024L * 1024L * 1024L * 5L]; // 5g buff
+  char *buf = new char[1024L * 1024L * 1024L * 5L]; // 5g buff
   int line_num = 0;
   while (fgets(buf, sizeof(buf), in) != NULL) {
     // printf("%s\n\n", buf);
@@ -74,6 +74,7 @@ void read_file(char *path) {
       init_csr_dense_vector<double>(buf, dense_vector);
     line_num++;
   }
+  delete[] buf;
   fclose(in);
 }
 
