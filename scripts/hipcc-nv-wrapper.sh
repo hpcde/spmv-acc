@@ -11,6 +11,13 @@ do
   case $arg in
     $REMOVE) # remove argument
       ;;
+
+    # OpenMP
+    "-fopenmp")
+     newcmd="$newcmd -Xcompiler -fopenmp";;
+
+    "-fopenmp=libomp")
+      newcmd="$newcmd -Xcompiler -fopenmp";;
     *)
       newcmd="$newcmd $arg";;
   esac
