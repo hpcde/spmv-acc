@@ -5,9 +5,9 @@
 #ifndef SPMV_ACC_SPARSE_FORMAT_H
 #define SPMV_ACC_SPARSE_FORMAT_H
 
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 
 #include "api/types.h"
 #ifdef _OPENMP
@@ -50,7 +50,6 @@ template <typename I, typename T> struct Entry {
 
 // COO sparse matrix type
 template <typename I, typename T> class coo_mtx {
-  typedef Entry<I, T> coo_entry;
 
 public:
   I rows = 0;
@@ -60,38 +59,74 @@ public:
   std::unique_ptr<I[]> row_index = nullptr;
   std::unique_ptr<I[]> col_index = nullptr;
   std::unique_ptr<T[]> values = nullptr;
+};
+
+/**
+ * head information of matrix market format.
+ */
+struct mm_header {
+  std::size_t num_rows;
+  std::size_t num_columns;
+  std::size_t num_non_zeroes; // nnz in file body.
+  bool pattern;
+  bool hermitian;
+  bool complex;
+  bool symmetric;
+};
+
+struct body_line {
+  std::size_t line_num;
+  std::string line;
+};
+
+template <typename I, typename T> class matrix_market {
+public:
+  typedef Entry<I, T> type_entry;
+
+  mm_header header;
+  /*
+   * nnz in real matrix.
+   * it can be different from nnz in header (which is non-zeros in matrix-market file)
+   * if the matrix is symmetric or hermitian.
+   */
+  std::size_t nnz;
+  std::unique_ptr<type_entry[]> data;
+
+  void set_header(const mm_header _header) { this->header = _header; }
 
   // convert to csr matrix format
   csr_mtx<I, T> to_csr() {
     csr_mtx<I, T> csr;
-    std::vector<coo_entry> entries;
-    entries.reserve(this->nnz);
-    for (size_t i = 0; i < this->nnz; i++) {
-      entries.push_back(coo_entry{this->row_index[i], this->col_index[i], this->values[i]});
-    }
+    type_entry *entries = data.get();
+    std::size_t N = this->nnz;
+
     // sort by row id, then column id
 #ifdef _OPENMP
     const int max_threads = omp_get_max_threads();
-    sort::quickSort_parallel<long, Entry<I, T>>(entries.data(), static_cast<long>(entries.size()),
-                                                static_cast<long>(max_threads));
+    sort::quickSort_parallel<long, Entry<I, T>>(entries, static_cast<long>(N), static_cast<long>(max_threads));
 #endif
 #ifndef _OPENMP
-    std::sort(std::begin(entries), std::end(entries));
+    std::sort(entries, entries + N);
 #endif
 
-    csr.alloc(this->rows, this->cols, this->nnz);
-    memset(csr.row_ptr, 0, (this->rows + 1) * sizeof(I));
+    csr.alloc(this->header.num_rows, this->header.num_columns, this->nnz);
+    memset(csr.row_ptr, 0, (this->header.num_rows + 1) * sizeof(I));
+
     for (size_t i = 0; i < this->nnz; i++) {
       csr.values[i] = entries[i].v;
       csr.col_index[i] = entries[i].c;
       ++csr.row_ptr[entries[i].r + 1]; // this line of code only set nnz of current row
     }
 
-    for (size_t i = 0; i < this->rows; i++) {
+    for (size_t i = 0; i < this->header.num_rows; i++) {
       const unsigned int nnz_this_row = csr.row_ptr[i + 1];
       csr.row_ptr[i + 1] = csr.row_ptr[i] + nnz_this_row;
     }
     return csr;
+  }
+
+  coo_mtx<I, T> to_coo() {
+    // todo:
   }
 
   /**

@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -35,24 +36,6 @@ namespace {
 } // namespace
 
 /**
- * head information of matrix market format.
- */
-struct mm_header {
-  std::size_t num_rows;
-  std::size_t num_columns;
-  std::size_t num_non_zeroes;
-  bool pattern;
-  bool hermitian;
-  bool complex;
-  bool symmetric;
-};
-
-struct body_line {
-  std::size_t line_num;
-  std::string line;
-};
-
-/**
  * This class read COO format sparse matrix from file.
  * todo: currently, we only support float point number (does not support integer).
  * @tparam I type of integer
@@ -62,7 +45,7 @@ struct body_line {
  */
 template <typename I, typename T> class matrix_market_reader {
 public:
-  coo_mtx<I, T> load_mat(std::string file) {
+  matrix_market<I, T> load_mat(std::string file) {
     std::ifstream fstream(file);
     if (!fstream.is_open()) {
       throw std::runtime_error(std::string("could not open \"") + file + "\"");
@@ -77,9 +60,10 @@ public:
       reserve *= 2;
     }
 
-    coo_mtx<I, T> res_matrix;
+    matrix_market<I, T> res_matrix;
+    res_matrix.set_header(header);
     // the nnz passed to alloc can be larger than the real fact when the matrix is symmetric.
-    res_matrix.alloc(header.num_rows, header.num_columns, reserve);
+    std::unique_ptr<Entry<I, T>[]> mm_data = std::make_unique<Entry<I, T>[]>(reserve);
 
     // get length of file
     const std::size_t body_length = this->body_length(fstream);
@@ -96,7 +80,7 @@ public:
     char *p = strtok(body_buffer, "\n");
     while (p != NULL) {
       ++line_counter;
-      parse_line(file, res_matrix, header, coo_lines_vec[i], line_counter, nnz_dia, read);
+      parse_line(file, mm_data.get(), header, p, line_counter, nnz_dia, read);
       p = strtok(NULL, "\n");
     }
 #endif // _OPENMP
@@ -121,13 +105,16 @@ public:
       for (std::size_t i = 0; i < N; i++) {
         const std::size_t line_num = line_counter + i + 1;
         char *local_line = body_lines_data[i];
-        parse_line(file, res_matrix, header, local_line, line_num, nnz_dia, read);
+        parse_line(file, mm_data.get(), header, local_line, line_num, nnz_dia, read);
       }
     }
 #endif // _OPENMP
 
     delete[] body_buffer;
+
+    // resize nnz
     res_matrix.nnz = read;
+    res_matrix.data = std::move(mm_data);
 
     // assert read count.
     if (read + nnz_dia != reserve) {
@@ -265,7 +252,7 @@ private:
   /**
    * parse a line of matrix body
    */
-  static void parse_line(const std::string &file, coo_mtx<I, T> &res_matrix, const mm_header header, char *line,
+  static void parse_line(const std::string &file, Entry<I, T> *_data, const mm_header header, char *line,
                          const std::size_t &line_counter, std::size_t &nnz_dia, std::size_t &read) {
     if (line[0] == '%') {
       return;
@@ -295,9 +282,7 @@ private:
       index = read;
       read++;
     }
-    res_matrix.row_index[index] = r - 1;
-    res_matrix.col_index[index] = c - 1;
-    res_matrix.values[index] = value;
+    _data[index] = Entry<I, T>{static_cast<I>(r - 1), static_cast<I>(c - 1), value};
     if ((header.symmetric || header.hermitian) && r == c) {
       nnz_dia++;
     }
@@ -310,9 +295,7 @@ private:
         index2 = read;
         read++;
       }
-      res_matrix.row_index[index2] = c - 1;
-      res_matrix.col_index[index2] = r - 1;
-      res_matrix.values[index2] = value;
+      _data[index2] = Entry<I, T>{static_cast<I>(c - 1), static_cast<I>(r - 1), value}; // exchange row and column.
     }
   }
 };
