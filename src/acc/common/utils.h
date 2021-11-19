@@ -60,7 +60,7 @@ template <typename T> __forceinline__ __device__ void __builtin_nontemporal_stor
 
 template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(double sum) {
 #ifdef __HIP_PLATFORM_HCC__
-  return dpp_wf_reduce_sum(sum);
+  return dpp_wf_reduce_sum<WFSIZE>(sum);
 #endif
 
 #ifndef __HIP_PLATFORM_HCC__
