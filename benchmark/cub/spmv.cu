@@ -1,3 +1,5 @@
+#define CUB_STDERR
+
 #include <cub/device/device_spmv.cuh>
 #include <cub/util_allocator.cuh>
 #include <cub/util_debug.cuh>

@@ -3,7 +3,7 @@ set(CUB_HEADER_FILES
         )
 
 set(CUB_SOURCE_FILES
-        spmv.cpp
+        spmv.cu
         )
 
 # set binary path and lib storage path for compiling process.
