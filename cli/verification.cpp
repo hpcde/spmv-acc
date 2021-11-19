@@ -37,6 +37,18 @@ void host_spmv(dtype alpha, dtype beta, const dtype *value, const int *rowptr, c
   }
 }
 
+void host_spmv(const dtype *value, const int *rowptr, const int *colindex, int m, int n, int a, const dtype *x,
+               dtype *y) {
+  // calculate the matrix-vector multiply where matrix is stored in the form of CSR
+  for (int i = 0; i < m; i++) {
+    dtype y0 = 0;
+    for (int j = rowptr[i]; j < rowptr[i + 1]; j++) {
+      y0 += value[j] * x[colindex[j]];
+    }
+    y[i] = y0;
+  }
+}
+
 #ifdef gpu
 void rocsparse(type_csr d_csr, dtype *dev_x, dtype *dev_y, dtype &alpha, dtype &beta) {
   const int A_num_rows = d_csr.rows;

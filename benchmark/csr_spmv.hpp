@@ -38,9 +38,9 @@ template <typename T> void print_statistics(std::string mtx_name, int rows, int 
 
 // see also: https://stackoverflow.com/questions/4173254/what-is-the-curiously-recurring-template-pattern-crtp
 template <class T> struct CsrSpMV {
-  void csr_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  bool csr_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                 const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
-    static_cast<T *>(this)->csr_spmv_impl(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
+    return static_cast<T *>(this)->csr_spmv_impl(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
   }
 
   void test(std::string mtx_path, enum sparse_operation operation, dtype alpha, dtype beta, type_csr h_csr,
@@ -64,12 +64,19 @@ template <class T> struct CsrSpMV {
 
     // device result check
     HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, h_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
-    csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
+    bool flag = csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
     HIP_CHECK(hipMemcpy(h_vectors.hY, dev_y, d_csr.rows * sizeof(dtype), hipMemcpyDeviceToHost));
 
     // host side verification
-    host_spmv(alpha, beta, h_csr.values, h_csr.row_ptr, h_csr.col_index, h_csr.rows, h_csr.cols, h_csr.nnz,
-              h_vectors.hX, h_vectors.hhY);
+    if (flag == true) {
+      // y = alpha*A*x + beta*y
+      host_spmv(alpha, beta, h_csr.values, h_csr.row_ptr, h_csr.col_index, h_csr.rows, h_csr.cols, h_csr.nnz,
+                h_vectors.hX, h_vectors.hhY);
+    } else {
+      // y = A*x
+      host_spmv(h_csr.values, h_csr.row_ptr, h_csr.col_index, h_csr.rows, h_csr.cols, h_csr.nnz, h_vectors.hX,
+                h_vectors.hhY);
+    }
     print_statistics<dtype>(mtx_path, h_csr.rows, h_csr.cols, h_csr.nnz, timer1.time_use);
     verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
     memcpy(h_vectors.hhY, h_vectors.temphY, d_csr.rows * sizeof(dtype));

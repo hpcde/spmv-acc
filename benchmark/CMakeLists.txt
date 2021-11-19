@@ -17,7 +17,7 @@ set(SPMV_BENCHMARK_NAME spmv-gpu-benchmark)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-add_executable(${SPMV_BENCHMARK_NAME} main.cpp)
+add_executable(${SPMV_BENCHMARK_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 target_include_directories(
         ${SPMV_BENCHMARK_NAME}
         PUBLIC
@@ -39,7 +39,7 @@ target_link_libraries(
 ##### install files
 ##########################
 # install bin and libs
-install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB} ${SPMV_BENCHMARK_HOLA_LIB}
+install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB} ${SPMV_BENCHMARK_HOLA_LIB} ${SPMV_BENCHMARK_SCALAR_MUL_LIB}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
