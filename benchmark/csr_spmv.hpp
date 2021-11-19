@@ -87,6 +87,7 @@ template <class T> struct CsrSpMV {
 #ifndef __HIP_PLATFORM_HCC__
 #include "cub_impl.inl"
 #include "cusparse_impl.inl"
+#include "hola_impl.inl"
 #endif
 
 #endif
