@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -49,7 +50,16 @@ template <class T> struct CsrSpMV {
     for (int i = 0; i < 10; ++i) {
       // call sparse spmv
       HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
-      csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
+      try {
+        csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y);
+      } catch (const std::runtime_error &error) {
+        std::cout << "error occur, return" << std::endl;
+        std::cerr << error.what() << std::endl;
+        hipDeviceSynchronize();
+        memcpy(h_vectors.hhY, h_vectors.temphY, d_csr.rows * sizeof(dtype));
+        HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
+        return;
+      }
     }
     hipDeviceSynchronize();
 

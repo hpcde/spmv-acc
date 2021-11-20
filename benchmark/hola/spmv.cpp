@@ -1,3 +1,6 @@
+#include <iostream>
+#include <stdexcept>
+
 #include "include/dCSR.h"
 #include "include/dVector.h"
 #include "include/holaspmv.h"
@@ -25,7 +28,11 @@ void spmv(int trans, int rows, int cols, int nnz, const csr_desc<int, double> d_
   d_x.data = const_cast<double *>(x);
   size_t temp_size = 0;
   // get tempmem size first
-  hola_spmv(nullptr, temp_size, d_y, d_csr, d_x, HolaMode::Default, false, false);
+  try {
+    hola_spmv(nullptr, temp_size, d_y, d_csr, d_x, HolaMode::Default, false, false);
+  } catch (const std::runtime_error &error) {
+    throw error;
+  }
   // allocate the temp memory.
   void *d_hola_temp;
   cudaMalloc(&d_hola_temp, temp_size);
@@ -34,5 +41,9 @@ void spmv(int trans, int rows, int cols, int nnz, const csr_desc<int, double> d_
   }
   // use the temp memory for calculation.
   constexpr int padding = 0;
-  hola_spmv(d_hola_temp, temp_size, d_y, d_csr, d_x, HolaMode::Default, false, padding >= 512 ? true : false);
+  try {
+    hola_spmv(d_hola_temp, temp_size, d_y, d_csr, d_x, HolaMode::Default, false, padding >= 512 ? true : false);
+  } catch (const std::runtime_error &error) {
+    throw error;
+  }
 }
