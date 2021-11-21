@@ -27,7 +27,8 @@
  * @param nnz number of non-zeros
  * @param time time in us
  */
-template <typename T> void print_statistics(std::string mtx_name, int rows, int cols, int nnz, BenchmarkTime bmt) {
+template <typename T>
+void print_statistics(std::string mtx_name, std::string strategy_name, int rows, int cols, int nnz, BenchmarkTime bmt) {
   double mem_bytes = static_cast<double>(sizeof(T) * (2 * rows + nnz) + sizeof(int) * (rows + 1 + nnz));
 
   double calc_time_bandwidth = (mem_bytes + 0.0) / (1024 * 1024 * 1024) / (bmt.calc_time_use / 1e3 / 1e3);
@@ -36,12 +37,13 @@ template <typename T> void print_statistics(std::string mtx_name, int rows, int 
   double total_time_bandwidth = (mem_bytes + 0.0) / (1024 * 1024 * 1024) / (bmt.total_time_use / 1e3 / 1e3);
   double total_time_gflops = static_cast<double>(2 * nnz) / bmt.total_time_use / 1e3;
 
-  std::cout << "matrix name: " << mtx_name << ", rows: " << rows << ", cols: " << cols << ", nnz: " << nnz
-            << ", nnz/row: " << (nnz + 0.0) / rows << ", GB/s(calc_time): " << calc_time_bandwidth
-            << ", GFLOPS(calc_time): " << calc_time_gflops << ", GB/s(total_time): " << total_time_bandwidth
-            << ", GFLOPS(total_time): " << total_time_gflops << ", mid pre cost: " << bmt.pre_time_use
-            << ", mid calc cost: " << bmt.calc_time_use << ", mid destroy cost: " << bmt.destroy_time_use
-            << ", mid total cost: " << bmt.total_time_use << std::endl;
+  std::cout << "matrix name: " << mtx_name << ", strategy name: " << strategy_name << ", rows: " << rows
+            << ", cols: " << cols << ", nnz: " << nnz << ", nnz/row: " << (nnz + 0.0) / rows
+            << ", GB/s(calc_time): " << calc_time_bandwidth << ", GFLOPS(calc_time): " << calc_time_gflops
+            << ", GB/s(total_time): " << total_time_bandwidth << ", GFLOPS(total_time): " << total_time_gflops
+            << ", mid pre cost: " << bmt.pre_time_use << ", mid calc cost: " << bmt.calc_time_use
+            << ", mid destroy cost: " << bmt.destroy_time_use << ", mid total cost: " << bmt.total_time_use
+            << std::endl;
 }
 
 // see also: https://stackoverflow.com/questions/4173254/what-is-the-curiously-recurring-template-pattern-crtp
@@ -64,8 +66,8 @@ template <class T> struct CsrSpMV {
     return static_cast<T *>(this)->csr_spmv_impl(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, bmt);
   }
 
-  void test(std::string mtx_path, enum sparse_operation operation, dtype alpha, dtype beta, type_csr h_csr,
-            type_csr d_csr, host_vectors<dtype> h_vectors, dtype *&dev_x, dtype *&dev_y) {
+  void test(std::string mtx_path, const std::string &strategy_name, enum sparse_operation operation, dtype alpha,
+            dtype beta, type_csr h_csr, type_csr d_csr, host_vectors<dtype> h_vectors, dtype *&dev_x, dtype *&dev_y) {
     BenchmarkTimeArray bmt_array;
     // warm up GPU
     for (int i = 0; i < 10; ++i) {
@@ -74,6 +76,7 @@ template <class T> struct CsrSpMV {
       try {
         csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y, nullptr);
       } catch (const std::runtime_error &error) {
+        std::cout << "matrix name: " << mtx_path << ", strategy name: " << get_strategy_name() << std::endl;
         std::cout << "error occur, return" << std::endl;
         std::cerr << error.what() << std::endl;
         hipDeviceSynchronize();
@@ -108,7 +111,7 @@ template <class T> struct CsrSpMV {
       host_spmv(h_csr.values, h_csr.row_ptr, h_csr.col_index, h_csr.rows, h_csr.cols, h_csr.nnz, h_vectors.hX,
                 h_vectors.hhY);
     }
-    print_statistics<dtype>(mtx_path, h_csr.rows, h_csr.cols, h_csr.nnz, bmt_array.get_mid_time());
+    print_statistics<dtype>(mtx_path, strategy_name, h_csr.rows, h_csr.cols, h_csr.nnz, bmt_array.get_mid_time());
     verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
     memcpy(h_vectors.hhY, h_vectors.temphY, d_csr.rows * sizeof(dtype));
     HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))

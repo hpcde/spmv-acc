@@ -82,29 +82,33 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   CsrSpMV<SpMVAccWfRow> spmv_acc_wf_row;
   CsrSpMV<SpMVAccLineEnhance> spmv_acc_line_enhance;
 
-  spmv_acc_default.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_adaptive.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_block_row.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_flat.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_light.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_default.test(mtx_path, "spmv-acc-default", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_adaptive.test(mtx_path, "spmv-acc-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_block_row.test(mtx_path, "spmv-acc-block-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
+                          dev_y);
+  spmv_acc_flat.test(mtx_path, "spmv-acc-flat", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_light.test(mtx_path, "spmv-acc-light", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   // todo: catch error of line strategy
   // spmv_acc_line.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_thread_row.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_vec_row.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_wf_row.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_line_enhance.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_thread_row.test(mtx_path, "spmv-acc-thread-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
+                           dev_y);
+  spmv_acc_vec_row.test(mtx_path, "spmv-acc-vector-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_wf_row.test(mtx_path, "spmv-acc-wavefront-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
+                       dev_y);
+  spmv_acc_line_enhance.test(mtx_path, "spmv-acc-line-enhance", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
+                             dev_y);
 #ifndef __HIP_PLATFORM_HCC__
   // cusparse
   CsrSpMV<CuSparseGeneral> cusparse_general;
-  cusparse_general.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  cusparse_general.test(mtx_path, "cuSparse", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 
   // cub
   CsrSpMV<CubDeviceSpMV> cub_device_spmv;
-  cub_device_spmv.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  cub_device_spmv.test(mtx_path, "cub", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 
   // hola
   CsrSpMV<HolaSpMV> hola_spmv;
-  hola_spmv.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  hola_spmv.test(mtx_path, "hola", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 #endif
 
   destroy_device_data(d_csr, dev_x, dev_y);
