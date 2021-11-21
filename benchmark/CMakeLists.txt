@@ -1,8 +1,10 @@
 set(SPMV_BENCHMARK_CUB_LIB cubspmv)
 set(SPMV_BENCHMARK_HOLA_LIB holaspmv)
+set(SPMV_BENCHMARK_UTILS_LIB benchmarkutil)
 
 add_subdirectory(cub)
 add_subdirectory(hola)
+add_subdirectory(utils)
 
 set(HEADER_FILES
         )
@@ -30,6 +32,7 @@ target_link_libraries(
         ${SPMV_CLI_LIB}
         ${SPMV_BENCHMARK_CUB_LIB}
         ${SPMV_BENCHMARK_HOLA_LIB}
+        ${SPMV_BENCHMARK_UTILS_LIB}
         cudart
         cusparse
 )
@@ -39,7 +42,8 @@ target_link_libraries(
 ##### install files
 ##########################
 # install bin and libs
-install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB} ${SPMV_BENCHMARK_HOLA_LIB} ${SPMV_BENCHMARK_SCALAR_MUL_LIB}
+install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB} ${SPMV_BENCHMARK_HOLA_LIB} ${SPMV_BENCHMARK_UTILS_LIB}
+        ${SPMV_BENCHMARK_UTILS_LIB}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib

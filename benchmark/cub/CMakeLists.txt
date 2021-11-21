@@ -37,6 +37,7 @@ if (HIP_ENABLE_FLAG)
             ${SPMV_BENCHMARK_CUB_LIB}
             PUBLIC
             ${SPMV_CLI_LIB}
+            ${SPMV_BENCHMARK_UTILS_LIB}
     )
     target_include_directories(
         ${SPMV_BENCHMARK_CUB_LIB}
