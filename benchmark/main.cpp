@@ -97,6 +97,18 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
                        dev_y);
   spmv_acc_line_enhance.test(mtx_path, "spmv-acc-line-enhance", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
                              dev_y);
+
+#ifdef __HIP_PLATFORM_HCC__
+  // rocsparse
+  CsrSpMV<RocSparseVecRow> rocsparse_vec_row;
+  rocsparse_vec_row.test(mtx_path, "rocSparse-vector-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
+                         dev_y);
+
+  CsrSpMV<RocSparseAdaptive> rocsparse_adaptive;
+  rocsparse_adaptive.test(mtx_path, "rocSparse-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
+                          dev_y);
+#endif
+
 #ifndef __HIP_PLATFORM_HCC__
   // cusparse
   CsrSpMV<CuSparseGeneral> cusparse_general;

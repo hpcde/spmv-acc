@@ -1,9 +1,11 @@
-set(SPMV_BENCHMARK_CUB_LIB cubspmv)
-set(SPMV_BENCHMARK_HOLA_LIB holaspmv)
-set(SPMV_BENCHMARK_UTILS_LIB benchmarkutil)
+if (BENCHMARK_CUDA_ENABLE_FLAG)
+    set(SPMV_BENCHMARK_CUB_LIB cubspmv)
+    set(SPMV_BENCHMARK_HOLA_LIB holaspmv)
+    add_subdirectory(cub)
+    add_subdirectory(hola)
+endif ()
 
-add_subdirectory(cub)
-add_subdirectory(hola)
+set(SPMV_BENCHMARK_UTILS_LIB benchmarkutil)
 add_subdirectory(utils)
 
 set(HEADER_FILES
@@ -26,16 +28,26 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(
-        ${SPMV_BENCHMARK_NAME}
-        PUBLIC
-        ${SPMV_CLI_LIB}
-        ${SPMV_BENCHMARK_CUB_LIB}
-        ${SPMV_BENCHMARK_HOLA_LIB}
-        ${SPMV_BENCHMARK_UTILS_LIB}
-        cudart
-        cusparse
-)
+if (BENCHMARK_CUDA_ENABLE_FLAG)
+    target_link_libraries(
+            ${SPMV_BENCHMARK_NAME}
+            PUBLIC
+            ${SPMV_CLI_LIB}
+            ${SPMV_BENCHMARK_CUB_LIB}
+            ${SPMV_BENCHMARK_HOLA_LIB}
+            ${SPMV_BENCHMARK_UTILS_LIB}
+            cudart
+            cusparse
+    )
+else ()
+    target_link_libraries(
+            ${SPMV_BENCHMARK_NAME}
+            PUBLIC
+            ${SPMV_CLI_LIB}
+            ${SPMV_BENCHMARK_UTILS_LIB}
+            rocsparse
+    )
+endif ()
 
 
 ##########################
