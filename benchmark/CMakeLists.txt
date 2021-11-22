@@ -3,6 +3,9 @@ if (BENCHMARK_CUDA_ENABLE_FLAG)
     set(SPMV_BENCHMARK_HOLA_LIB holaspmv)
     add_subdirectory(cub)
     add_subdirectory(hola)
+else ()
+    set(SPMV_BENCHMARK_HOLA_HIP_LIB holahip)
+    add_subdirectory(hola-hip)
 endif ()
 
 set(SPMV_BENCHMARK_UTILS_LIB benchmarkutil)
@@ -44,6 +47,7 @@ else ()
             ${SPMV_BENCHMARK_NAME}
             PUBLIC
             ${SPMV_CLI_LIB}
+            ${SPMV_BENCHMARK_HOLA_HIP_LIB}
             ${SPMV_BENCHMARK_UTILS_LIB}
             rocsparse
     )
@@ -54,8 +58,7 @@ endif ()
 ##### install files
 ##########################
 # install bin and libs
-install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB} ${SPMV_BENCHMARK_HOLA_LIB} ${SPMV_BENCHMARK_UTILS_LIB}
-        ${SPMV_BENCHMARK_UTILS_LIB}
+install(TARGETS ${SPMV_BENCHMARK_NAME} ${SPMV_BENCHMARK_CUB_LIB} ${SPMV_BENCHMARK_HOLA_LIB} ${SPMV_BENCHMARK_UTILS_LIB} ${SPMV_BENCHMARK_HOLA_HIP_LIB}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib

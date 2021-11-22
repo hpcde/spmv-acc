@@ -107,6 +107,10 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   CsrSpMV<RocSparseAdaptive> rocsparse_adaptive;
   rocsparse_adaptive.test(mtx_path, "rocSparse-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
                           dev_y);
+  // hola
+  CsrSpMV<HolaHipSpMV> hola_hip_spmv;
+  hola_hip_spmv.test(mtx_path, "hip-hola", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+
 #endif
 
 #ifndef __HIP_PLATFORM_HCC__

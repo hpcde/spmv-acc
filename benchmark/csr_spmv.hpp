@@ -122,6 +122,7 @@ template <class T> struct CsrSpMV {
 
 // rocm
 #ifdef __HIP_PLATFORM_HCC__
+#include "hola_hip_impl.inl"
 #include "rocsparse_impl.inl"
 #endif
 
