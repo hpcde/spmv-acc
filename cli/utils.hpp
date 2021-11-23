@@ -82,6 +82,13 @@ void create_host_data(type_csr _csr, host_vectors<dtype> &h_vecs, bool overwrite
   }
 }
 
+void destroy_host_data(host_vectors<dtype> &h_vecs) {
+  delete[] h_vecs.hhY;
+  delete[] h_vecs.hY;
+  delete[] h_vecs.temphY;
+  delete[] h_vecs.hX;
+}
+
 type_csr create_device_data(type_csr h_csr, dtype *hX, dtype *hY, dtype *&dX, dtype *&dY) {
   const int A_num_rows = h_csr.rows;
   const int A_num_cols = h_csr.cols;
@@ -104,6 +111,14 @@ type_csr create_device_data(type_csr h_csr, dtype *hX, dtype *hY, dtype *&dX, dt
   HIP_CHECK(hipMemcpy(dX, hX, A_num_cols * sizeof(dtype), hipMemcpyHostToDevice))
   HIP_CHECK(hipMemcpy(dY, hY, A_num_rows * sizeof(dtype), hipMemcpyHostToDevice))
   return dev_csr;
+}
+
+void destroy_device_data(type_csr d_csr, dtype *&dX, dtype *&dY) {
+  HIP_CHECK(hipFree((void *)dY))
+  HIP_CHECK(hipFree((void *)dX))
+  HIP_CHECK(hipFree((void *)d_csr.values))
+  HIP_CHECK(hipFree((void *)d_csr.col_index))
+  HIP_CHECK(hipFree((void *)d_csr.row_ptr))
 }
 
 #endif // SPMV_ACC_UTILS_HPP

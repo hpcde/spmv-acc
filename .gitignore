@@ -2,6 +2,7 @@
 .DS_Store
 .idea/
 cmake-build-debug
+third-party/holaspmv/
 
 ### VisualStudioCode template
 .vscode/*
