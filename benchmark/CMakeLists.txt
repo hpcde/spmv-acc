@@ -28,10 +28,12 @@ else ()
 endif ()
 
 set(HEADER_FILES
+        utils/statistics_logger.h
         )
 
 set(SOURCE_FILES
         main.cpp
+        utils/statistics_logger.cpp
         )
 
 set(SPMV_BENCHMARK_NAME spmv-gpu-benchmark)

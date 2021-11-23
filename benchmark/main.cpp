@@ -17,6 +17,7 @@
 #include "matrix_market_reader.hpp"
 #include "sparse_format.h"
 #include "utils.hpp"
+#include "utils/statistics_logger.h"
 
 #include "csr_spmv.hpp"
 
@@ -82,6 +83,8 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   SpMVAccVecRow spmv_acc_vec_row;
   SpMVAccWfRow spmv_acc_wf_row;
   SpMVAccLineEnhance spmv_acc_line_enhance;
+
+  statistics::print_statistics_header();
 
   spmv_acc_default.test(mtx_path, "spmv-acc-default", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   spmv_acc_adaptive.test(mtx_path, "spmv-acc-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
