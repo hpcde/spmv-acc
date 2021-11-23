@@ -10,6 +10,8 @@
 #include "utils/benchmark_time.h"
 
 #include "csr_spmv.hpp"
+
+#include "flat/spmv_acc_flat.hpp"
 #include "hip-adaptive/adaptive.h"
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
 #include "hip-light/spmv_hip_acc_imp.h"
@@ -19,7 +21,6 @@
 #include "hip-vector-row/vector_row.h"
 #include "hip-wf-row/spmv_hip.h"
 #include "hip/spmv_hip_acc_imp.h"
-#include "spmv_acc_flat.hpp"
 
 struct SpMVAccDefault : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,

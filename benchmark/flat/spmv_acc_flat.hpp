@@ -1,16 +1,18 @@
 //
 // Created by reget on 2021/11/21.
+// this file is copied and modified from src/acc/flat/flat.cpp for adding timer code.
 //
+
 #ifndef SPMV_ACC_BENCHMARK_SPMV_ACC_FLAT_HPP
 #define SPMV_ACC_BENCHMARK_SPMV_ACC_FLAT_HPP
 
 #include <iostream>
 
+#include "../utils/benchmark_time.h"
 #include "common/macros.h"
 #include "hip-flat/flat_config.h"
 #include "hip-flat/spmv_hip_acc_imp.h"
 #include "timer.h"
-#include "utils/benchmark_time.h"
 
 template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS_PER_BLOCK>
 inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
