@@ -188,9 +188,9 @@ private:
   std::size_t body_length(std::ifstream &fstream) {
     const long body_pos = fstream.tellg();
     fstream.seekg(0, fstream.end); // seek to end of file
-    const long body_length = std::static_cast<long>(fstream.tellg()) - body_pos;
+    const long body_length = static_cast<long>(fstream.tellg()) - body_pos;
     fstream.seekg(body_pos, fstream.beg); // reset position
-    return std::static_cast<std::size_t>(body_length);
+    return static_cast<std::size_t>(body_length);
   }
 
   static bool parse_line_value(char *line, const bool pattern, I &row, I &col, T &value) {

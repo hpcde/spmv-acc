@@ -54,8 +54,9 @@ int main(int argc, char **argv) {
     destroy_host_data(h_vectors);
   } else {
     matrix_market_reader<int, dtype> mm_reader;
-    coo_mtx<int, dtype> coo_sparse = mm_reader.load_mat(mtx_path);
-    h_csr = coo_sparse.to_csr();
+    matrix_market<int, dtype> mm = mm_reader.load_mat(mtx_path);
+    h_csr = mm.to_csr();
+
     create_host_data(h_csr, h_vectors, true);
     test_spmv(mtx_path, h_csr, h_vectors);
     destroy_host_data(h_vectors);

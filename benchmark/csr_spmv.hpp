@@ -76,7 +76,7 @@ template <class T> struct CsrSpMV {
       try {
         csr_spmv(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y, nullptr);
       } catch (const std::runtime_error &error) {
-        std::cout << "matrix name: " << mtx_path << ", strategy name: " << get_strategy_name() << std::endl;
+        std::cout << "matrix name: " << mtx_path << ", strategy name: " << strategy_name << std::endl;
         std::cout << "error occur, return" << std::endl;
         std::cerr << error.what() << std::endl;
         hipDeviceSynchronize();
