@@ -1,16 +1,17 @@
 #!/bin/sh
 #this file is used for load hola from bitbucket.org
 
-wget https://bitbucket.org/gpusmack/holaspmv/get/master.tar.gz
+git clone https://bitbucket.org/gpusmack/holaspmv.git
+cd holaspmv
+git checkout e1df708ac3b8d09efe1c1971f477f2ffde233122
+git apply ../holaspmv.patch
 
-tar -xf gpusmack-holaspmv-e1df708ac3b8.tar.gz
-mv gpusmack-holaspmv-e1df708ac3b8 holaspmv
+# load cub 1.8.0
+cd deps/
+curl https://github.com/NVlabs/cub/archive/refs/tags/1.8.0.tar.gz -L -o cub-1.8.0.tar.gz
+tar -xf cub-1.8.0.tar.gz
+ln -sf cub-1.8.0 cub
+rm -rf cub-1.8.0.tar.gz
 
-#load cub 1.8.0
-cd holaspmv/deps/
-wget https://github.com/NVlabs/cub/archive/refs/tags/v1.8.0.tar.gz
-tar -xf v1.8.0.tar.gz
-mv cub-v1.8.0 cub
-cd ../..
-
-#todo: auto modify dVector.h dCSR.h dCSR.cpp
+# or use system cub:
+# ln -s /usr/local/cuda/include/cub ./

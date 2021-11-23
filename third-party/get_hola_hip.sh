@@ -1,15 +1,8 @@
 #!/bin/sh
-#this file is used for load hola from bitbucket.org
+#this file is used for load hola from git.hpcer.dev or github
 
-git clone https://git.hpcer.dev/PRA/hola-hip.git
+# or mirror from: https://github.com/hpcde/hola-hip.git
+git clone https://git.hpcer.dev/PRA/hola-hip.git holahip
 
-mv hola-hip holahip
-
-cd holahip/hip-hola
-
-# modify d_csr.h
-sed -i 's/^.*alloc/\/\/&/g' d_csr.h
-sed -i 's/^.*convert/\/\/&/g' d_csr.h
-
-# modify d_csr.cpp
-sed -i 's/^.*/\/\/&/g' d_csr.cpp
+cd holahip
+git checkout 20b1669b9c397aca8f629099eb70890c53940da0
