@@ -72,16 +72,16 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   dtype alpha = 1.0;
   dtype beta = 1.0;
   // spmv-acc
-  CsrSpMV<SpMVAccDefault> spmv_acc_default;
-  CsrSpMV<SpMVAccAdaptive> spmv_acc_adaptive;
-  CsrSpMV<SpMVAccBlockRow> spmv_acc_block_row;
-  CsrSpMV<SpMVAccFlat> spmv_acc_flat;
-  CsrSpMV<SpMVAccLight> spmv_acc_light;
-  CsrSpMV<SpMVAccLine> spmv_acc_line;
-  CsrSpMV<SpMVAccThreadRow> spmv_acc_thread_row;
-  CsrSpMV<SpMVAccVecRow> spmv_acc_vec_row;
-  CsrSpMV<SpMVAccWfRow> spmv_acc_wf_row;
-  CsrSpMV<SpMVAccLineEnhance> spmv_acc_line_enhance;
+  SpMVAccDefault spmv_acc_default;
+  SpMVAccAdaptive spmv_acc_adaptive;
+  SpMVAccBlockRow spmv_acc_block_row;
+  SpMVAccFlat spmv_acc_flat;
+  SpMVAccLight spmv_acc_light;
+  SpMVAccLine spmv_acc_line;
+  SpMVAccThreadRow spmv_acc_thread_row;
+  SpMVAccVecRow spmv_acc_vec_row;
+  SpMVAccWfRow spmv_acc_wf_row;
+  SpMVAccLineEnhance spmv_acc_line_enhance;
 
   spmv_acc_default.test(mtx_path, "spmv-acc-default", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   spmv_acc_adaptive.test(mtx_path, "spmv-acc-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
@@ -101,30 +101,30 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
 
 #ifdef __HIP_PLATFORM_HCC__
   // rocsparse
-  CsrSpMV<RocSparseVecRow> rocsparse_vec_row;
+  RocSparseVecRow rocsparse_vec_row;
   rocsparse_vec_row.test(mtx_path, "rocSparse-vector-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
                          dev_y);
 
-  CsrSpMV<RocSparseAdaptive> rocsparse_adaptive;
+  RocSparseAdaptive rocsparse_adaptive;
   rocsparse_adaptive.test(mtx_path, "rocSparse-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
                           dev_y);
   // hola
-  CsrSpMV<HolaHipSpMV> hola_hip_spmv;
+  HolaHipSpMV hola_hip_spmv;
   hola_hip_spmv.test(mtx_path, "hip-hola", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 
 #endif
 
 #ifndef __HIP_PLATFORM_HCC__
   // cusparse
-  CsrSpMV<CuSparseGeneral> cusparse_general;
+  CuSparseGeneral cusparse_general;
   cusparse_general.test(mtx_path, "cuSparse", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 
   // cub
-  CsrSpMV<CubDeviceSpMV> cub_device_spmv;
+  CubDeviceSpMV cub_device_spmv;
   cub_device_spmv.test(mtx_path, "cub", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 
   // hola
-  CsrSpMV<HolaSpMV> hola_spmv;
+  HolaSpMV hola_spmv;
   hola_spmv.test(mtx_path, "hola", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
 #endif
 
