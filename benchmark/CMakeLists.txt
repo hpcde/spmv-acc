@@ -48,6 +48,21 @@ target_link_libraries(
         ${BENCHMARK_DEP_LIBS}
 )
 
+# See https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
+if (SPMV_OMP_ENABLED_FLAG)
+    find_package(OpenMP)
+    if (${OPENMP_FOUND} AND ${OpenMP_CXX_FOUND})
+        set_target_properties(${SPMV_BENCHMARK_NAME} PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
+        set_target_properties(${SPMV_BENCHMARK_NAME} PROPERTIES LINK_FLAGS ${OpenMP_CXX_FLAGS})
+    elseif (${OPENMP_FOUND} OR ${OpenMP_C_FOUND})
+        set_target_properties(${SPMV_BENCHMARK_NAME} PROPERTIES COMPILE_FLAGS ${OpenMP_C_FLAGS})
+        set_target_properties(${SPMV_BENCHMARK_NAME} PROPERTIES LINK_FLAGS ${OpenMP_C_FLAGS})
+    else ()
+        message(FATAL_ERROR "OpenMP not found, but required OpenMP support.")
+    endif ()
+    message(STATUS "Build ${SPMV_CLI_NAME} with OpenMP support.")
+endif ()
+
 ##########################
 ##### install files
 ##########################
