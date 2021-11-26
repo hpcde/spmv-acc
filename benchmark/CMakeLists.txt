@@ -1,28 +1,20 @@
 set(SPMV_BENCHMARK_UTILS_LIB benchmarkutil)
 add_subdirectory(utils)
 
-set(BENCHMARK_DEP_LIBS ${SPMV_CLI_LIB} ${SPMV_BENCHMARK_UTILS_LIB})
+set(SPMV_BENCHMARK_SPARSE_LIB benchmark_sparse)
+set(BENCHMARK_DEP_LIBS ${SPMV_CLI_LIB} ${SPMV_BENCHMARK_UTILS_LIB} ${SPMV_BENCHMARK_SPARSE_LIB})
+
+include(sparse.cmake)
 
 if (BENCHMARK_CUDA_ENABLE_FLAG)
-    set(SPMV_BENCHMARK_CUB_LIB cubspmv)
-    set(SPMV_BENCHMARK_HOLA_LIB holaspmv)
-    add_subdirectory(cub)
-    add_subdirectory(hola)
-
     set(BENCHMARK_DEP_LIBS
             ${BENCHMARK_DEP_LIBS}
-            ${SPMV_BENCHMARK_CUB_LIB}
-            ${SPMV_BENCHMARK_HOLA_LIB}
             cudart
             cusparse
             )
 else ()
-    set(SPMV_BENCHMARK_HOLA_HIP_LIB holahip)
-    add_subdirectory(hola-hip)
-
     set(BENCHMARK_DEP_LIBS
             ${BENCHMARK_DEP_LIBS}
-            ${SPMV_BENCHMARK_HOLA_HIP_LIB}
             rocsparse
             )
 endif ()

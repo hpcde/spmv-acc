@@ -11,7 +11,7 @@
 
 #include "csr_spmv.hpp"
 
-#include "flat/spmv_acc_flat.hpp"
+#include "flat/spmv_acc_flat.h"
 #include "hip-adaptive/adaptive.h"
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
 #include "hip-light/spmv_hip_acc_imp.h"

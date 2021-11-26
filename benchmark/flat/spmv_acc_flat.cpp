@@ -8,6 +8,7 @@
 
 #include <iostream>
 
+#include "spmv_acc_flat.h"
 #include "../utils/benchmark_time.h"
 #include "common/macros.h"
 #include "hip-flat/flat_config.h"
@@ -18,8 +19,6 @@ template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS
 inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
                                         const int *rowptr, const int *colindex, const double *value, const double *x,
                                         double *y, BenchmarkTime *bmt) {
-  my_timer pre_timer, calc_timer;
-  pre_timer.start();
   int *break_points;
   // the nnz is rowptr[m], in one round, it can process about `blocks * R * threads_per_block` nnz.
   const int total_rounds =
@@ -28,14 +27,7 @@ inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int be
   const int break_points_len = total_rounds * BLOCKS + 1;
   hipMalloc((void **)&break_points, break_points_len * sizeof(int));
   hipMemset(break_points, 0, break_points_len * sizeof(int));
-  pre_timer.stop();
-  calc_timer.start();
   (pre_calc_break_point<R * THREADS_PER_BLOCK, BLOCKS, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
-  hipDeviceSynchronize();
-  calc_timer.stop();
-  if (bmt != nullptr) {
-    bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.);
-  }
   FLAT_KERNEL_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS_PER_BLOCK);
 }
 
