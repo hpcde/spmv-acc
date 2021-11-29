@@ -20,6 +20,7 @@
 #include "building_config.h"
 #include "clipp.h"
 
+#include "csr_binary_reader.hpp"
 #include "csr_mtx_reader.hpp"
 #include "matrix_market_reader.hpp"
 #include "sparse_format.h"
@@ -57,6 +58,19 @@ int main(int argc, char **argv) {
     // array data in `h_csr` is keep in instance `csr_reader`.
     csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
     create_host_data(h_csr, h_vectors);
+    test_spmv(mtx_path, h_csr, h_vectors);
+  } else if (fmt == "bin") {
+    csr_binary_reader<int32_t, dtype> csr_bin_reader;
+    csr_bin_reader.load_mat(mtx_path);
+    csr_bin_reader.close_stream();
+
+    h_csr.rows = csr_bin_reader.rows();
+    h_csr.cols = csr_bin_reader.cols();
+    h_csr.nnz = csr_bin_reader.nnz();
+    // just reuse memory in file reading step.
+    csr_bin_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr);
+
+    create_host_data(h_csr, h_vectors, true);
     test_spmv(mtx_path, h_csr, h_vectors);
   } else {
     matrix_market_reader<int, dtype> mm_reader;
