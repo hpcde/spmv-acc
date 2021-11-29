@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/genshen/cmds"
@@ -76,6 +77,7 @@ func (f *fetch) Run() error {
 				mat.DlLinks.MatrixMarket, mat.DlLinks.Matlab, mat.DlLinks.RutherfordBoeing)); err != nil {
 				return err
 			}
+		}
 
 		// dump to json
 		if metaJsonBytes, err := json.Marshal(matMates); err != nil {
@@ -85,7 +87,7 @@ func (f *fetch) Run() error {
 			if err != nil {
 				return err
 			}
-			defer out.Close()
+			defer jsonFile.Close()
 
 			if _, err := jsonFile.Write(metaJsonBytes); err != nil {
 				return err
