@@ -26,10 +26,11 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
 int main(int argc, char **argv) {
   std::string mtx_path = "", fmt = "csr";
 
-  auto cli =
-      (clipp::value("input file", mtx_path),
-       clipp::option("-f", "--format").doc("input matrix format, can be `csr` (default) or `mm` (matrix market)") &
-           clipp::value("format", fmt));
+  auto cli = (clipp::value("input file", mtx_path),
+              clipp::option("-f", "--format")
+                      .doc("input matrix format, can be `csr` (default), `mm` (matrix market) or "
+                           "`bin` (csr binary)") &
+                  clipp::value("format", fmt));
 
   if (!parse(argc, argv, cli)) {
     std::cout << clipp::make_man_page(cli, argv[0]);
