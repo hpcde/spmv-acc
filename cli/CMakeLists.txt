@@ -32,6 +32,19 @@ target_link_libraries(
         ${ACC_LIBS}
 )
 
+add_executable(${SPMV_CLI_NAME} main.cpp)
+target_include_directories(
+        ${SPMV_CLI_NAME}
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(
+        ${SPMV_CLI_NAME}
+        PUBLIC
+        ${SPMV_CLI_LIB}
+)
+
 # See https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
 if (SPMV_OMP_ENABLED_FLAG)
     find_package(OpenMP)
@@ -46,19 +59,6 @@ if (SPMV_OMP_ENABLED_FLAG)
     endif ()
     message(STATUS "Build ${SPMV_CLI_NAME} with OpenMP support.")
 endif ()
-
-add_executable(${SPMV_CLI_NAME} main.cpp)
-target_include_directories(
-        ${SPMV_CLI_NAME}
-        PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
-        $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(
-        ${SPMV_CLI_NAME}
-        PUBLIC
-        ${SPMV_CLI_LIB}
-)
 
 ##########################
 ##### install files

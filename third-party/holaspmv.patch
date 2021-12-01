@@ -1,0 +1,28 @@
+diff --git a/include/dVector.h b/include/dVector.h
+index 197a920..dc9b729 100644
+--- a/include/dVector.h
++++ b/include/dVector.h
+@@ -19,8 +19,8 @@ struct dDenseVector
+ 	}
+ 	~dDenseVector()
+ 	{
+-		if (data != nullptr)
+-			cudaFree(data);
++//       if (data != nullptr)
++//           cudaFree(data);
+ 	}
+ };
+ 
+diff --git a/source/dCSR.cpp b/source/dCSR.cpp
+index 4fb8a18..e66d609 100644
+--- a/source/dCSR.cpp
++++ b/source/dCSR.cpp
+@@ -34,7 +34,7 @@ void dCSR<T>::alloc(size_t r, size_t c, size_t n)
+ template<typename T>
+ dCSR<T>::~dCSR()
+ {
+-	dealloc(*this);
++//   dealloc(*this);
+ }
+ 
+ 

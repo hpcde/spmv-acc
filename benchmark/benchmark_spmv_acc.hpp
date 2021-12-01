@@ -1,7 +1,17 @@
+//
+// Created by reget on 2021/11/16.
+//
+
+#ifndef SPMV_ACC_BENCHMARK_SPMV_ACC_HPP
+#define SPMV_ACC_BENCHMARK_SPMV_ACC_HPP
+
 #include "api/types.h"
 #include "timer.h"
 #include "utils/benchmark_time.h"
 
+#include "csr_spmv.hpp"
+
+#include "flat/spmv_acc_flat.h"
 #include "hip-adaptive/adaptive.h"
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
 #include "hip-light/spmv_hip_acc_imp.h"
@@ -11,10 +21,9 @@
 #include "hip-vector-row/vector_row.h"
 #include "hip-wf-row/spmv_hip.h"
 #include "hip/spmv_hip_acc_imp.h"
-#include "spmv_acc_flat.hpp"
 
-struct SpMVAccDefault : CsrSpMV<SpMVAccDefault> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccDefault : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -25,12 +34,12 @@ struct SpMVAccDefault : CsrSpMV<SpMVAccDefault> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccAdaptive : CsrSpMV<SpMVAccAdaptive> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccAdaptive : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -41,12 +50,12 @@ struct SpMVAccAdaptive : CsrSpMV<SpMVAccAdaptive> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccBlockRow : CsrSpMV<SpMVAccBlockRow> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccBlockRow : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -57,20 +66,20 @@ struct SpMVAccBlockRow : CsrSpMV<SpMVAccBlockRow> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccFlat : CsrSpMV<SpMVAccFlat> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccFlat : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     flat_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, bmt);
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccLight : CsrSpMV<SpMVAccLight> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccLight : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -81,12 +90,12 @@ struct SpMVAccLight : CsrSpMV<SpMVAccLight> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccLine : CsrSpMV<SpMVAccLine> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccLine : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -97,12 +106,12 @@ struct SpMVAccLine : CsrSpMV<SpMVAccLine> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccThreadRow : CsrSpMV<SpMVAccThreadRow> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccThreadRow : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -113,12 +122,12 @@ struct SpMVAccThreadRow : CsrSpMV<SpMVAccThreadRow> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccVecRow : CsrSpMV<SpMVAccVecRow> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccVecRow : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -129,12 +138,12 @@ struct SpMVAccVecRow : CsrSpMV<SpMVAccVecRow> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccWfRow : CsrSpMV<SpMVAccWfRow> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccWfRow : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -145,12 +154,12 @@ struct SpMVAccWfRow : CsrSpMV<SpMVAccWfRow> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct SpMVAccLineEnhance : CsrSpMV<SpMVAccLineEnhance> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct SpMVAccLineEnhance : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
@@ -161,6 +170,8 @@ struct SpMVAccLineEnhance : CsrSpMV<SpMVAccLineEnhance> {
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
+
+#endif // SPMV_ACC_BENCHMARK_SPMV_ACC_HPP

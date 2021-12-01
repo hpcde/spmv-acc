@@ -1,3 +1,10 @@
+//
+// Created by reget on 2021/11/16.
+//
+
+#ifndef SPMV_ACC_BENCHMARK_CUSPARSE_HPP
+#define SPMV_ACC_BENCHMARK_CUSPARSE_HPP
+
 #include <cusparse.h>
 
 #include <api/types.h>
@@ -5,8 +12,8 @@
 #include "timer.h"
 #include "utils/benchmark_time.h"
 
-struct CuSparseGeneral : CsrSpMV<CuSparseGeneral> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct CuSparseGeneral : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
 
     const double cu_alpha = static_cast<double>(alpha);
@@ -47,6 +54,8 @@ struct CuSparseGeneral : CsrSpMV<CuSparseGeneral> {
     if (bmt != nullptr) {
       bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
+
+#endif // SPMV_ACC_BENCHMARK_CUSPARSE_HPP

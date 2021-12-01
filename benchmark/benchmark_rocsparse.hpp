@@ -1,3 +1,10 @@
+//
+// Created by reget on 2021/11/22.
+//
+
+#ifndef SPMV_ACC_BENCHMARK_ROCSPARSE_HPP
+#define SPMV_ACC_BENCHMARK_ROCSPARSE_HPP
+
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
@@ -9,8 +16,8 @@
 #include "timer.h"
 #include "utils/benchmark_time.h"
 
-struct RocSparseVecRow : CsrSpMV<RocSparseVecRow> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct RocSparseVecRow : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     const double hip_alpha = static_cast<double>(alpha);
     const double hip_beta = static_cast<double>(beta);
@@ -36,12 +43,12 @@ struct RocSparseVecRow : CsrSpMV<RocSparseVecRow> {
     if (bmt != nullptr) {
       bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
 
-struct RocSparseAdaptive : CsrSpMV<RocSparseAdaptive> {
-  bool csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+struct RocSparseAdaptive : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     const double hip_alpha = static_cast<double>(alpha);
     const double hip_beta = static_cast<double>(beta);
@@ -74,6 +81,8 @@ struct RocSparseAdaptive : CsrSpMV<RocSparseAdaptive> {
     if (bmt != nullptr) {
       bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
     }
-    return true;
   }
+  bool verify_beta_y() { return true; }
 };
+
+#endif // SPMV_ACC_BENCHMARK_ROCSPARSE_HPP
