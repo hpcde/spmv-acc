@@ -73,7 +73,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   dtype alpha = 1.0;
   dtype beta = 1.0;
   // spmv-acc
-  SpMVAccDefault spmv_acc_default;
+//  SpMVAccDefault spmv_acc_default;
   SpMVAccAdaptive spmv_acc_adaptive;
   SpMVAccBlockRow spmv_acc_block_row;
   SpMVAccFlat spmv_acc_flat;
@@ -86,7 +86,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
 
   statistics::print_statistics_header();
 
-  spmv_acc_default.test(mtx_path, "spmv-acc-default", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+//  spmv_acc_default.test(mtx_path, "spmv-acc-default", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   spmv_acc_adaptive.test(mtx_path, "spmv-acc-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   spmv_acc_block_row.test(mtx_path, "spmv-acc-block-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
                           dev_y);
