@@ -203,7 +203,7 @@ func parseBodyLine(line, filename string, header MMHeader, lineCounter TpIndex, 
 
 	r, c, value, err := parseLineValue(line, header.pattern)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read data at line %d from matrix market file %s", lineCounter, filename)
+		return nil, nil, fmt.Errorf("failed to read data at line %d from matrix market file %s: %w", lineCounter, filename, err)
 	}
 
 	if r > header.numRows {
@@ -238,10 +238,10 @@ func parseLineValue(line string, pattern bool) (TpIndex, TpIndex, TpFloat, error
 	var n int
 	var err error
 	if pattern {
-		n, err = fmt.Fscanln(&lineBuffer, &row, &col)
+		n, err = fmt.Fscan(&lineBuffer, &row, &col)
 		value = 1.0
 	} else {
-		n, err = fmt.Fscanln(&lineBuffer, &row, &col, &value)
+		n, err = fmt.Fscan(&lineBuffer, &row, &col, &value)
 	}
 
 	// check error
