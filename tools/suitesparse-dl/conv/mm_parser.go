@@ -138,8 +138,8 @@ func parseHeader(reader *bufio.Reader, filename string) (*MMHeader, TpIndex, err
 		header.pattern = true
 	} else if tokens[3] == "complex" {
 		header.complex = true
-	} else if tokens[3] != "real" { // todo: only for real type.
-		return &header, 0, errors.New("MatrixMarket data type does not match matrix format")
+	} else if tokens[3] != "real" && tokens[3] != "integer" { // we treat integer type as real type.
+		return &header, 0, fmt.Errorf("matrix market data type does not match matrix format on filename: %s", filename)
 	}
 
 	if tokens[4] == "general" {
