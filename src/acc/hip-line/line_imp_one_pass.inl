@@ -2,6 +2,9 @@
 // Created by reget on 2021/09/29.
 //
 
+#ifndef LINE_IMP_ONE_PASS_INL
+#define LINE_IMP_ONE_PASS_INL
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -14,23 +17,43 @@
 #include "building_config.h"
 #include "line_config.h"
 
+template <typename I, typename T>
+__device__ __forceinline__ void
+line_one_pass_kernel(const I block_thread_num, const I block_thread_id, const I block_row_begin, const I block_row_end,
+                     const I block_row_idx_end, const I block_row_idx_begin, T *shared_val, const I m, const T alpha,
+                     const T beta, const I *row_offset, const I *csr_col_ind, const T *csr_val, const T *x, T *y);
+
 template <int ROW_SIZE, int MAX_ROW_NNZ, typename I, typename T>
-__global__ void spmv_line_one_pass_kernel(int m, const T alpha, const T beta, const I *row_offset,
-                                          const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+__global__ void spmv_line_one_pass_kernel(I m, const T alpha, const T beta, const I *row_offset, const I *csr_col_ind,
+                                          const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int block_id = blockIdx.x;                                 // global block id
   const int block_thread_num = blockDim.x;                         // threads num in a block
   const int block_thread_id = global_thread_id % block_thread_num; // local thread id in current block
   constexpr int shared_len = ROW_SIZE * MAX_ROW_NNZ;
-#ifdef LINE_GLOBAL_LOAD_X2
-  constexpr int N_UNROLLING_SHIFT = 1;
-#endif
+
   __shared__ T shared_val[shared_len];
   const I block_row_begin = block_id * ROW_SIZE;
   const I block_row_end = min(block_row_begin + ROW_SIZE, m);
   // load val to lds parallel
   const I block_row_idx_begin = row_offset[block_row_begin];
   const I block_row_idx_end = row_offset[block_row_end];
+  const I n_values_load = block_row_idx_end - block_row_idx_begin;
+
+  // In this case, user can make sure the values of this Block would not exceed the LDS array.
+  line_one_pass_kernel<I, T>(block_thread_num, block_thread_id, block_row_begin, block_row_end, block_row_idx_end,
+                             block_row_idx_begin, shared_val, m, alpha, beta, row_offset, csr_col_ind, csr_val, x, y);
+}
+
+template <typename I, typename T>
+__device__ __forceinline__ void
+line_one_pass_kernel(const I block_thread_num, const I block_thread_id, const I block_row_begin, const I block_row_end,
+                     const I block_row_idx_end, const I block_row_idx_begin, T *shared_val, const I m, const T alpha,
+                     const T beta, const I *row_offset, const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+#ifdef LINE_GLOBAL_LOAD_X2
+  constexpr int N_UNROLLING_SHIFT = 1;
+#endif
+
 #ifndef LINE_GLOBAL_LOAD_X2
   for (I i = block_row_idx_begin + block_thread_id; i < block_row_idx_end; i += block_thread_num) {
     shared_val[i - block_row_idx_begin] = csr_val[i] * x[csr_col_ind[i]];
@@ -67,3 +90,5 @@ __global__ void spmv_line_one_pass_kernel(int m, const T alpha, const T beta, co
 #define LINE_ONE_PASS_KERNEL_WRAPPER(N, MAX_ROW_NNZ, BLOCKS, THREADS)                                                  \
   (spmv_line_one_pass_kernel<N, MAX_ROW_NNZ, int, double>)<<<BLOCKS, THREADS>>>(m, alpha, beta, rowptr, colindex,      \
                                                                                 value, x, y)
+
+#endif // LINE_IMP_ONE_PASS_INL
