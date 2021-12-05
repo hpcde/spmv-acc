@@ -11,6 +11,10 @@
 #include "line_config.h"
 #include "line_imp_one_pass.inl"
 
+template <class T> constexpr T &constexpr_max(T &a, T &b) { return a > b ? a : b; }
+
+#define CONSTEXPR_MAX(A, B) (A > B ? A : B)
+
 /**
  * run adaptive line method.
  * In this version, it can switch between line and vector-row method.
@@ -45,7 +49,7 @@ __global__ void spmv_adaptive_line_kernel(const int ROW_SIZE, const I m, const T
   const int block_thread_id = global_thread_id % block_thread_num; // local thread id in current block
   constexpr int shared_len = BLOCK_LDS_SIZE;
 
-  __shared__ T shared_val[shared_len];
+  __shared__ T shared_val[CONSTEXPR_MAX(shared_len, THREADS / VECTOR_SIZE)];
   const I block_row_begin = block_id * ROW_SIZE;
   const I block_row_end = min(block_row_begin + ROW_SIZE, m);
   // load val to lds parallel
@@ -66,7 +70,7 @@ __global__ void spmv_adaptive_line_kernel(const int ROW_SIZE, const I m, const T
     const int tid_in_wf = block_thread_id % WF_SIZE;
     const int wf_id = block_thread_id / WF_SIZE;
 
-    __shared__ T lds_y[THREADS / VECTOR_SIZE]; // todo: USE `shared_val`
+    // __shared__ T lds_y[THREADS / VECTOR_SIZE];
 
     for (int row = block_row_begin + vector_id; row < block_row_end; row += vector_num) {
       const int row_start = row_offset[row];
@@ -83,7 +87,7 @@ __global__ void spmv_adaptive_line_kernel(const int ROW_SIZE, const I m, const T
       }
 
       block_store_y_with_coalescing<THREADS, VECTOR_SIZE, WF_SIZE, T>(tid_in_wf, global_thread_id, row, m, alpha, beta,
-                                                                      sum, y, y, lds_y);
+                                                                      sum, y, y, shared_val);
     }
   }
 }
