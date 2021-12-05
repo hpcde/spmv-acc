@@ -23,16 +23,15 @@ line_one_pass_kernel(const I block_thread_num, const I block_thread_id, const I 
                      const I block_row_idx_end, const I block_row_idx_begin, T *shared_val, const I m, const T alpha,
                      const T beta, const I *row_offset, const I *csr_col_ind, const T *csr_val, const T *x, T *y);
 
-template <int ROW_SIZE, int MAX_ROW_NNZ, typename I, typename T>
+template <int ROW_SIZE, int BLOCK_LDS_SIZE, typename I, typename T>
 __global__ void spmv_line_one_pass_kernel(I m, const T alpha, const T beta, const I *row_offset, const I *csr_col_ind,
                                           const T *csr_val, const T *x, T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int block_id = blockIdx.x;                                 // global block id
   const int block_thread_num = blockDim.x;                         // threads num in a block
   const int block_thread_id = global_thread_id % block_thread_num; // local thread id in current block
-  constexpr int shared_len = ROW_SIZE * MAX_ROW_NNZ;
 
-  __shared__ T shared_val[shared_len];
+  __shared__ T shared_val[BLOCK_LDS_SIZE];
   const I block_row_begin = block_id * ROW_SIZE;
   const I block_row_end = min(block_row_begin + ROW_SIZE, m);
   // load val to lds parallel
@@ -87,8 +86,8 @@ line_one_pass_kernel(const I block_thread_num, const I block_thread_id, const I 
   y[reduce_row_id] = alpha * sum + y[reduce_row_id];
 }
 
-#define LINE_ONE_PASS_KERNEL_WRAPPER(N, MAX_ROW_NNZ, BLOCKS, THREADS)                                                  \
-  (spmv_line_one_pass_kernel<N, MAX_ROW_NNZ, int, double>)<<<BLOCKS, THREADS>>>(m, alpha, beta, rowptr, colindex,      \
-                                                                                value, x, y)
+#define LINE_ONE_PASS_KERNEL_WRAPPER(N, BLOCK_LDS_SIZE, BLOCKS, THREADS)                                               \
+  (spmv_line_one_pass_kernel<N, BLOCK_LDS_SIZE, int, double>)<<<BLOCKS, THREADS>>>(m, alpha, beta, rowptr, colindex,   \
+                                                                                   value, x, y)
 
 #endif // LINE_IMP_ONE_PASS_INL

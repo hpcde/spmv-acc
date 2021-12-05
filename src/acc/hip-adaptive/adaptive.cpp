@@ -47,10 +47,11 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, const csr_
     constexpr int HIP_THREADS = 256;
     constexpr int R = 2;
     constexpr int MAX_ROW_NNZ = 5;
+    constexpr int BLOCK_LDS_SIZE = HIP_THREADS * R;
     const int ROW_NUM = HIP_THREADS / MAX_ROW_NNZ * R; // rows per block
     const int HIP_BLOCKS = m / ROW_NUM + (m % ROW_NUM == 0 ? 0 : 1);
-    (spmv_line_one_pass_kernel<ROW_NUM, MAX_ROW_NNZ, int, double>)<<<HIP_BLOCKS, HIP_THREADS>>>(m, alpha, beta, rowptr,
-                                                                                                colindex, value, x, y);
+    (spmv_line_one_pass_kernel<ROW_NUM, BLOCK_LDS_SIZE, int, double>)<<<HIP_BLOCKS, HIP_THREADS>>>(
+        m, alpha, beta, rowptr, colindex, value, x, y);
     return;
   }
 
