@@ -28,18 +28,24 @@ void line_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc
   // LINE_KERNEL_WRAPPER(5);
 }
 
-template <int R, int BLOCK_LDS_SIZE, int VEC_SIZE, int HIP_THREADS, typename I, typename T>
-void inline adaptive_line_wrapper(const I m, const T alpha, const T beta, const I *row_offset, const I *csr_col_ind,
-                                  const T *csr_val, const T *x, T *y) {
-  // note: we can make HIP_THREADS / VEC_SIZE * N = ROW_NUM (where N is an integer),
-  // then each vector can only process N row if vector-row is selected.
-  constexpr int ROW_NUM = HIP_THREADS / (2 * VEC_SIZE) * R;
+/**
+ * @tparam NNZ_PER_ROW NNZ_PER_ROW is an estimated value of the max nnz of matrix rows.
+ *  suggested value is (2 * VEC_SIZE + 1).
+ */
+template <int BLOCK_LDS_SIZE, int VEC_SIZE, int HIP_THREADS, typename I, typename T>
+void inline adaptive_line_wrapper(const int NNZ_PER_ROW, const I m, const T alpha, const T beta, const I *row_offset,
+                                  const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+  const int ROW_NUM = BLOCK_LDS_SIZE / NNZ_PER_ROW;
 
   const int HIP_BLOCKS = m / ROW_NUM + (m % ROW_NUM == 0 ? 0 : 1);
-  (spmv_adaptive_line_kernel<ROW_NUM, BLOCK_LDS_SIZE, HIP_THREADS, __WF_SIZE__, VEC_SIZE, int, double,
-                             false>)<<<HIP_BLOCKS, HIP_THREADS>>>(m, alpha, beta, row_offset, csr_col_ind, csr_val, x,
-                                                                  y);
+  (spmv_adaptive_line_kernel<BLOCK_LDS_SIZE, HIP_THREADS, __WF_SIZE__, VEC_SIZE, int, double,
+                             false>)<<<HIP_BLOCKS, HIP_THREADS>>>(ROW_NUM, m, alpha, beta, row_offset, csr_col_ind,
+                                                                  csr_val, x, y);
 }
+
+#define ADAPTIVE_LINE_WRAPPER(VEC_SIZE, NNZ_PER_ROW)                                                                   \
+  (adaptive_line_wrapper<BLOCK_LDS_SIZE, VEC_SIZE, HIP_THREADS, int, double>)((NNZ_PER_ROW), m, alpha, beta,        \
+                                                                                 rowptr, colindex, value, x, y)
 
 void adaptive_line_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                                const double *x, double *y) {
@@ -52,23 +58,19 @@ void adaptive_line_sparse_spmv(int trans, const double alpha, const double beta,
   constexpr int BLOCK_LDS_SIZE = HIP_THREADS * R;
 
   if (nnz_per_row <= 4 || __WF_SIZE__ <= 2) {
-    (adaptive_line_wrapper<R, BLOCK_LDS_SIZE, 2, HIP_THREADS, int, double>)(m, alpha, beta, rowptr, colindex, value, x,
-                                                                            y);
+    // by setting NNZ_PER_ROW's value (which can change and can only change ROW_NUM),
+    // we can try to make rows fall into line algorithm, rather than vector row.
+    ADAPTIVE_LINE_WRAPPER(2, nnz_per_row + 1);
   } else if (nnz_per_row <= 8 || __WF_SIZE__ <= 4) {
-    (adaptive_line_wrapper<R, BLOCK_LDS_SIZE, 4, HIP_THREADS, int, double>)(m, alpha, beta, rowptr, colindex, value, x,
-                                                                            y);
+    ADAPTIVE_LINE_WRAPPER(4, nnz_per_row + 1);
   } else if (nnz_per_row <= 16 || __WF_SIZE__ <= 8) {
-    (adaptive_line_wrapper<R, BLOCK_LDS_SIZE, 8, HIP_THREADS, int, double>)(m, alpha, beta, rowptr, colindex, value, x,
-                                                                            y);
+    ADAPTIVE_LINE_WRAPPER(8, nnz_per_row + 2);
   } else if (nnz_per_row <= 32 || __WF_SIZE__ <= 16) {
-    (adaptive_line_wrapper<R, BLOCK_LDS_SIZE, 16, HIP_THREADS, int, double>)(m, alpha, beta, rowptr, colindex, value, x,
-                                                                             y);
+    ADAPTIVE_LINE_WRAPPER(16, nnz_per_row + 4);
   } else if (nnz_per_row <= 64 || __WF_SIZE__ <= 32) {
-    (adaptive_line_wrapper<R, BLOCK_LDS_SIZE, 32, HIP_THREADS, int, double>)(m, alpha, beta, rowptr, colindex, value, x,
-                                                                             y);
+    ADAPTIVE_LINE_WRAPPER(32, nnz_per_row + 4);
   } else {
-    (adaptive_line_wrapper<R, BLOCK_LDS_SIZE, 64, HIP_THREADS, int, double>)(m, alpha, beta, rowptr, colindex, value, x,
-                                                                             y);
+    ADAPTIVE_LINE_WRAPPER(64, nnz_per_row + 4);
   }
 }
 

@@ -17,7 +17,6 @@
  * In the adaptive line, each hip block is assigned equal number of rows.
  * If the nnz of those rows is larger than the LDS size that is available for this hip block,
  * vector-row method will be used, otherwise, traditional line method will be used.
- * @tparam ROW_SIZE rows number for calculation by this hip block.
  * @tparam BLOCK_LDS_SIZE LDS size for a block to store temp values.
  * @tparam THREADS threads number per block in kernel config.
  * @tparam WF_SIZE threads number in a wavefront
@@ -26,6 +25,7 @@
  * @tparam T float point type
  * @tparam NO_LDS_EXCEED True: api caller can make sure the data in a block
  *         will not exceed the LDS size `BLOCK_LDS_SIZE`.
+ * @param ROW_SIZE rows number for calculation by this hip block.
  * @param m total rows number
  * @param alpha,beta: alpha and beta value in y=alpha*Ax+beta*y
  * @param row_offset: row offset in CSR format.
@@ -35,10 +35,10 @@
  * @param y vector y in y=alpha*Ax+beta*y
  * @return
  */
-template <int ROW_SIZE, int BLOCK_LDS_SIZE, int THREADS, int WF_SIZE, int VECTOR_SIZE, typename I, typename T,
-          bool NO_LDS_EXCEED>
-__global__ void spmv_adaptive_line_kernel(const I m, const T alpha, const T beta, const I *row_offset,
-                                          const I *csr_col_ind, const T *csr_val, const T *x, T *y) {
+template <int BLOCK_LDS_SIZE, int THREADS, int WF_SIZE, int VECTOR_SIZE, typename I, typename T, bool NO_LDS_EXCEED>
+__global__ void spmv_adaptive_line_kernel(const int ROW_SIZE, const I m, const T alpha, const T beta,
+                                          const I *row_offset, const I *csr_col_ind, const T *csr_val, const T *x,
+                                          T *y) {
   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
   const int block_id = blockIdx.x;                                 // global block id
   const int block_thread_num = blockDim.x;                         // threads num in a block
