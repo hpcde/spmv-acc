@@ -39,7 +39,7 @@ void sparse_csr_spmv(int trans, const int alpha, const int beta, const csr_desc<
 #endif
 
 #ifdef KERNEL_STRATEGY_LINE
-  line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
+  adaptive_line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
 #endif
 
 #ifdef KERNEL_STRATEGY_THREAD_ROW

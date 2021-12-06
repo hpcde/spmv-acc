@@ -42,16 +42,9 @@ void adaptive_sparse_spmv(int trans, const int alpha, const int beta, const csr_
   // 2. otherwise, pick strategy by average nnz per row.
   if (avg_nnz_per_row <= 4) {
     // use line strategy with one-pass support.
+    adaptive_line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
     // we can also use thread-row strategy.
     // thread_row_sparse_spmv(trans, alpha, beta, m, n, row_ptr, col_index, value, x, y);
-    constexpr int HIP_THREADS = 256;
-    constexpr int R = 2;
-    constexpr int MAX_ROW_NNZ = 5;
-    constexpr int BLOCK_LDS_SIZE = HIP_THREADS * R;
-    const int ROW_NUM = HIP_THREADS / MAX_ROW_NNZ * R; // rows per block
-    const int HIP_BLOCKS = m / ROW_NUM + (m % ROW_NUM == 0 ? 0 : 1);
-    (spmv_line_one_pass_kernel<ROW_NUM, BLOCK_LDS_SIZE, int, double>)<<<HIP_BLOCKS, HIP_THREADS>>>(
-        m, alpha, beta, rowptr, colindex, value, x, y);
     return;
   }
 
