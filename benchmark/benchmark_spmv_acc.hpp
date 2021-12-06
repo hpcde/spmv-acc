@@ -99,7 +99,7 @@ struct SpMVAccLine : CsrSpMV {
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     my_timer calc_timer;
     calc_timer.start();
-    line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
+    adaptive_line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
     hipDeviceSynchronize();
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
