@@ -6,7 +6,6 @@
 #include <hip/hip_runtime_api.h>
 
 #include "../common/utils.h"
-#include "../hip-vector-row/vector_row_native.hpp" // use vector-row reduction
 #include "building_config.h"
 #include "line_config.h"
 #include "line_imp_one_pass.inl"
@@ -71,7 +70,7 @@ __global__ void spmv_adaptive_line_kernel(const int ROW_SIZE, const I m, const T
     const int wf_id = block_thread_id / WF_SIZE;
 
     // __shared__ T lds_y[THREADS / VECTOR_SIZE];
-
+    int rows_left = block_row_end - block_row_begin;
     for (int row = block_row_begin + vector_id; row < block_row_end; row += vector_num) {
       const int row_start = row_offset[row];
       const int row_end = row_offset[row + 1];
@@ -86,8 +85,31 @@ __global__ void spmv_adaptive_line_kernel(const int ROW_SIZE, const I m, const T
         sum += __shfl_down(sum, i, VECTOR_SIZE);
       }
 
-      block_store_y_with_coalescing<THREADS, VECTOR_SIZE, WF_SIZE, T>(tid_in_wf, global_thread_id, row, m, alpha, beta,
-                                                                      sum, y, y, shared_val);
+      // store back
+      constexpr int BLOCK_VECTORS = THREADS / VECTOR_SIZE;
+      const int ACTIVE_VECTORS = min(BLOCK_VECTORS, rows_left); // number of active vector in this round
+      rows_left -= vector_num;
+
+      const int &tid_in_block = block_thread_id; // thread id in current block
+      const int &vec_id_in_block = vector_id;    // vector id in current block
+
+      const int vec_row = row - tid_in_block / VECTOR_SIZE + tid_in_block;
+
+      T y_local;
+      if (tid_in_block < ACTIVE_VECTORS && vec_row < m) {
+        y_local = y[vec_row];
+      }
+
+      if (tid_in_wf % VECTOR_SIZE == 0) {
+        shared_val[vec_id_in_block] = sum;
+      }
+
+      __syncthreads();
+
+      if (tid_in_block < ACTIVE_VECTORS && vec_row < m) {
+        const T local_sum = shared_val[tid_in_block];
+        y[vec_row] = device_fma(beta, y_local, alpha * local_sum);
+      }
     }
   }
 }
