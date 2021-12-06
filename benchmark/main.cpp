@@ -108,8 +108,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
                           dev_y);
   spmv_acc_flat.test(mtx_path, "spmv-acc-flat", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   spmv_acc_light.test(mtx_path, "spmv-acc-light", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  // todo: catch error of line strategy
-  // spmv_acc_line.test(mtx_path, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  spmv_acc_line.test(mtx_path, "spmv-acc-line", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
   spmv_acc_thread_row.test(mtx_path, "spmv-acc-thread-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
                            dev_y);
   spmv_acc_vec_row.test(mtx_path, "spmv-acc-vector-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
