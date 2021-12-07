@@ -50,13 +50,13 @@ func (c *Conv) Run() error {
 	mm.Sort()
 	rowPtr := make([]TpIndex, mm.header.numRows+1)
 	colIndex := make([]TpIndex, len(mm.data))
-	nnzs := make([]TpFloat, len(mm.data))
+	nonZeros := make([]TpFloat, len(mm.data))
 	for i, ele := range mm.data {
 		if ele.row >= mm.header.numRows {
 			return errors.New("out of range when converting to CSR")
 		}
 		colIndex[i] = ele.col
-		nnzs[i] = ele.value
+		nonZeros[i] = ele.value
 		rowPtr[ele.row+1]++
 	}
 	var i TpIndex = 0
@@ -73,13 +73,14 @@ func (c *Conv) Run() error {
 		if !c.litterEndian {
 			byteOrder = binary.BigEndian
 		}
+		var nnz TpIndex = (TpIndex)(len(mm.data))
 		if err := binary.Write(outfile, byteOrder, &(mm.header.numRows)); err != nil {
 			return err
 		}
 		if err := binary.Write(outfile, byteOrder, &(mm.header.numColumns)); err != nil {
 			return err
 		}
-		if err := binary.Write(outfile, byteOrder, &(mm.header.numNonZeroes)); err != nil {
+		if err := binary.Write(outfile, byteOrder, &(nnz)); err != nil {
 			return err
 		}
 		if err := binary.Write(outfile, byteOrder, rowPtr); err != nil {
@@ -88,7 +89,7 @@ func (c *Conv) Run() error {
 		if err := binary.Write(outfile, byteOrder, colIndex); err != nil {
 			return err
 		}
-		if err := binary.Write(outfile, byteOrder, nnzs); err != nil {
+		if err := binary.Write(outfile, byteOrder, nonZeros); err != nil {
 			return err
 		}
 	}
