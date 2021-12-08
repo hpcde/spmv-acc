@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 }
 
 void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors) {
-  hipSetDevice(0);
+  HIP_CHECK(hipSetDevice(0));
   dtype *dev_x, *dev_y;
   type_csr d_csr = create_device_data(h_csr, h_vectors.hX, h_vectors.temphY, dev_x, dev_y);
 
