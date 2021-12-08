@@ -138,8 +138,8 @@ func parseHeader(reader *bufio.Reader, filename string) (*MMHeader, TpIndex, err
 		header.pattern = true
 	} else if tokens[3] == "complex" {
 		header.complex = true
-	} else if tokens[3] != "real" { // todo: only for real type.
-		return &header, 0, errors.New("MatrixMarket data type does not match matrix format")
+	} else if tokens[3] != "real" && tokens[3] != "integer" { // we treat integer type as real type.
+		return &header, 0, fmt.Errorf("matrix market data type does not match matrix format on filename: %s", filename)
 	}
 
 	if tokens[4] == "general" {
@@ -203,7 +203,7 @@ func parseBodyLine(line, filename string, header MMHeader, lineCounter TpIndex, 
 
 	r, c, value, err := parseLineValue(line, header.pattern)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read data at line %d from matrix market file %s", lineCounter, filename)
+		return nil, nil, fmt.Errorf("failed to read data at line %d from matrix market file %s: %w", lineCounter, filename, err)
 	}
 
 	if r > header.numRows {
@@ -238,10 +238,10 @@ func parseLineValue(line string, pattern bool) (TpIndex, TpIndex, TpFloat, error
 	var n int
 	var err error
 	if pattern {
-		n, err = fmt.Fscanln(&lineBuffer, &row, &col)
+		n, err = fmt.Fscan(&lineBuffer, &row, &col)
 		value = 1.0
 	} else {
-		n, err = fmt.Fscanln(&lineBuffer, &row, &col, &value)
+		n, err = fmt.Fscan(&lineBuffer, &row, &col, &value)
 	}
 
 	// check error
