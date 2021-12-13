@@ -58,25 +58,31 @@ __device__ __forceinline__ void line_enhance_vec_reduce(const I reduce_row_id, c
                                                         const I reduce_row_idx_begin, const I reduce_row_idx_end,
                                                         const I block_round_inx_start, const I block_round_inx_end,
                                                         const T *shared_val, T &sum, const int tid_in_vec) {
+  T local_sum = static_cast<T>(0);
   if (reduce_row_id < block_row_end) {
     if (reduce_row_idx_begin < block_round_inx_end && reduce_row_idx_end > block_round_inx_start) {
-      T local_sum = static_cast<T>(0);
+      // (label-1)
       // reduce from LDS
       const I reduce_start = max(reduce_row_idx_begin, block_round_inx_start);
       const I reduce_end = min(reduce_row_idx_end, block_round_inx_end);
       for (I j = reduce_start + tid_in_vec; j < reduce_end; j += VECTOR_SIZE) {
         local_sum += shared_val[j - block_round_inx_start];
       }
-      // reduce from lanes in a vector
-      if (VECTOR_SIZE > 1) { // in fact, this branch is unnecessary.
-#pragma unroll
-        for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
-          local_sum += __shfl_down(local_sum, i, VECTOR_SIZE);
-        }
-      }
-      sum += local_sum;
     }
   }
+  // Here, if vector is inactive in (label-1), `local_sum` will be 0.0,
+  // then following reduction step will still make `local_sum` to be 0.0,
+  // and `sum` will not get changed for the inactive vector.
+
+  // reduce from lanes in a vector
+  if (VECTOR_SIZE > 1) { // in fact, this branch is unnecessary.
+#pragma unroll
+    for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
+      local_sum += __shfl_down(local_sum, i, VECTOR_SIZE);
+      // or use: __shfl_down_sync(0xffffffff, i, VECTOR_SIZE);
+    }
+  }
+  sum += local_sum;
 }
 
 #endif // SPMV_ACC_LINE_ENHANCE_REDUCE_HPP
