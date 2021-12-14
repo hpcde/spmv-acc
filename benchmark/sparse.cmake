@@ -24,6 +24,6 @@ target_link_libraries(
 target_include_directories(
     ${SPMV_BENCHMARK_SPARSE_LIB}
     PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/holahip/hip-hola$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/holaspmv$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/holahip/hip-hola$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/holaspmv$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/holaspmv/deps/cub$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
     $<INSTALL_INTERFACE:include>
 )

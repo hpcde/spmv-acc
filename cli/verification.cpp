@@ -12,6 +12,34 @@
 
 #include "verification.h"
 
+template <typename I, typename T> VerifyResult<I, T> verify_y(T *dy, T *hy, I N) {
+  I first_failed_at = -1;
+  I failed_count = 0;
+  T max_error = 0.0;
+  for (I i = 0; i < N; i++) {
+    if (std::fabs(dy[i] - hy[i]) > max_error) {
+      max_error = std::fabs(dy[i] - hy[i]);
+    }
+    // save first_failed_at.
+    if ((std::fabs(hy[i]) <= 1e-12 && std::fabs(dy[i] - hy[i]) >= 1e-14) ||
+        (std::fabs(hy[i]) > 1e-12 && std::fabs(dy[i] - hy[i]) / std::fabs(hy[i]) >= 1e-7)) {
+      if (failed_count <= 0) {
+        first_failed_at = i;
+      }
+      failed_count++;
+    }
+  }
+
+  return VerifyResult<I, T>{
+      .max_error = max_error,
+      .first_failed_at = first_failed_at,
+      .failed_count = failed_count,
+  };
+}
+
+template VerifyResult<int, double> verify_y(double *dy, double *hy, int N);
+template VerifyResult<int, float> verify_y(float *dy, float *hy, int N);
+
 void verify(double *dy, double *hy, int n) {
   int total_validation = 0;
   for (int i = 0; i < n; i++) {

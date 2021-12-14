@@ -12,9 +12,11 @@
 
 #define HIP_CHECK(stat)                                                                                                \
   {                                                                                                                    \
-    if ((stat) != hipSuccess) {                                                                                        \
-      std::cerr << "Error: hip error in line " << __LINE__ << std::endl;                                               \
-      exit(-1);                                                                                                        \
+    hipError_t err = stat;                                                                                             \
+    if (err != hipSuccess) {                                                                                           \
+      std::cerr << "Error: HIP reports " << hipGetErrorString(err) << std::endl;                                       \
+      std::cerr << "Raised in file " << __FILE__ << "#" << __func__ << "#line " << __LINE__ << std::endl;              \
+      std::abort();                                                                                                    \
     }                                                                                                                  \
   }
 

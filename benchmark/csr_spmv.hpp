@@ -87,9 +87,11 @@ struct CsrSpMV {
       host_spmv(h_csr.values, h_csr.row_ptr, h_csr.col_index, h_csr.rows, h_csr.cols, h_csr.nnz, h_vectors.hX,
                 h_vectors.hhY);
     }
+
+    const VerifyResult<int, double> verify_result = verify_y(h_vectors.hY, h_vectors.hhY, h_csr.rows);
     statistics::print_statistics<dtype>(mtx_path, strategy_name, h_csr.rows, h_csr.cols, h_csr.nnz,
-                                        bmt_array.get_mid_time());
-    verify(h_vectors.hY, h_vectors.hhY, h_csr.rows);
+                                        bmt_array.get_mid_time(), verify_result);
+
     memcpy(h_vectors.hhY, h_vectors.temphY, d_csr.rows * sizeof(dtype));
     HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
   }
