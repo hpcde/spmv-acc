@@ -1,5 +1,5 @@
 set(SP_LIB_HEADER ${SP_LIB_HEADER}
-        ${SP_LIB_SRC_BASE}/spmv.h
+        ${SP_LIB_SRC_BASE}/hola-hip/spmv.h
         ${CMAKE_SOURCE_DIR}/third-party/holahip/hip-hola/d_csr.h
         ${CMAKE_SOURCE_DIR}/third-party/holahip/hip-hola/hola_vector.h
         ${CMAKE_SOURCE_DIR}/third-party/holahip/hip-hola/hola_spmv.h
