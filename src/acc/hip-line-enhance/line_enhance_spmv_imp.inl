@@ -62,17 +62,10 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
       line_enhance_direct_reduce<I, T>(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
                                        block_round_inx_start, block_round_inx_end, shared_val, sum);
     }
-    if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC) {
+    if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC || REDUCE_OPTION == LE_REDUCE_OPTION_VEC_MEM_COALESCING) {
       sum += line_enhance_vec_reduce<I, T, VEC_SIZE>(reduce_row_id, block_row_end, reduce_row_idx_begin,
                                                      reduce_row_idx_end, block_round_inx_start, block_round_inx_end,
                                                      shared_val, tid_in_vec);
-    }
-    if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC_MEM_COALESCING) {
-      const T local_sum = line_enhance_vec_reduce<I, T, VEC_SIZE>(reduce_row_id, block_row_end, reduce_row_idx_begin,
-                                                                  reduce_row_idx_end, block_round_inx_start,
-                                                                  block_round_inx_end, shared_val, tid_in_vec);
-      sum += line_enhance_vec_shift<I, T, THREADS / VEC_SIZE>(tid_in_block, vec_id_in_block, tid_in_vec, shared_val,
-                                                              local_sum);
     }
   }
   // store result
@@ -82,12 +75,16 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
     }
   }
   if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC) {
+    line_enhance_vec_local_shift<I, T, VEC_SIZE>(sum);
     if (reduce_row_id < block_row_end && tid_in_vec == 0) {
       y[reduce_row_id] = alpha * sum + y[reduce_row_id];
     }
   }
   if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC_MEM_COALESCING) {
     const I thread_reduce_row_id = block_row_begin + tid_in_block;
+    line_enhance_vec_local_shift<I, T, VEC_SIZE>(sum);
+    sum = line_enhance_vec_global_shift<I, T, THREADS / VEC_SIZE>(tid_in_block, vec_id_in_block, tid_in_vec,
+                                                                   shared_val, sum);
     if (thread_reduce_row_id < block_row_end) {
       y[thread_reduce_row_id] = alpha * sum + y[thread_reduce_row_id];
     }

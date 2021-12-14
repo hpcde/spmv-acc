@@ -70,27 +70,29 @@ __device__ __forceinline__ T line_enhance_vec_reduce(const I reduce_row_id, cons
       }
     }
   }
-  // Here, if vector is inactive in (label-1), `local_sum` will be 0.0,
-  // then following reduction step will still make `local_sum` to be 0.0,
-  // and `sum` will not get changed for the inactive vector.
+  return local_sum;
+}
 
+// local shift can reduce data inside a vector to the first thread in the vector.
+template <typename I, typename T, int VECTOR_SIZE>
+__device__ __forceinline__ void line_enhance_vec_local_shift(T &data) {
   // reduce from lanes in a vector
   if (VECTOR_SIZE > 1) { // in fact, this branch is unnecessary.
 #pragma unroll
     for (int i = VECTOR_SIZE >> 1; i > 0; i >>= 1) {
-      local_sum += __shfl_down(local_sum, i, VECTOR_SIZE);
+      data += __shfl_down(data, i, VECTOR_SIZE);
       // or use: __shfl_down_sync(0xffffffff, i, VECTOR_SIZE);
     }
   }
-  return local_sum;
 }
 
-// make y storing memory coalescing in vector-based reduction step.
-// note: make sure: 1. the shared_val array is large enough (large then vector number in block).
+// global shift moves data from the first thread inside vectors to the front threads inside a block.
+// It can make y storing memory-coalescing in vector-based reduction step.
+// note: please make sure: 1. the shared_val array is large enough (large then vector number in block).
 // 2. vector number must less or equal than the rows processed by a block.
 template <typename I, typename T, int VECTORS_NUM>
-__device__ __forceinline__ T line_enhance_vec_shift(const I tid_in_block, const I vec_id_in_block, const I tid_in_vec,
-                                                    T *shared_val, const T data) {
+__device__ __forceinline__ T line_enhance_vec_global_shift(const I tid_in_block, const I vec_id_in_block,
+                                                           const I tid_in_vec, T *shared_val, const T data) {
   __syncthreads(); // sync previous LDS reading in vector reduction step.
   if (tid_in_vec == 0) {
     shared_val[vec_id_in_block] = data;
