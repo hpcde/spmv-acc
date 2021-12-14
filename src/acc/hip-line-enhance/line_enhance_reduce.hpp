@@ -54,10 +54,10 @@ __device__ __forceinline__ void line_enhance_direct_reduce(const I reduce_row_id
  * @note: other parameter keep the same as device function line_enhance_direct_reduce.
  */
 template <typename I, typename T, int VECTOR_SIZE>
-__device__ __forceinline__ void line_enhance_vec_reduce(const I reduce_row_id, const I block_row_end,
-                                                        const I reduce_row_idx_begin, const I reduce_row_idx_end,
-                                                        const I block_round_inx_start, const I block_round_inx_end,
-                                                        const T *shared_val, T &sum, const int tid_in_vec) {
+__device__ __forceinline__ T line_enhance_vec_reduce(const I reduce_row_id, const I block_row_end,
+                                                     const I reduce_row_idx_begin, const I reduce_row_idx_end,
+                                                     const I block_round_inx_start, const I block_round_inx_end,
+                                                     const T *shared_val, const int tid_in_vec) {
   T local_sum = static_cast<T>(0);
   if (reduce_row_id < block_row_end) {
     if (reduce_row_idx_begin < block_round_inx_end && reduce_row_idx_end > block_round_inx_start) {
@@ -82,7 +82,25 @@ __device__ __forceinline__ void line_enhance_vec_reduce(const I reduce_row_id, c
       // or use: __shfl_down_sync(0xffffffff, i, VECTOR_SIZE);
     }
   }
-  sum += local_sum;
+  return local_sum;
+}
+
+// make y storing memory coalescing in vector-based reduction step.
+// note: make sure: 1. the shared_val array is large enough (large then vector number in block).
+// 2. vector number must less or equal than the rows processed by a block.
+template <typename I, typename T, int VECTORS_NUM>
+__device__ __forceinline__ T line_enhance_vec_shift(const I tid_in_block, const I vec_id_in_block, const I tid_in_vec,
+                                                    T *shared_val, const T data) {
+  __syncthreads(); // sync previous LDS reading in vector reduction step.
+  if (tid_in_vec == 0) {
+    shared_val[vec_id_in_block] = data;
+  }
+  __syncthreads();
+  T shift_data = static_cast<T>(0);
+  if (tid_in_block < VECTORS_NUM) {
+    shift_data = shared_val[tid_in_block];
+  }
+  return shift_data;
 }
 
 #endif // SPMV_ACC_LINE_ENHANCE_REDUCE_HPP
