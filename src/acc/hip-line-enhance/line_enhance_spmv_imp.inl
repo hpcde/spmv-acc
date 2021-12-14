@@ -12,6 +12,9 @@ template <int REDUCE_OPTION, int WF_SIZE, int VEC_SIZE, int ROWS_PER_BLOCK, int 
 __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
                                     const I *__restrict__ csr_col_ind, const T *__restrict__ csr_val,
                                     const T *__restrict__ x, T *__restrict__ y) {
+  static_assert(THREADS / VEC_SIZE >= ROWS_PER_BLOCK,
+                "vector number in block must larger or equal then the rows processed per block");
+
   const int g_tid = threadIdx.x + blockDim.x * blockIdx.x; // global thread id
   const int g_bid = blockIdx.x;                            // global block id
   const int tid_in_block = g_tid % THREADS;                // local thread id in current block
