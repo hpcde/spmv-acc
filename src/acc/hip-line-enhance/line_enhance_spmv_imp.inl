@@ -12,6 +12,9 @@ template <int REDUCE_OPTION, int WF_SIZE, int VEC_SIZE, int ROWS_PER_BLOCK, int 
 __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I *__restrict__ row_offset,
                                     const I *__restrict__ csr_col_ind, const T *__restrict__ csr_val,
                                     const T *__restrict__ x, T *__restrict__ y) {
+  static_assert(THREADS / VEC_SIZE >= ROWS_PER_BLOCK,
+                "vector number in block must larger or equal then the rows processed per block");
+
   const int g_tid = threadIdx.x + blockDim.x * blockIdx.x; // global thread id
   const int g_bid = blockIdx.x;                            // global block id
   const int tid_in_block = g_tid % THREADS;                // local thread id in current block
@@ -62,9 +65,10 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
       line_enhance_direct_reduce<I, T>(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
                                        block_round_inx_start, block_round_inx_end, shared_val, sum);
     }
-    if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC) {
-      line_enhance_vec_reduce<I, T, VEC_SIZE>(reduce_row_id, block_row_end, reduce_row_idx_begin, reduce_row_idx_end,
-                                              block_round_inx_start, block_round_inx_end, shared_val, sum, tid_in_vec);
+    if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC || REDUCE_OPTION == LE_REDUCE_OPTION_VEC_MEM_COALESCING) {
+      sum += line_enhance_vec_reduce<I, T, VEC_SIZE>(reduce_row_id, block_row_end, reduce_row_idx_begin,
+                                                     reduce_row_idx_end, block_round_inx_start, block_round_inx_end,
+                                                     shared_val, tid_in_vec);
     }
   }
   // store result
@@ -74,8 +78,18 @@ __global__ void line_enhance_kernel(int m, const T alpha, const T beta, const I 
     }
   }
   if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC) {
+    line_enhance_vec_local_shift<I, T, VEC_SIZE>(sum);
     if (reduce_row_id < block_row_end && tid_in_vec == 0) {
       y[reduce_row_id] = alpha * sum + y[reduce_row_id];
+    }
+  }
+  if (REDUCE_OPTION == LE_REDUCE_OPTION_VEC_MEM_COALESCING) {
+    const I thread_reduce_row_id = block_row_begin + tid_in_block;
+    line_enhance_vec_local_shift<I, T, VEC_SIZE>(sum);
+    sum = line_enhance_vec_global_shift<I, T, THREADS / VEC_SIZE>(tid_in_block, vec_id_in_block, tid_in_vec,
+                                                                   shared_val, sum);
+    if (thread_reduce_row_id < block_row_end) {
+      y[thread_reduce_row_id] = alpha * sum + y[thread_reduce_row_id];
     }
   }
 }
