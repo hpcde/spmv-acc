@@ -2,7 +2,7 @@ style: github
 template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
-  repository_url: https://git.hpcer.dev/PRA/spmv-acc
+  repository_url: https://github.com/hpcde/spmv-acc
 options:
   commits:
     # filters:

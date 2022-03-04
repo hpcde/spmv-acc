@@ -139,8 +139,8 @@
 
 ### Merge
 - **kernel-adaptive:** Merge branch 'revert-adaptive-line-enhance-case' into branch main
-- **kernel-adaptive:** Merge pull request [#20](https://git.hpcer.dev/PRA/spmv-acc/issues/20) from hpcde/feature-adaptive-line-enhance
-- **kernel-adaptive:** Merge pull request [#19](https://git.hpcer.dev/PRA/spmv-acc/issues/19) from hpcde/feature-kernel-line-for-short-row-matrix
+- **kernel-adaptive:** Merge pull request [#20](https://github.com/hpcde/spmv-acc/issues/20) from hpcde/feature-adaptive-line-enhance
+- **kernel-adaptive:** Merge pull request [#19](https://github.com/hpcde/spmv-acc/issues/19) from hpcde/feature-kernel-line-for-short-row-matrix
 
 ### Revert
 - **kernel-adaptive:** don't use adaptive line-enhance if a large matrix has short rows
@@ -174,14 +174,14 @@
 - **kernel-flat:** correct the wrong length of array `break_points`
 
 ### Merge
-- Merge pull request [#14](https://git.hpcer.dev/PRA/spmv-acc/issues/14) from hpcde/feature-more-flexible-configs
-- **cli:** Merge pull request [#11](https://git.hpcer.dev/PRA/spmv-acc/issues/11) from hpcde/feature-new-cli
-- **cmake:** Merge pull request [#12](https://git.hpcer.dev/PRA/spmv-acc/issues/12) from hpcde/fix-cmake-find-omp
-- **kernel-flat:** Merge pull request [#10](https://git.hpcer.dev/PRA/spmv-acc/issues/10) from hpcde/feature-kernel-flat-vec-reduction
-- **kernel-flat:** Merge pull request [#13](https://git.hpcer.dev/PRA/spmv-acc/issues/13) from hpcde/feature-kernel-flat-one-pass
-- **kernel-line:** Merge pull request [#15](https://git.hpcer.dev/PRA/spmv-acc/issues/15) from hpcde/feature-kernel-line-one-pass
-- **kernel-line-enhance:** Merge pull request [#18](https://git.hpcer.dev/PRA/spmv-acc/issues/18) from hpcde/feature-kernel-strategy-line-enhance
-- **tools:** Merge pull request [#16](https://git.hpcer.dev/PRA/spmv-acc/issues/16) from hpcde/feature-csr-tool-block-nnz
+- Merge pull request [#14](https://github.com/hpcde/spmv-acc/issues/14) from hpcde/feature-more-flexible-configs
+- **cli:** Merge pull request [#11](https://github.com/hpcde/spmv-acc/issues/11) from hpcde/feature-new-cli
+- **cmake:** Merge pull request [#12](https://github.com/hpcde/spmv-acc/issues/12) from hpcde/fix-cmake-find-omp
+- **kernel-flat:** Merge pull request [#10](https://github.com/hpcde/spmv-acc/issues/10) from hpcde/feature-kernel-flat-vec-reduction
+- **kernel-flat:** Merge pull request [#13](https://github.com/hpcde/spmv-acc/issues/13) from hpcde/feature-kernel-flat-one-pass
+- **kernel-line:** Merge pull request [#15](https://github.com/hpcde/spmv-acc/issues/15) from hpcde/feature-kernel-line-one-pass
+- **kernel-line-enhance:** Merge pull request [#18](https://github.com/hpcde/spmv-acc/issues/18) from hpcde/feature-kernel-strategy-line-enhance
+- **tools:** Merge pull request [#16](https://github.com/hpcde/spmv-acc/issues/16) from hpcde/feature-csr-tool-block-nnz
 
 ### Perf
 - **cli:** add OpenMP support for the new cli to parse the input matrix
@@ -200,7 +200,7 @@
 - **kernel-line-enhance:** move direct reduction to a new func `line_enhance_direct_reduce`
 
 ### Pull Requests
-- Merge pull request [#17](https://git.hpcer.dev/PRA/spmv-acc/issues/17) from hpcde/feature-adaptive-flat
+- Merge pull request [#17](https://github.com/hpcde/spmv-acc/issues/17) from hpcde/feature-adaptive-flat
 
 
 <a name="v0.4.0"></a>
@@ -235,18 +235,18 @@
 - **kernel-vector-row:** fix the wrong kernel func called in native vector-row while VECTOR_SIZE is 8
 
 ### Merge
-- Merge pull request [#4](https://git.hpcer.dev/PRA/spmv-acc/issues/4) from hpcde/fix-flat-and-vector-row-bugs
+- Merge pull request [#4](https://github.com/hpcde/spmv-acc/issues/4) from hpcde/fix-flat-and-vector-row-bugs
 - Merge branch 'cmake-enable-build-all-strategies' into 'main'
-- **kernel-adaptive:** Merge pull request [#1](https://git.hpcer.dev/PRA/spmv-acc/issues/1) from hpcde/feature-kernel-adaptive into branch main
-- **kernel-flat:** Merge pull request [#2](https://git.hpcer.dev/PRA/spmv-acc/issues/2) from hpcde/opt-on-kernel-flat
-- **kernel-thread-row:** Merge pull request [#9](https://git.hpcer.dev/PRA/spmv-acc/issues/9) from hpcde/feat-thread-row-single
-- **kernel-thread-row:** Merge pull request [#6](https://git.hpcer.dev/PRA/spmv-acc/issues/6) from hpcde/opt-thread-row-in-block-level
-- **kernel-thread-row:** Merge pull request [#8](https://git.hpcer.dev/PRA/spmv-acc/issues/8) from hpcde/opt-thread-row-tune-kernel-config
-- **kernel-thread-row:** Merge pull request [#7](https://git.hpcer.dev/PRA/spmv-acc/issues/7) from hpcde/opt-thread-row-in-block-level-x-remap
+- **kernel-adaptive:** Merge pull request [#1](https://github.com/hpcde/spmv-acc/issues/1) from hpcde/feature-kernel-adaptive into branch main
+- **kernel-flat:** Merge pull request [#2](https://github.com/hpcde/spmv-acc/issues/2) from hpcde/opt-on-kernel-flat
+- **kernel-thread-row:** Merge pull request [#9](https://github.com/hpcde/spmv-acc/issues/9) from hpcde/feat-thread-row-single
+- **kernel-thread-row:** Merge pull request [#6](https://github.com/hpcde/spmv-acc/issues/6) from hpcde/opt-thread-row-in-block-level
+- **kernel-thread-row:** Merge pull request [#8](https://github.com/hpcde/spmv-acc/issues/8) from hpcde/opt-thread-row-tune-kernel-config
+- **kernel-thread-row:** Merge pull request [#7](https://github.com/hpcde/spmv-acc/issues/7) from hpcde/opt-thread-row-in-block-level-x-remap
 - **kernel-vector-row:** Merge branch 'enhance-vector-row' into feature-kernel-adaptive
-- **kernel-vector-row:** Merge pull request [#3](https://git.hpcer.dev/PRA/spmv-acc/issues/3) from hpcde/opt-vector-row-access-y-coalescing
+- **kernel-vector-row:** Merge pull request [#3](https://github.com/hpcde/spmv-acc/issues/3) from hpcde/opt-vector-row-access-y-coalescing
 - **kernel-vector-row:** Merge branch 'enhance-vector-row' into 'main'
-- **thread-row:** Merge pull request [#5](https://git.hpcer.dev/PRA/spmv-acc/issues/5) from hpcde/opt-thread-row-remap-vec_x
+- **thread-row:** Merge pull request [#5](https://github.com/hpcde/spmv-acc/issues/5) from hpcde/opt-thread-row-remap-vec_x
 
 ### Perf
 - **kernel-flat:** move barrier __syncthreads() ahead(moved to the place before loading matrix data)
@@ -519,14 +519,15 @@
 - **kernel-wf-row-reg:** removed unused code
 
 
-[Unreleased]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.5.0...HEAD
-[v0.5.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/stash_flat_preprocess...v0.5.0
-[stash_flat_preprocess]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.4.0...stash_flat_preprocess
-[v0.4.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.3.0...v0.4.0
-[v0.3.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.4...v0.3.0
-[v0.2.4]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.3...v0.2.4
-[v0.2.3]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.2...v0.2.3
-[v0.2.2]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.1...v0.2.2
-[v0.2.1]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.2.0...v0.2.1
-[v0.2.0]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.1.1...v0.2.0
-[v0.1.1]: https://git.hpcer.dev/PRA/spmv-acc/compare/v0.1.0...v0.1.1
+[Unreleased]: https://github.com/hpcde/spmv-acc/compare/v0.6.0...HEAD
+[v0.6.0]: https://github.com/hpcde/spmv-acc/compare/v0.5.0...v0.6.0
+[v0.5.0]: https://github.com/hpcde/spmv-acc/compare/stash_flat_preprocess...v0.5.0
+[stash_flat_preprocess]: https://github.com/hpcde/spmv-acc/compare/v0.4.0...stash_flat_preprocess
+[v0.4.0]: https://github.com/hpcde/spmv-acc/compare/v0.3.0...v0.4.0
+[v0.3.0]: https://github.com/hpcde/spmv-acc/compare/v0.2.4...v0.3.0
+[v0.2.4]: https://github.com/hpcde/spmv-acc/compare/v0.2.3...v0.2.4
+[v0.2.3]: https://github.com/hpcde/spmv-acc/compare/v0.2.2...v0.2.3
+[v0.2.2]: https://github.com/hpcde/spmv-acc/compare/v0.2.1...v0.2.2
+[v0.2.1]: https://github.com/hpcde/spmv-acc/compare/v0.2.0...v0.2.1
+[v0.2.0]: https://github.com/hpcde/spmv-acc/compare/v0.1.1...v0.2.0
+[v0.1.1]: https://github.com/hpcde/spmv-acc/compare/v0.1.0...v0.1.1
