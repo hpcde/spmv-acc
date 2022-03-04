@@ -2,6 +2,126 @@
 ## [Unreleased]
 
 
+<a name="v0.6.0"></a>
+## [v0.6.0] - 2022-03-01
+### Build
+- **cmake:** support OpenMP for benchmark executable target when performing linking
+- **cmake:** reorganize benchmark device-side libs and pass the missing HIP_NVCC_FLAGS to flat src
+- **cmake:** add a cmake option `SPMV_BUILD_BENCHMARK` to disable/enable benchmark building
+- **cmake:** reorganize cmake script under directory benchmark
+- **cmake:** add cmake config for benchmark executable binary
+- **cmake:** set CXX standard to 14 for using std::unique_ptr
+- **cmake:** move clipp.h header to directory `third-party`
+
+### Docs
+- **readme:** add document of fetching dependency `clipp`
+- **suitesparse-dl:** add document for "matrices with the same name"
+- **suitesparse-dl:** add document of extracting matrix market from .tar.gz file
+
+### Feat
+- correctly access row_offset when device row_offset accessing on host side is not supported
+- **benchmark:** add benchmark support for SpMV-acc strategies and cuSPARSE in func `test_spmv`
+- **benchmark:** more strong verification for benchmark
+- **benchmark:** throw runtime_error of hola device SpMV
+- **benchmark:** record preproc time, calc time and destroy time in statistics data
+- **benchmark:** add the adaptive line kernel to benchmark
+- **benchmark:** record strategy name in statistics data
+- **benchmark:** benchmark support for rocsparse SpMV: vector and csr-adaptive
+- **benchmark:** benchmark support for hola CsrMV on hip
+- **benchmark:** benchmark support for hola CsrMV on Cuda
+- **benchmark:** destory host/device data after test
+- **benchmark:** disable benchmarking the default sequential spmv method on device side
+- **benchmark:** verify after outputting statistics
+- **benchmark:** change style of performance statistics log: split header and data
+- **benchmark:** benchmark support for cub CsrMV on Cuda
+- **cli:** add OpenMP support to matrix-market input parsing
+- **cli:** update the cli and benchmark help message: value of `-f` can be `bin`
+- **cli:** add OpenMP support for data sorting when converting COO to CSR
+- **cli:** support to read csr-binary format converted by `suitesparse-dl conv` sub-command
+- **cli:** use clipp to parse command line argument
+- **cli:** show more detailed error message in HIP_CHECK macro
+- **cli:** add matrix market format reading support
+- **common:** support reduction on CUDA platform and make DPP reduction available only on ROCm
+- **common:** add compatible code to make nontemporal-load/store, fma and atomicAdd work on nvidia
+- **common:** mv data-load assembly to `platform/rocm` and add compatible data loading code for CUDA
+- **kernel-light:** support the case of "wrap size is 32" (Nvidia GPU) for light strategy
+- **kernel-line:** replace the origin line method with adaptive-line method
+- **kernel-line:** adjust the value of ROW_NUM in adaptive line calculation
+- **kernel-line:** add adaptive line-kerenel: switch between line and vector-row
+- **kernel-line:** combine the LDS space used by line and vector-row algorithm in adaptive line
+- **kernel-line-enhance:** support memory coalescing in vector reduction when storing data back
+- **kernel-line-enhance:** add a static assert to check vector number and rows assigned to a block
+- **kernel-vector-row:** support to move data from thread 0 of vectors to front lanes on CUDA
+- **kernel-vertor-row:** support the case of "wrap size is 32" (Nvidia GPU)
+- **scripts:** add a compiler wrapper to remove unrecognized argument `-std=gnu++14` for nvcc
+- **suitesparse-dl:** download matrices into different NNZ categories
+- **suitesparse-dl:** support to convert matrix market format to binary CSR file format
+- **suitesparse-dl:** add feature of generating sbatch file from matrices data for job submitting
+- **suitesparse-dl:** add `fetch` subcommand for fetching collection metadata
+- **suitesparse-dl:** add cli flags parsing and use `dl` sub-command for downloading
+- **suitesparse-dl:** add cli flags to specific data dir and goroutines for downloading
+- **suitesparse-dl:** support to convert matrix with integer type as value
+- **suitesparse-dl:** stop downloading if there is any error in downloading process
+- **suitesparse-dl:** skip the matrix downloading if the file exists
+- **suitesparse-dl:** download matrix to temporary file and then rename to the final file
+- **suitesparse-dl:** add a tool for downloading matrices of matrix market format from SuiteSparse
+- **third-party:** add a prompt to set the WARP_SIZE after downloaded hip-hola
+- **third-party:** specific version and apply changes when or after downloading hola
+
+### Fix
+- **benchmark:** correct verification for cub and hola spmv which only compute y=Ax
+- **benchmark:** fix cub SpMV invalid device function
+- **cli:** fix incorrect nnz assertion while reading matrix market format
+- **cli:** fix Segmentation fault while using csr matrix data after variable `csr_reader` is released
+- **cmake:** fix typos and incorrect path in benchmark cmake script to make hola-hip compiling passed
+- **compile:** correct possible compiling error `error: size of array 'buf' is negative`
+- **compile:** fix possible compiling error of `determining template type` under some compilers
+- **compile:** fix compiling errors in benchmark and cli building
+- **compile:** fix compiling issues (with OpenMP support) on nvidia platform
+- **compile:** add the missing template param for func `dpp_wf_reduce_sum` on ROCm platform
+- **demo:** fix possible crash when allocing buffer memory for csr file reading in demo
+- **kernel-flat:** fix compiling error: `flat_sparse_spmv` declaration does not match the definition
+- **kernel-line:** fix incorrect data storing logic of vector-row method in adaptive line
+- **kernel-line-enhance:** fix the possible stucked vector-based reduction on NVIDIA platform
+- **suitesparse-dl:** fix incorrect "NNZ" values stored into binary csr file header
+- **suitesparse-dl:** fix compiling errors in `fetch` sub-command
+- **suitesparse-dl:** fix parsing error when the matrix data type is complex
+- **third-party:** bump hola-hip version to fix building errors from `hipFree` and `CSR<double>` template
+
+### Merge
+- Merge pull request [#35](https://github.com/hpcde/spmv-acc/issues/35) from hpcde/fix-hola-hip-building-errors
+- Merge pull request [#25](https://github.com/hpcde/spmv-acc/issues/25) from hpcde/feature-nvidia-support
+- Merge pull request [#27](https://github.com/hpcde/spmv-acc/issues/27) from hpcde/fix-error-of-nvidia-support
+- **benchmark:** Merge pull request [#28](https://github.com/hpcde/spmv-acc/issues/28) from hpcde/feature-benchmark
+- **benchmark:** Merge pull request [#36](https://github.com/hpcde/spmv-acc/issues/36) from hpcde/enhanced-HIP_CHECK-and-verify-for-cli-and-benchmark
+- **benchmark:** Merge pull request [#30](https://github.com/hpcde/spmv-acc/issues/30) from hpcde/benchmarks-improves
+- **cli:** Merge pull request [#26](https://github.com/hpcde/spmv-acc/issues/26) from hpcde/feature-openmp-matrix-market-reading
+- **cli:** Merge pull request [#31](https://github.com/hpcde/spmv-acc/issues/31) from hpcde/feature-csr-binary-reader
+- **cli:** Merge pull request [#22](https://github.com/hpcde/spmv-acc/issues/22) from hpcde/feature-matrix_market_support
+- **kernel-line:** Merge pull request [#32](https://github.com/hpcde/spmv-acc/issues/32) from hpcde/feature-adaptive-line
+- **kernel-line-enhance:** Merge pull request [#34](https://github.com/hpcde/spmv-acc/issues/34) from hpcde/fix-line-enhance-shlf_down-reduce-stucked
+- **kernel-line-enhance:** Merge pull request [#37](https://github.com/hpcde/spmv-acc/issues/37) from hpcde/opt-line-enhance-vector-reduction
+- **suitesparse-dl:** Merge pull request [#33](https://github.com/hpcde/spmv-acc/issues/33) from hpcde/hotfix-suitesparse-dl-conv
+- **suitesparse-dl:** Merge pull request [#24](https://github.com/hpcde/spmv-acc/issues/24) from hpcde/feature-suitesparse-dl-sbatch-gen
+- **suitesparse-dl:** merge: Merge pull request [#23](https://github.com/hpcde/spmv-acc/issues/23) from hpcde/feature-suitesparse-downloader
+
+### Perf
+- **cli:** remove unnecessary data copy when converting matrix-market to CSR
+- **cli:** replace stringstream with user-customized line parser to parse matrix-market format
+- **cli:** read the whole file into buffer and than parse while loading matrix-market format
+- **kernel-line-enhance:** move a part of sum reduction (local & global shift) to out of rounds-loop
+
+### Refactor
+- **benchmark:** apply a simpler approach to benchmark different algorithms
+- **cli:** refactor code of matrix-market reading and parsing: split header and body reading
+- **cli:** move implementation code of verification.h to cpp file
+- **cli:** rename class mtx_reader -> csr_mtx_reader, file csr.hpp -> sparse_format.h
+- **kernel-line:** use param BLOCK_LDS_SIZE, rather than MAX_ROW_NNZ, to specific LDS size
+
+### Pull Requests
+- Merge pull request [#29](https://github.com/hpcde/spmv-acc/issues/29) from hpcde/feature-suitesparse-dl-binary-csr-convert
+
+
 <a name="v0.5.0"></a>
 ## [v0.5.0] - 2021-10-15
 ### Chore
