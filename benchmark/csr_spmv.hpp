@@ -67,6 +67,7 @@ struct CsrSpMV {
     for (int i = 0; i < BENCHMARK_ARRAY_SIZE; i++) {
       BenchmarkTime bmt;
       HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, d_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
+      hipDeviceSynchronize();
       csr_spmv_impl(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y, &bmt);
       hipDeviceSynchronize();
       bmt_array.append(bmt);
@@ -75,6 +76,7 @@ struct CsrSpMV {
     // device result check
     HIP_CHECK(hipMemcpy(dev_y, h_vectors.temphY, h_csr.rows * sizeof(dtype), hipMemcpyHostToDevice))
     csr_spmv_impl(operation, alpha, beta, h_csr.as_const(), d_csr.as_const(), dev_x, dev_y, nullptr);
+    hipDeviceSynchronize();
     HIP_CHECK(hipMemcpy(h_vectors.hY, dev_y, d_csr.rows * sizeof(dtype), hipMemcpyDeviceToHost));
 
     // host side verification
