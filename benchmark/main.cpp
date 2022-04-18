@@ -20,6 +20,7 @@
 #include "utils.hpp"
 #include "utils/statistics_logger.h"
 
+#include "benchmark_config.h"
 #include "csr_spmv.hpp"
 
 void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors);
@@ -80,6 +81,14 @@ int main(int argc, char **argv) {
   }
 }
 
+#define SPMV_BENCHMARK(instance, name, flag)                                                                           \
+  {                                                                                                                    \
+    instance ins;                                                                                                      \
+    if (flag) {                                                                                                        \
+      ins.test(mtx_path, name, operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);                         \
+    }                                                                                                                  \
+  }
+
 void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vectors) {
   HIP_CHECK(hipSetDevice(0));
   dtype *dev_x, *dev_y;
@@ -88,62 +97,36 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   enum sparse_operation operation = operation_none;
   dtype alpha = 1.0;
   dtype beta = 1.0;
-  // spmv-acc
-//  SpMVAccDefault spmv_acc_default;
-  SpMVAccAdaptive spmv_acc_adaptive;
-  SpMVAccBlockRow spmv_acc_block_row;
-  SpMVAccFlat spmv_acc_flat;
-  SpMVAccLight spmv_acc_light;
-  SpMVAccLine spmv_acc_line;
-  SpMVAccThreadRow spmv_acc_thread_row;
-  SpMVAccVecRow spmv_acc_vec_row;
-  SpMVAccWfRow spmv_acc_wf_row;
-  SpMVAccLineEnhance spmv_acc_line_enhance;
 
   statistics::print_statistics_header();
 
-//  spmv_acc_default.test(mtx_path, "spmv-acc-default", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_adaptive.test(mtx_path, "spmv-acc-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_block_row.test(mtx_path, "spmv-acc-block-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
-                          dev_y);
-  spmv_acc_flat.test(mtx_path, "spmv-acc-flat", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_light.test(mtx_path, "spmv-acc-light", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_line.test(mtx_path, "spmv-acc-line", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_thread_row.test(mtx_path, "spmv-acc-thread-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
-                           dev_y);
-  spmv_acc_vec_row.test(mtx_path, "spmv-acc-vector-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-  spmv_acc_wf_row.test(mtx_path, "spmv-acc-wavefront-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
-                       dev_y);
-  spmv_acc_line_enhance.test(mtx_path, "spmv-acc-line-enhance", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
-                             dev_y);
+  // spmv-acc
+  // SPMV_BENCHMARK(SpMVAccDefault, "spmv-acc-default", ENABLE_SPMV_ACC_DEFAULT);
+  SPMV_BENCHMARK(SpMVAccAdaptive, "spmv-acc-adaptive", ENABLE_SPMV_ACC_ADAPTIVE);
+  SPMV_BENCHMARK(SpMVAccBlockRow, "spmv-acc-block-row", ENABLE_SPMV_ACC_BLOCK_ROW);
+  SPMV_BENCHMARK(SpMVAccFlat, "spmv-acc-flat", ENABLE_SPMV_ACC_FLAT);
+  SPMV_BENCHMARK(SpMVAccLight, "spmv-acc-light", ENABLE_SPMV_ACC_LIGHT);
+  SPMV_BENCHMARK(SpMVAccLine, "spmv-acc-line", ENABLE_SPMV_ACC_LINE);
+  SPMV_BENCHMARK(SpMVAccThreadRow, "spmv-acc-thread-row", ENABLE_SPMV_ACC_THREAD_ROW);
+  SPMV_BENCHMARK(SpMVAccVecRow, "spmv-acc-vector-row", ENABLE_SPMV_ACC_VECTOR_ROW);
+  SPMV_BENCHMARK(SpMVAccWfRow, "spmv-acc-wavefront-row", ENABLE_SPMV_ACC_WF_ROW);
+  SPMV_BENCHMARK(SpMVAccLineEnhance, "spmv-acc-line-enhance", ENABLE_SPMV_ACC_LE_ROW);
 
 #ifdef __HIP_PLATFORM_HCC__
   // rocsparse
-  RocSparseVecRow rocsparse_vec_row;
-  rocsparse_vec_row.test(mtx_path, "rocSparse-vector-row", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
-                         dev_y);
-
-  RocSparseAdaptive rocsparse_adaptive;
-  rocsparse_adaptive.test(mtx_path, "rocSparse-adaptive", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x,
-                          dev_y);
+  SPMV_BENCHMARK(RocSparseVecRow, "rocSparse-vector-row", ENABLE_ROC_VECTOR_ROW);
+  SPMV_BENCHMARK(RocSparseAdaptive, "rocSparse-adaptive", ENABLE_ROC_ADAPTIVE);
   // hola
-  HolaHipSpMV hola_hip_spmv;
-  hola_hip_spmv.test(mtx_path, "hip-hola", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-
+  SPMV_BENCHMARK(HolaHipSpMV, "hip-hola", ENABLE_HIP_HOLA);
 #endif
 
 #ifndef __HIP_PLATFORM_HCC__
   // cusparse
-  CuSparseGeneral cusparse_general;
-  cusparse_general.test(mtx_path, "cuSparse", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-
+  SPMV_BENCHMARK(CuSparseGeneral, "cuSparse", ENABLE_CU_SPARSE);
   // cub
-  CubDeviceSpMV cub_device_spmv;
-  cub_device_spmv.test(mtx_path, "cub", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
-
+  SPMV_BENCHMARK(CubDeviceSpMV, "cub", ENABLE_CUB);
   // hola
-  HolaSpMV hola_spmv;
-  hola_spmv.test(mtx_path, "hola", operation, alpha, beta, h_csr, d_csr, h_vectors, dev_x, dev_y);
+  SPMV_BENCHMARK(HolaSpMV, "hola", ENABLE_HOLA);
 #endif
 
   destroy_device_data(d_csr, dev_x, dev_y);
