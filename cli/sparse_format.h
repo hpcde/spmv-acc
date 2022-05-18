@@ -6,7 +6,9 @@
 #define SPMV_ACC_SPARSE_FORMAT_H
 
 #include <algorithm>
+#include <cstring>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "api/types.h"

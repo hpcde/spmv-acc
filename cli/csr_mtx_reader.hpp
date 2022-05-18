@@ -5,6 +5,7 @@
 #ifndef SPMV_ACC_CSR_MTX_READER_HPP
 #define SPMV_ACC_CSR_MTX_READER_HPP
 
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
