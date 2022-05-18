@@ -34,13 +34,13 @@ public:
 template <typename I, typename T> struct Entry {
   I r, c;
   T v;
-  bool operator<(const Entry &other) {
+  bool operator<(const Entry &other) const {
     if (r != other.r) {
       return r < other.r;
     }
     return c < other.c;
   }
-  bool operator>(const Entry &other) {
+  bool operator>(const Entry &other) const {
     if (r != other.r) {
       return r > other.r;
     }
