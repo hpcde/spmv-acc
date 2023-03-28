@@ -46,6 +46,9 @@ else ()
     MESSAGE(FATAL_ERROR "unsupported wavefront reduction strategy ${WF_REDUCE}")
 endif ()
 
+# flat reduce strategy
+option(FLAT_SEGMENT_SUM_REDUCE "flat reducting strategy is segement sum" OFF)
+
 if (HIP_ENABLE_FLAG)
     set(SPMV_BIN_NAME spmv-hip)
     set(SPMV_CLI_LIB sparse_cli)
