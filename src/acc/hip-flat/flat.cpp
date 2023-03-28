@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "../common/macros.h"
+#include "building_config.h"
 #include "flat_config.h"
 #include "spmv_hip_acc_imp.h"
 
@@ -68,6 +69,8 @@ void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int
 
   constexpr int R = 2;
   constexpr int THREADS_PER_BLOCK = 512;
+
+#ifndef FLAT_SEGMENT_SUM_REDUCE
   // for non one-pass.
   if (!FLAT_ONE_PASS) {
     constexpr int blocks = 512;
@@ -106,4 +109,12 @@ void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int
     flat_one_pass_sparse_spmv<R, REDUCE_OPT, VEC_SIZE, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, nnz, rowptr,
                                                                           colindex, value, x, y);
   }
+#endif
+
+#ifdef FLAT_SEGMENT_SUM_REDUCE
+  constexpr int blocks = 512;
+  constexpr int RED_OPT = FLAT_REDUCE_OPTION_SEGMENT_SUM;
+  flat_multi_pass_sparse_spmv<R, RED_OPT, 2, blocks, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, nnz, rowptr, colindex,
+                                                                        value, x, y);
+#endif
 }
