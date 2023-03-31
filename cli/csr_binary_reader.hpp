@@ -40,9 +40,12 @@ public:
       std::cerr << "file open failed, file: " << mtx_path << std::endl;
       return;
     }
-    fin.read((BytePtr)(&(P::rows)), sizeof(I)); // todo: make sure storage type is 4 bytes.
-    fin.read((BytePtr)(&(P::cols)), sizeof(I));
-    fin.read((BytePtr)(&(P::nnz)), sizeof(I));
+    I &_r = P::rows;
+    I &_c = P::cols;
+    I &_nnz = P::nnz;
+    fin.read((BytePtr)(&(_r)), sizeof(I)); // todo: make sure storage type is 4 bytes.
+    fin.read((BytePtr)(&(_c)), sizeof(I));
+    fin.read((BytePtr)(&(_nnz)), sizeof(I));
 
     P::row_ptr = new I[P::rows + 1];
     P::col_index = new I[P::nnz];
