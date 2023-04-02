@@ -148,10 +148,10 @@ int calc_bin_index(int nnz)
 template<class T>
 void acsr_driver(int alpha, T *values, int *row_off, int* d_col_idx, int * d_row_off, T *x, T *y, int m, int n, int nnz,BenchmarkTime *bmt)
 {
-	cudaMemset(y, 0, n * sizeof(T));
 	my_timer pre_timer, calc_timer, destroy_timer;
 
 	pre_timer.start();
+	cudaMemset(y, 0, n * sizeof(T));
 	int max_nnz = INT_MIN;
 	for (int i = 1; i < m; i++){
 		max_nnz = max(max_nnz, row_off[i] - row_off[i - 1]);
