@@ -8,7 +8,7 @@
 // spmv-acc
 constexpr bool ENABLE_SPMV_ACC_DEFAULT = false;
 constexpr bool ENABLE_SPMV_ACC_ADAPTIVE = true;
-constexpr bool ENABLE_SPMV_ACC_BLOCK_ROW = true;
+constexpr bool ENABLE_SPMV_ACC_BLOCK_ROW = false;
 constexpr bool ENABLE_SPMV_ACC_FLAT = true;
 constexpr bool ENABLE_SPMV_ACC_LIGHT = true;
 constexpr bool ENABLE_SPMV_ACC_LINE = true;

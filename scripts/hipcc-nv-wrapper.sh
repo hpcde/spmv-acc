@@ -24,4 +24,4 @@ do
 done
 
 # Finally execute the new command
-exec $newcmd
+exec $newcmd --gpu-architecture=compute_70 --gpu-code=sm_70
