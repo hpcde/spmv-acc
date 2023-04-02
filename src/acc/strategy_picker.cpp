@@ -31,7 +31,12 @@ void sparse_csr_spmv(int trans, const int alpha, const int beta, const csr_desc<
 #endif
 
 #ifdef KERNEL_STRATEGY_FLAT
+#ifndef FLAT_SEGMENT_SUM_REDUCE
   flat_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
+#endif
+#ifdef FLAT_SEGMENT_SUM_REDUCE
+  segment_sum_flat_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
+#endif
 #endif
 
 #ifdef KERNEL_STRATEGY_LIGHT
