@@ -16,7 +16,7 @@
 struct ACSRSpMV : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    acsr(trans, h_csr_desc, d_csr_desc, x, y, bmt);
+    acsr(trans, alpha, h_csr_desc, d_csr_desc, x, y, bmt);
   }
   bool verify_beta_y() { return false; }
 };
