@@ -22,7 +22,8 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   using I = int;
   using T = double;
 
-  char *temp_storage = nullptr;
+  void *temp_storage = nullptr;
+  char *remain_storage = nullptr;
   int temp_storage_bytes = 0;
   temp_storage_bytes += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
   temp_storage_bytes += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
@@ -31,13 +32,13 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   temp_storage_bytes += ALIGN_256_BYTES(sizeof(int));
   temp_storage_bytes += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
 #endif
-  cudaMalloc((void **)&temp_storage, temp_storage_bytes);
-
-  int *S = reinterpret_cast<int *>(temp_storage);
-  temp_storage += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
-  KeyValuePair<int, T> *r = reinterpret_cast<KeyValuePair<int, T> *>(temp_storage);
+  cudaMalloc(&temp_storage, temp_storage_bytes);
+  remain_storage = reinterpret_cast<char*>(temp_storage);
+  int *S = reinterpret_cast<int *>(remain_storage);
+  remain_storage += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
+  KeyValuePair<int, T> *r = reinterpret_cast<KeyValuePair<int, T> *>(remain_storage);
   ;
-  temp_storage += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
+  remain_storage += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
 
   // step 1: partition
   partition<int, 256, ITEMS_PER_BLOCK><<<512, 256>>>(d_csr_desc.row_ptr, h_csr_desc.rows, GlobalBlockNum + 1, S);
@@ -53,11 +54,11 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
 #endif
 #ifdef UPDATE_LOOK_BACK
   {
-    cudaMemset(temp_storage, 0, ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType)));
-    int *dblock_id = reinterpret_cast<int *>(temp_storage);
-    temp_storage += ALIGN_256_BYTES(sizeof(int));
-    PartStateType *dpart_state_type = reinterpret_cast<PartStateType *>(temp_storage);
-    temp_storage += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
+    cudaMemset(remain_storage, 0, ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType)));
+    int *dblock_id = reinterpret_cast<int *>(remain_storage);
+    remain_storage += ALIGN_256_BYTES(sizeof(int));
+    PartStateType *dpart_state_type = reinterpret_cast<PartStateType *>(remain_storage);
+    remain_storage += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
     look_back_update<T, 256>
         <<<UpdateBlockNum, 256>>>(r, h_csr_desc.rows, GlobalBlockNum, y, dblock_id, dpart_state_type);
   }
@@ -65,8 +66,7 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   cudaDeviceSynchronize();
   calc_timer.stop();
   destroy_timer.start();
-  cudaFree(r);
-  cudaFree(S);
+  cudaFree(temp_storage);
   destroy_timer.stop();
   if (bmt != nullptr) {
     bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
