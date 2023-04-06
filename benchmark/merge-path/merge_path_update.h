@@ -99,7 +99,7 @@ template <typename Key, typename Value> __device__ __forceinline__ int get_flag(
   return tmp_state.flag;
 }
 
-template <typename T, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
+template <typename T, int BLOCK_THREAD_NUM>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     look_back_update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y, int *dblock_id,
                      PartStateType *dpart_state_type) {
