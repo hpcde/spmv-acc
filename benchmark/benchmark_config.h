@@ -26,5 +26,6 @@ constexpr bool ENABLE_HIP_HOLA = true;
 constexpr bool ENABLE_CU_SPARSE = true;
 constexpr bool ENABLE_CUB = true;
 constexpr bool ENABLE_HOLA = true;
+constexpr bool ENABLE_MERGE_PATH = true;
 
 #endif // SPMV_ACC_BENCHMARK_CONFIG_H
