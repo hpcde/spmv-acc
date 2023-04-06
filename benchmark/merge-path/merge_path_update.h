@@ -99,10 +99,11 @@ template <typename Key, typename Value> __device__ __forceinline__ int get_flag(
   return tmp_state.flag;
 }
 
-template <typename T, int BLOCK_THREAD_NUM>
+template <typename T, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     look_back_update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y, int *dblock_id,
                      PartStateType *dpart_state_type) {
+  static_assert(ITEMS_PER_THREAD == 1, "not support mutiple items per thread.");
   const int block_thread_id = threadIdx.x;
   using BlockScanT = cub::BlockScan<KeyValuePair<int, T>, BLOCK_THREAD_NUM>;
   __shared__ typename BlockScanT::TempStorage temp_storage_for_scan;
@@ -114,6 +115,7 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
   __shared__ int flat_block_id;
   __shared__ int lds_rows[BLOCK_THREAD_NUM];
   __shared__ KeyValuePair<int, T> lds_pair;
+  __shared__ Key first_key;
   if (block_thread_id == 0) {
     flat_block_id = atomicAdd(dblock_id, 1);
   }
@@ -127,6 +129,9 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
   const int idx = block_item_begin + block_thread_id;
   if (idx < block_item_end) {
     pair = r[idx];
+  }
+  if (block_thread_id == 0) {
+    first_key = pair.key;
   }
   if (block_thread_id == BLOCK_THREAD_NUM - 1) {
     set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::I, pair.key, static_cast<Value>(0));
@@ -145,7 +150,11 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     }
   } else {
     if (block_thread_id == BLOCK_THREAD_NUM - 1) {
-      set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::A, pair.key, pair.val);
+      if (pair.key == first_key) {
+        set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::A, pair.key, pair.val);
+      } else {
+        set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::P, pair.key, pair.val);
+      }
     }
     if (block_thread_id == 0) {
       const int track_flat_id = flat_block_id - 1;
