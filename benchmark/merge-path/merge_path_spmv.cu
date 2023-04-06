@@ -22,7 +22,7 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   using I = int;
   using T = double;
 
-  char* temp_storage = nullptr;
+  char *temp_storage = nullptr;
   int temp_storage_bytes = 0;
   temp_storage_bytes += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
   temp_storage_bytes += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
@@ -31,11 +31,12 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   temp_storage_bytes += ALIGN_256_BYTES(sizeof(int));
   temp_storage_bytes += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
 #endif
-  cudaMalloc((void**)&temp_storage, temp_storage_bytes);
+  cudaMalloc((void **)&temp_storage, temp_storage_bytes);
 
-  int *S = reinterpret_cast<int*>(temp_storage);
+  int *S = reinterpret_cast<int *>(temp_storage);
   temp_storage += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
-  KeyValuePair<int, T> *r = reinterpret_cast<KeyValuePair<int, T>*>(temp_storage);;
+  KeyValuePair<int, T> *r = reinterpret_cast<KeyValuePair<int, T> *>(temp_storage);
+  ;
   temp_storage += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
 
   // step 1: partition
@@ -53,9 +54,9 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
 #ifdef UPDATE_LOOK_BACK
   {
     cudaMemset(temp_storage, 0, ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType)));
-    int *dblock_id = reinterpret_cast<int*>(temp_storage);
+    int *dblock_id = reinterpret_cast<int *>(temp_storage);
     temp_storage += ALIGN_256_BYTES(sizeof(int));
-    PartStateType *dpart_state_type = reinterpret_cast<PartStateType*>(temp_storage);
+    PartStateType *dpart_state_type = reinterpret_cast<PartStateType *>(temp_storage);
     temp_storage += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
     look_back_update<T, 256>
         <<<UpdateBlockNum, 256>>>(r, h_csr_desc.rows, GlobalBlockNum, y, dblock_id, dpart_state_type);
