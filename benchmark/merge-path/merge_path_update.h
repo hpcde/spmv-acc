@@ -159,15 +159,16 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
       bool is_over = false;
       KeyValuePair<int, T> tmp_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
       if ((f != LookBackState<Key, Value>::X) && tmp_pair.key != pair.key) {
+        while (f == LookBackState<Key, Value>::X || f == LookBackState<Key, Value>::I) {
+          __threadfence();
+          f = get_flag<Key, Value>(&dpart_state_type[track_flat_id]);
+        }
+        tmp_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
         y[tmp_pair.key] += tmp_pair.val;
-        lds_pair.key = 0;
-        lds_pair.val = static_cast<T>(0);
         is_over = true;
       }
       while (!is_over && f != LookBackState<Key, Value>::P) {
-        // wait
         __threadfence();
-        // update flag
         f = get_flag<Key, Value>(&dpart_state_type[track_flat_id]);
       }
       lds_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
@@ -198,7 +199,7 @@ void update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__rest
 template <typename T, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
 void update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y, void *temp_storage,
             LookBackType) {
-  const int UpdateBlockNum = (count + BLOCK_THREAD_NUM - 1) / BLOCK_THREAD_NUM;
+  const int UpdateBlockNum = (count + BLOCK_THREAD_NUM) / BLOCK_THREAD_NUM;
   char *remain_storage = reinterpret_cast<char *>(temp_storage);
   cudaMemset(remain_storage, 0, ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType)));
   int *dblock_id = reinterpret_cast<int *>(remain_storage);
@@ -212,7 +213,7 @@ void update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__rest
 template <int BLOCK_THREAD_NUM> int update_temp_storage_bytes(int count, SingleBlockType) { return 0; }
 
 template <int BLOCK_THREAD_NUM> int update_temp_storage_bytes(int count, LookBackType) {
-  const int UpdateBlockNum = (count + BLOCK_THREAD_NUM - 1) / BLOCK_THREAD_NUM;
+  const int UpdateBlockNum = (count + BLOCK_THREAD_NUM) / BLOCK_THREAD_NUM;
   return ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
 }
 
