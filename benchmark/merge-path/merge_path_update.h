@@ -176,8 +176,8 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     if (block_thread_id == BLOCK_THREAD_NUM - 1) {
       if (pair.key == lds_pair.key) {
         pair.val += lds_pair.val;
+        set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::P, pair.key, pair.val);
       }
-      set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::P, pair.key, pair.val);
     } else {
       if (lds_rows[block_thread_id] != lds_rows[block_thread_id + 1]) {
         if (pair.key == lds_pair.key) {
