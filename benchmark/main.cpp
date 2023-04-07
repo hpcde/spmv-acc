@@ -131,7 +131,8 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   // hola
   SPMV_BENCHMARK(HolaSpMV, "hola", ENABLE_HOLA);
   // merge path
-  SPMV_BENCHMARK(MergePathSpMV, "merge-path", ENABLE_MERGE_PATH)
+  SPMV_BENCHMARK(MergePathSingleBlockUpdateSpMV, "merge-path-single-block-update", ENABLE_MERGE_PATH)
+  SPMV_BENCHMARK(MergePathLookBackUpdateSpMV, "merge-path-look-back-update", ENABLE_MERGE_PATH)
   // ACSR
   SPMV_BENCHMARK(ACSRSpMV, "acsr", ENABLE_ACSR);
 #endif
