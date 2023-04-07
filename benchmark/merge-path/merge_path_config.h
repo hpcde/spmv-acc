@@ -1,18 +1,26 @@
 #ifndef SPMV_ACC_BENCHMARK_MERGE_PATH_CONFIG_H
 #define SPMV_ACC_BENCHMARK_MERGE_PATH_CONFIG_H
 
-// reduction algorithm:
-// 1. linear search -> REDUCE_LINEAR_SEARCH
-// 2. binary serach -> REDUCE_BINARY_SEARCH
+enum ReductionAlgorithm { Linear = 0, Binary = 1 };
 
-// #define REDUCE_LINEAR_SEARCH
-#define REDUCE_BINARY_SEARCH
+struct LinearSearchType {};
+struct BinarySearchType {};
 
-// update algorithm:
-// 1. single block -> UPDATE_SINGLE_BLOCK
-// 2. look back    -> UPDATE_LOOK_BACK
+template <int ReductionAlgorithm> struct ReductionTrait;
 
-// #define UPDATE_SINGLE_BLOCK
-#define UPDATE_LOOK_BACK
+template <> struct ReductionTrait<Linear> { using type = LinearSearchType; };
+
+template <> struct ReductionTrait<Binary> { using type = BinarySearchType; };
+
+enum UpdateAlgorithm { SingleBlock = 0, LookBack = 1 };
+
+struct SingleBlockType {};
+struct LookBackType {};
+
+template <int UpdateAlgorithm> struct UpdateTrait;
+
+template <> struct UpdateTrait<SingleBlock> { using type = SingleBlockType; };
+
+template <> struct UpdateTrait<LookBack> { using type = LookBackType; };
 
 #endif // SPMV_ACC_BENCHMARK_MERGE_PATH_CONFIG_H

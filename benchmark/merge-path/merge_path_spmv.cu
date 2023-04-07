@@ -10,6 +10,7 @@
 #include <cuda_runtime.h>
 #include <utility>
 
+template <int REDUCTION_ALGORITHM, int UPDATE_ALGORITHM>
 void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
   my_timer pre_timer, calc_timer, destroy_timer;
@@ -27,17 +28,12 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   int temp_storage_bytes = 0;
   temp_storage_bytes += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
   temp_storage_bytes += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
-#ifdef UPDATE_LOOK_BACK
-  const int UpdateBlockNum = (GlobalBlockNum + 255) / 256;
-  temp_storage_bytes += ALIGN_256_BYTES(sizeof(int));
-  temp_storage_bytes += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
-#endif
+  temp_storage_bytes += update_temp_storage_bytes<256>(GlobalBlockNum, typename UpdateTrait<UPDATE_ALGORITHM>::type{});
   cudaMalloc(&temp_storage, temp_storage_bytes);
-  remain_storage = reinterpret_cast<char*>(temp_storage);
+  remain_storage = reinterpret_cast<char *>(temp_storage);
   int *S = reinterpret_cast<int *>(remain_storage);
   remain_storage += ALIGN_256_BYTES((GlobalBlockNum + 1) * sizeof(int));
   KeyValuePair<int, T> *r = reinterpret_cast<KeyValuePair<int, T> *>(remain_storage);
-  ;
   remain_storage += ALIGN_256_BYTES(GlobalBlockNum * sizeof(KeyValuePair<int, T>));
 
   // step 1: partition
@@ -47,22 +43,12 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   // step 2: reduction
   calc_timer.start();
   reduction<T, I, BLOCK_THREAD_NUM, ITEMS_PER_THREAD><<<GlobalBlockNum, BLOCK_THREAD_NUM>>>(
-      alpha, h_csr_desc.nnz, S, r, d_csr_desc.row_ptr, d_csr_desc.col_index, d_csr_desc.values, x, y);
+      alpha, h_csr_desc.nnz, S, r, d_csr_desc.row_ptr, d_csr_desc.col_index, d_csr_desc.values, x, y,
+      typename ReductionTrait<REDUCTION_ALGORITHM>::type{});
   // step 3: update
-#ifdef UPDATE_SINGLE_BLOCK
-  { single_block_update<T, 256><<<1, 256>>>(r, h_csr_desc.rows, GlobalBlockNum, y); }
-#endif
-#ifdef UPDATE_LOOK_BACK
-  {
-    cudaMemset(remain_storage, 0, ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType)));
-    int *dblock_id = reinterpret_cast<int *>(remain_storage);
-    remain_storage += ALIGN_256_BYTES(sizeof(int));
-    PartStateType *dpart_state_type = reinterpret_cast<PartStateType *>(remain_storage);
-    remain_storage += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
-    look_back_update<T, 256>
-        <<<UpdateBlockNum, 256>>>(r, h_csr_desc.rows, GlobalBlockNum, y, dblock_id, dpart_state_type);
-  }
-#endif
+  update<T, 256>(r, h_csr_desc.rows, GlobalBlockNum, y, reinterpret_cast<void *>(remain_storage),
+                 typename UpdateTrait<UPDATE_ALGORITHM>::type{});
+  remain_storage += update_temp_storage_bytes<256>(GlobalBlockNum, typename UpdateTrait<UPDATE_ALGORITHM>::type{});
   cudaDeviceSynchronize();
   calc_timer.stop();
   destroy_timer.start();
@@ -72,3 +58,24 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
     bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
   }
 }
+
+// template instantiation
+template void merge_path_spmv<Linear, SingleBlock>(int trans, const int alpha, const int beta,
+                                                   const csr_desc<int, double> h_csr_desc,
+                                                   const csr_desc<int, double> d_csr_desc, const double *x, double *y,
+                                                   BenchmarkTime *bmt);
+
+template void merge_path_spmv<Linear, LookBack>(int trans, const int alpha, const int beta,
+                                                const csr_desc<int, double> h_csr_desc,
+                                                const csr_desc<int, double> d_csr_desc, const double *x, double *y,
+                                                BenchmarkTime *bmt);
+
+template void merge_path_spmv<Binary, SingleBlock>(int trans, const int alpha, const int beta,
+                                                   const csr_desc<int, double> h_csr_desc,
+                                                   const csr_desc<int, double> d_csr_desc, const double *x, double *y,
+                                                   BenchmarkTime *bmt);
+
+template void merge_path_spmv<Binary, LookBack>(int trans, const int alpha, const int beta,
+                                                const csr_desc<int, double> h_csr_desc,
+                                                const csr_desc<int, double> d_csr_desc, const double *x, double *y,
+                                                BenchmarkTime *bmt);
