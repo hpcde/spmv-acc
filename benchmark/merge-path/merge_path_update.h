@@ -5,7 +5,6 @@
 #include "merge_path_utils.h"
 #include <cub/block/block_scan.cuh>
 
-#ifdef UPDATE_SINGLE_BLOCK
 template <typename T, int BLOCK_THREAD_NUM>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     single_block_update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y) {
@@ -63,9 +62,7 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     }
   }
 }
-#endif
 
-#ifdef UPDATE_LOOK_BACK
 using PartStateType = int4;
 
 template <typename Key, typename Value> struct alignas(sizeof(PartStateType)) LookBackState {
@@ -191,6 +188,32 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     }
   }
 }
-#endif
+
+template <typename T, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
+void update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y, void *temp_storage,
+            SingleBlockType) {
+  single_block_update<T, BLOCK_THREAD_NUM><<<1, BLOCK_THREAD_NUM>>>(r, rows, count, y);
+}
+
+template <typename T, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
+void update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y, void *temp_storage,
+            LookBackType) {
+  const int UpdateBlockNum = (count + BLOCK_THREAD_NUM - 1) / BLOCK_THREAD_NUM;
+  char *remain_storage = reinterpret_cast<char *>(temp_storage);
+  cudaMemset(remain_storage, 0, ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType)));
+  int *dblock_id = reinterpret_cast<int *>(remain_storage);
+  remain_storage += ALIGN_256_BYTES(sizeof(int));
+  PartStateType *dpart_state_type = reinterpret_cast<PartStateType *>(remain_storage);
+  remain_storage += ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
+  look_back_update<T, BLOCK_THREAD_NUM, ITEMS_PER_THREAD>
+      <<<UpdateBlockNum, BLOCK_THREAD_NUM>>>(r, rows, count, y, dblock_id, dpart_state_type);
+}
+
+template <int BLOCK_THREAD_NUM> int update_temp_storage_bytes(int count, SingleBlockType) { return 0; }
+
+template <int BLOCK_THREAD_NUM> int update_temp_storage_bytes(int count, LookBackType) {
+  const int UpdateBlockNum = (count + BLOCK_THREAD_NUM - 1) / BLOCK_THREAD_NUM;
+  return ALIGN_256_BYTES(sizeof(int)) + ALIGN_256_BYTES(UpdateBlockNum * sizeof(PartStateType));
+}
 
 #endif // SPMV_ACC_BENCHMARK_MERGE_PATH_UPDATE_H
