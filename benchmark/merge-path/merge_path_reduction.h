@@ -5,6 +5,13 @@
 #include "merge_path_utils.h"
 #include <cub/block/block_scan.cuh>
 
+template <typename T, typename BlockScanT, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD> struct ReductionTempStorage {
+  union Reuseable {
+    typename BlockScanT::TempStorage for_scan;
+    KeyValuePair<int, T> for_pair[BLOCK_THREAD_NUM * ITEMS_PER_THREAD];
+  } reuse;
+};
+
 template <typename T, typename I, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     reduction(const int alpha, int nnz, int *__restrict__ S, KeyValuePair<int, T> *__restrict__ r,
@@ -18,31 +25,42 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
   const int block_idx_begin = global_block_id * BLOCK_THREAD_NUM * ITEMS_PER_THREAD;
 
   using BlockScanT = cub::BlockScan<KeyValuePair<int, T>, BLOCK_THREAD_NUM>;
-  __shared__ typename BlockScanT::TempStorage temp_storage_for_scan;
+
+  __shared__ char temp_storage[sizeof(ReductionTempStorage<T, BlockScanT, BLOCK_THREAD_NUM, ITEMS_PER_THREAD>)];
+  KeyValuePair<int, T> *temp_storage_for_pair = reinterpret_cast<KeyValuePair<int, T> *>(temp_storage);
+  typename BlockScanT::TempStorage *temp_storage_for_scan =
+      reinterpret_cast<typename BlockScanT::TempStorage *>(temp_storage);
   using ReduceOpT = ReduceByKeyOp;
   ReduceOpT op;
   KeyValuePair<int, T> pair[ITEMS_PER_THREAD];
   unsigned int is_last = 0;
 #pragma unroll ITEMS_PER_THREAD
   for (int i = 0; i < ITEMS_PER_THREAD; ++i) {
-    pair[i] = {block_row_end, static_cast<T>(0)};
-    const int idx = block_idx_begin + ITEMS_PER_THREAD * block_thread_id + i;
+    KeyValuePair<int, T> tmp_pair = {block_row_end, static_cast<T>(0)};
+    const int idx = block_idx_begin + BLOCK_THREAD_NUM * i + block_thread_id;
     // linear search
     int next_row_idx;
     for (int row = block_row_begin + 1; row <= block_row_end; ++row) {
       next_row_idx = rowptr[row];
       if (idx < next_row_idx) {
-        pair[i].key = row - 1;
+        tmp_pair.key = row - 1;
         break;
       }
     }
-    is_last |= (idx + 1 == next_row_idx) << i;
     if (idx < nnz) {
-      pair[i].val = alpha * value[idx] * x[colindex[idx]];
+      tmp_pair.val = alpha * value[idx] * x[colindex[idx]];
     }
+    temp_storage_for_pair[idx - block_idx_begin] = tmp_pair;
   }
   __syncthreads();
-  BlockScanT(temp_storage_for_scan).InclusiveScan<ITEMS_PER_THREAD>(pair, pair, op);
+#pragma unroll ITEMS_PER_THREAD
+  for (int i = 0; i < ITEMS_PER_THREAD; ++i) {
+    const int offset = ITEMS_PER_THREAD * block_thread_id + i;
+    pair[i] = temp_storage_for_pair[offset];
+    is_last |= (block_idx_begin + offset + 1 == rowptr[pair[i].key + 1]) << i;
+  }
+  __syncthreads();
+  BlockScanT(*temp_storage_for_scan).InclusiveScan<ITEMS_PER_THREAD>(pair, pair, op);
   __syncthreads();
 #pragma unroll ITEMS_PER_THREAD
   for (int i = 0; i < ITEMS_PER_THREAD; ++i) {
@@ -72,24 +90,35 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
   const int block_idx_begin = global_block_id * BLOCK_THREAD_NUM * ITEMS_PER_THREAD;
 
   using BlockScanT = cub::BlockScan<KeyValuePair<int, T>, BLOCK_THREAD_NUM>;
-  __shared__ typename BlockScanT::TempStorage temp_storage_for_scan;
+
+  __shared__ char temp_storage[sizeof(ReductionTempStorage<T, BlockScanT, BLOCK_THREAD_NUM, ITEMS_PER_THREAD>)];
+  KeyValuePair<int, T> *temp_storage_for_pair = reinterpret_cast<KeyValuePair<int, T> *>(temp_storage);
+  typename BlockScanT::TempStorage *temp_storage_for_scan =
+      reinterpret_cast<typename BlockScanT::TempStorage *>(temp_storage);
   using ReduceOpT = ReduceByKeyOp;
   ReduceOpT op;
   KeyValuePair<int, T> pair[ITEMS_PER_THREAD];
   unsigned int is_last = 0;
 #pragma unroll ITEMS_PER_THREAD
   for (int i = 0; i < ITEMS_PER_THREAD; ++i) {
-    pair[i] = {block_row_end, static_cast<T>(0)};
-    const int idx = block_idx_begin + ITEMS_PER_THREAD * block_thread_id + i;
+    KeyValuePair<int, T> tmp_pair = {block_row_end, static_cast<T>(0)};
+    const int idx = block_idx_begin + BLOCK_THREAD_NUM * i + block_thread_id;
     // binary search
-    pair[i].key = largest_less_equal_binary_search(block_row_begin, block_row_end + 1, rowptr, idx);
-    is_last |= (idx + 1 == rowptr[pair[i].key + 1]) << i;
+    tmp_pair.key = largest_less_equal_binary_search(block_row_begin, block_row_end + 1, rowptr, idx);
     if (idx < nnz) {
-      pair[i].val = alpha * value[idx] * x[colindex[idx]];
+      tmp_pair.val = alpha * value[idx] * x[colindex[idx]];
     }
+    temp_storage_for_pair[idx - block_idx_begin] = tmp_pair;
   }
   __syncthreads();
-  BlockScanT(temp_storage_for_scan).InclusiveScan<ITEMS_PER_THREAD>(pair, pair, op);
+#pragma unroll ITEMS_PER_THREAD
+  for (int i = 0; i < ITEMS_PER_THREAD; ++i) {
+    const int offset = ITEMS_PER_THREAD * block_thread_id + i;
+    pair[i] = temp_storage_for_pair[offset];
+    is_last |= (block_idx_begin + offset + 1 == rowptr[pair[i].key + 1]) << i;
+  }
+  __syncthreads();
+  BlockScanT(*temp_storage_for_scan).InclusiveScan<ITEMS_PER_THREAD>(pair, pair, op);
   __syncthreads();
 #pragma unroll ITEMS_PER_THREAD
   for (int i = 0; i < ITEMS_PER_THREAD; ++i) {

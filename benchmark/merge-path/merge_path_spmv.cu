@@ -15,10 +15,10 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
   my_timer pre_timer, calc_timer, destroy_timer;
   pre_timer.start();
-	cudaMemset(y, 0, h_csr_desc.rows * sizeof(double));
+  cudaMemset(y, 0, h_csr_desc.rows * sizeof(double));
 
   constexpr int BLOCK_THREAD_NUM = 256;
-  constexpr int ITEMS_PER_THREAD = 1;
+  constexpr int ITEMS_PER_THREAD = 2;
   constexpr int ITEMS_PER_BLOCK = BLOCK_THREAD_NUM * ITEMS_PER_THREAD;
   const int GlobalBlockNum = (h_csr_desc.nnz + ITEMS_PER_BLOCK - 1) / ITEMS_PER_BLOCK;
   using I = int;
