@@ -17,8 +17,8 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   pre_timer.start();
   cudaMemset(y, 0, h_csr_desc.rows * sizeof(double));
 
-  constexpr int BLOCK_THREAD_NUM = 256;
-  constexpr int ITEMS_PER_THREAD = 2;
+  constexpr int BLOCK_THREAD_NUM = 512;
+  constexpr int ITEMS_PER_THREAD = 4;
   constexpr int ITEMS_PER_BLOCK = BLOCK_THREAD_NUM * ITEMS_PER_THREAD;
   const int GlobalBlockNum = (h_csr_desc.nnz + ITEMS_PER_BLOCK - 1) / ITEMS_PER_BLOCK;
   using I = int;
