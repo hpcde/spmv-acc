@@ -100,43 +100,35 @@ template <typename T, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     look_back_update(KeyValuePair<int, T> *__restrict__ r, int rows, int count, T *__restrict__ y, int *dblock_id,
                      PartStateType *dpart_state_type) {
-  static_assert(ITEMS_PER_THREAD == 1, "not support mutiple items per thread.");
-  const int block_thread_id = threadIdx.x;
   using BlockScanT = cub::BlockScan<KeyValuePair<int, T>, BLOCK_THREAD_NUM>;
-  __shared__ typename BlockScanT::TempStorage temp_storage_for_scan;
   using ReduceOpT = ReduceByKeyOp;
   using Key = int;
   using Value = T;
+  static_assert(ITEMS_PER_THREAD == 1, "not support mutiple items per thread.");
   static_assert(sizeof(LookBackState<Key, Value>) == sizeof(PartStateType), "LookBackState must alignas 128 bits.");
-  ReduceOpT op;
+  __shared__ typename BlockScanT::TempStorage temp_storage_for_scan;
   __shared__ int flat_block_id;
   __shared__ int lds_rows[BLOCK_THREAD_NUM];
   __shared__ KeyValuePair<int, T> lds_pair;
-  __shared__ Key first_key;
+  const int block_thread_id = threadIdx.x;
+  ReduceOpT op;
   if (block_thread_id == 0) {
     flat_block_id = atomicAdd(dblock_id, 1);
   }
   __syncthreads();
   constexpr int ITEMS_PER_BLOCK = BLOCK_THREAD_NUM * ITEMS_PER_THREAD;
   const int block_item_begin = flat_block_id * ITEMS_PER_BLOCK;
-  const int block_item_end = min(block_item_begin + ITEMS_PER_BLOCK, count);
 
   PartStateType *block_state = dpart_state_type + flat_block_id;
-  KeyValuePair<Key, Value> pair(rows, static_cast<Value>(0));
+  KeyValuePair<Key, Value> pair = {rows, static_cast<Value>(0)};
   const int idx = block_item_begin + block_thread_id;
-  if (idx < block_item_end) {
+  if (idx < count) {
     pair = r[idx];
   }
-  if (block_thread_id == 0) {
-    first_key = pair.key;
-  }
-  if (block_thread_id == BLOCK_THREAD_NUM - 1) {
-    set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::I, pair.key, static_cast<Value>(0));
-  }
+  lds_rows[block_thread_id] = pair.key;
   __syncthreads();
   BlockScanT(temp_storage_for_scan).InclusiveScan(pair, pair, op);
   __syncthreads();
-  lds_rows[block_thread_id] = pair.key;
   if (flat_block_id == 0) {
     if (block_thread_id == BLOCK_THREAD_NUM - 1) {
       set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::P, pair.key, pair.val);
@@ -147,7 +139,7 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     }
   } else {
     if (block_thread_id == BLOCK_THREAD_NUM - 1) {
-      if (pair.key == first_key) {
+      if (pair.key == lds_rows[0]) {
         set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::A, pair.key, pair.val);
       } else {
         set_part_state<Key, Value>(block_state, LookBackState<Key, Value>::P, pair.key, pair.val);
@@ -155,23 +147,17 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
     }
     if (block_thread_id == 0) {
       const int track_flat_id = flat_block_id - 1;
-      int f = get_flag<Key, Value>(&dpart_state_type[track_flat_id]);
-      bool is_over = false;
-      KeyValuePair<int, T> tmp_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
-      if ((f != LookBackState<Key, Value>::X) && tmp_pair.key != pair.key) {
-        while (f == LookBackState<Key, Value>::X || f == LookBackState<Key, Value>::I) {
-          __threadfence();
-          f = get_flag<Key, Value>(&dpart_state_type[track_flat_id]);
-        }
-        tmp_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
-        y[tmp_pair.key] += tmp_pair.val;
-        is_over = true;
-      }
-      while (!is_over && f != LookBackState<Key, Value>::P) {
+      int f = LookBackState<Key, Value>::X;
+      while (f != LookBackState<Key, Value>::P) {
         __threadfence();
         f = get_flag<Key, Value>(&dpart_state_type[track_flat_id]);
       }
-      lds_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
+      __threadfence();
+      KeyValuePair<Key, Value> tmp_pair = get_pair<Key, Value>(&dpart_state_type[track_flat_id]);
+      if (tmp_pair.key < rows && tmp_pair.key != lds_rows[0]) {
+        y[tmp_pair.key] += tmp_pair.val;
+      }
+      lds_pair = tmp_pair;
     }
     __syncthreads();
     if (block_thread_id == BLOCK_THREAD_NUM - 1) {
