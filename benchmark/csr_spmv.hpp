@@ -113,6 +113,7 @@ struct CsrSpMV {
 #include "benchmark_cusparse.hpp"
 #include "benchmark_hola_cuda.hpp"
 #include "benchmark_merge_path.hpp"
+#include "benchmark_acsr.hpp"
 #endif
 
 #endif

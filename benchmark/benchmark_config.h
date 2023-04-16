@@ -30,6 +30,7 @@ constexpr bool ENABLE_CU_SPARSE = true;
 constexpr bool ENABLE_CUB = true;
 constexpr bool ENABLE_HOLA = true;
 constexpr bool ENABLE_MERGE_PATH = true;
+constexpr bool ENABLE_ACSR = true;
 
 #ifdef MACRO_BENCHMARK_FORCE_KERNEL_SYNC
 constexpr bool BENCHMARK_FORCE_KERNEL_SYNC = true;

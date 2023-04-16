@@ -131,6 +131,8 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   // merge path
   SPMV_BENCHMARK(MergePathSingleBlockUpdateSpMV, "merge-path-single-block-update", ENABLE_MERGE_PATH)
   SPMV_BENCHMARK(MergePathLookBackUpdateSpMV, "merge-path-look-back-update", ENABLE_MERGE_PATH)
+  // ACSR
+  SPMV_BENCHMARK(ACSRSpMV, "acsr", ENABLE_ACSR);
 #endif
 
   destroy_device_data(d_csr, dev_x, dev_y);

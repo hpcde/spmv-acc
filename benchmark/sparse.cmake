@@ -8,6 +8,7 @@ if (BENCHMARK_CUDA_ENABLE_FLAG)
     include(cub/cub_source_list.cmake)
     include(hola/hola_source_list.cmake)
     include(merge-path/merge_path_source_list.cmake)
+    include(acsr/acsr_source_list.cmake)
 else ()
     # add hola-hip
     include(hola-hip/hola-hip_source_list.cmake)
