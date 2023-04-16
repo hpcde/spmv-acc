@@ -2,7 +2,7 @@
 
 # this wrapper script is used for nvlink/hipcc to remove `-std=gnu++14` argument.
 
-LINKER=/opt/compilers/rocm/4.2.0/bin/hipcc
+LINKER=hipcc
 newcmd="$LINKER"
 REMOVE="-std=gnu++14"
 
@@ -24,4 +24,4 @@ do
 done
 
 # Finally execute the new command
-exec $newcmd
+exec $newcmd --gpu-architecture=compute_70 --gpu-code=sm_70

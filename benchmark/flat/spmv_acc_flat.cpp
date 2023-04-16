@@ -77,7 +77,7 @@ void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int
   const int nnz = d_csr_desc.nnz;
   const int n = d_csr_desc.cols;
 
-  constexpr int R = 2;
+  constexpr int R = 4;
   constexpr int THREADS_PER_BLOCK = 512;
   // for non one-pass.
   if (!FLAT_ONE_PASS) {
