@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "../common/macros.h"
+#include "building_config.h"
 #include "flat_config.h"
 #include "spmv_hip_acc_imp.h"
 
@@ -55,6 +56,26 @@ void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc
   adaptive_flat_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, d_csr_desc, x, y);
 }
 
+void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+                                  const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
+  const int bp_1 = h_csr_desc.row_ptr[h_csr_desc.rows / 2];
+  const int bp_2 = h_csr_desc.row_ptr[h_csr_desc.rows];
+
+  const int nnz_block_0 = bp_1 - 0;
+  const int nnz_block_1 = bp_2 - bp_1;
+
+  VAR_FROM_CSR_DESC(d_csr_desc)
+  const int nnz = d_csr_desc.nnz;
+  const int n = d_csr_desc.cols;
+
+  constexpr int R = 2;
+  constexpr int THREADS_PER_BLOCK = 512;
+  constexpr int blocks = 512;
+  constexpr int RED_OPT = FLAT_REDUCE_OPTION_SEGMENT_SUM;
+  flat_multi_pass_sparse_spmv<R, RED_OPT, 2, blocks, THREADS_PER_BLOCK>(trans, alpha, beta, m, n, nnz, rowptr, colindex,
+                                                                        value, x, y);
+}
+
 /**
  * set flat kernel template parameters adaptively.
  * currently, it only support adaptive template parameters on one-pass flat method.
@@ -68,6 +89,7 @@ void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int
 
   constexpr int R = 2;
   constexpr int THREADS_PER_BLOCK = 512;
+
   // for non one-pass.
   if (!FLAT_ONE_PASS) {
     constexpr int blocks = 512;

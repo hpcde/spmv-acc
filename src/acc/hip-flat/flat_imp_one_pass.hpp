@@ -64,6 +64,11 @@ __global__ void spmv_flat_one_pass_kernel(int m, const T alpha, const T beta, co
     flat_reduce_in_vector_with_mem_coalescing<I, T, nnz_per_block, THREADS, REDUCE_VEC_SIZE>(
         n_reduce_rows_num, tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id, alpha, row_offset,
         shared_val, y);
+  } else if (REDUCE_OPTION == FLAT_REDUCE_OPTION_SEGMENT_SUM) {
+      __shared__ I shared_idx[THREADS];
+      flat_reduce_segment_sum<I, T, nnz_per_block, R, THREADS>(tid_in_block, bp_index, reduce_start_row_id,
+                                                               reduce_end_row_id, alpha, row_offset, last_element_index, shared_idx,
+                                                               shared_val, y);
   } else {
     // direct reduction
     flat_reduce_direct<I, T, nnz_per_block, THREADS>(tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id,
