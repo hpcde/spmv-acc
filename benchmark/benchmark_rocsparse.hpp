@@ -41,7 +41,7 @@ struct RocSparseVecRow : CsrSpMV {
     rocsparse_destroy_handle(handle);
     destroy_timer.stop();
     if (bmt != nullptr) {
-      bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
+      bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, destroy_timer.time_use);
     }
   }
   bool verify_beta_y() { return true; }
@@ -79,7 +79,7 @@ struct RocSparseAdaptive : CsrSpMV {
     rocsparse_destroy_handle(handle);
     destroy_timer.stop();
     if (bmt != nullptr) {
-      bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
+      bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, destroy_timer.time_use);
     }
   }
   bool verify_beta_y() { return true; }

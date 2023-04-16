@@ -72,7 +72,7 @@ inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta
   lazy_device_sync(true);
   calc_timer.stop();
   if (bmt != nullptr) {
-    bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.);
+    bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, 0.);
   }
 }
 
