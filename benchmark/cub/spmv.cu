@@ -7,6 +7,7 @@
 #include "../utils/benchmark_time.h"
 #include "api/types.h"
 #include "timer.h"
+#include "benchmark_config.h"
 
 void spmv(int trans, const csr_desc<int, double> h_csr_desc, const csr_desc<int, double> d_csr_desc, const double *x,
           double *y, BenchmarkTime *bmt) {
@@ -34,7 +35,7 @@ void spmv(int trans, const csr_desc<int, double> h_csr_desc, const csr_desc<int,
   // Execute SpMV
   CubDebugExit(cub::DeviceSpmv::CsrMV<double>(d_buffer, d_buffer_size, d_values, d_row_ptr, d_col_index, d_x, d_y, rows,
                                               cols, nnz, (cudaStream_t)0, false));
-  cudaDeviceSynchronize();
+  lazy_device_sync(true);
   calc_timer.stop();
   destroy_timer.start();
   cudaFree(d_buffer);

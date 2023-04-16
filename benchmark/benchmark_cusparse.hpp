@@ -42,7 +42,7 @@ struct CuSparseGeneral : CsrSpMV {
     // Execute SpMV
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &cu_alpha, cu_mat, cu_x, &cu_beta, cu_y, CUDA_R_64F,
                  CUSPARSE_MV_ALG_DEFAULT, d_buffer);
-    cudaDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     destroy_timer.start();
     // Clear up on device

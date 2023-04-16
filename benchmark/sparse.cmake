@@ -23,6 +23,13 @@ target_link_libraries(
         ${SPMV_BENCHMARK_UTILS_LIB}
 )
 
+if(BENCHMARK_FORCE_SYNC_KERNELS)
+    target_compile_definitions(${SPMV_BENCHMARK_SPARSE_LIB} PUBLIC MACRO_BENCHMARK_FORCE_KERNEL_SYNC=1)
+    message(STATUS "force kernel sync for target ${SPMV_BENCHMARK_SPARSE_LIB} is enabled")
+else()
+    message(STATUS "force kernel sync for target ${SPMV_BENCHMARK_SPARSE_LIB} is disabled")
+endif()
+
 target_include_directories(
     ${SPMV_BENCHMARK_SPARSE_LIB}
     PUBLIC

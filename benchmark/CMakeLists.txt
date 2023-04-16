@@ -42,6 +42,13 @@ target_include_directories(
         $<INSTALL_INTERFACE:include>
 )
 
+if(BENCHMARK_FORCE_SYNC_KERNELS)
+        target_compile_definitions(${SPMV_BENCHMARK_NAME} PUBLIC MACRO_BENCHMARK_FORCE_KERNEL_SYNC=1)
+        message(STATUS "force kernel sync for target ${SPMV_BENCHMARK_NAME} is enabled")
+else()
+        message(STATUS "force kernel sync for target ${SPMV_BENCHMARK_NAME} is disabled")
+endif()
+
 target_link_libraries(
         ${SPMV_BENCHMARK_NAME}
         PUBLIC
