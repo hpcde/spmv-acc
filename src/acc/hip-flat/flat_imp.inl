@@ -125,6 +125,27 @@ __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I
   }
 }
 
+// a more simple kernel for calculation break-point.
+template <int BREAK_STRIDE, int BLOCKS, typename I>
+__global__ void pre_calc_break_point_v2(const I *__restrict__ row_ptr, const I m, I *__restrict__ break_points,
+                                        const I bp_len) {
+  const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
+  const int global_threads_num = blockDim.x * gridDim.x;
+
+  constexpr I break_stride = BREAK_STRIDE;
+
+  for (int i = global_thread_id; i < m; i += global_threads_num) {
+    int p1 = row_ptr[i] / break_stride;
+    if (row_ptr[i] % break_stride != 0) {
+      p1++;
+    }
+    const int p2 = (row_ptr[i + 1] - 1) / break_stride;
+    for (int j = p1; j <= p2; j++) {
+      break_points[j] = i;
+    }
+  }
+}
+
 #define FLAT_KERNEL_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS)                                        \
   (spmv_flat_kernel<__WF_SIZE__, R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS, int,                              \
                     double>)<<<(BLOCKS), (THREADS)>>>(m, alpha, beta, rowptr, break_points, colindex, value, x, y)
