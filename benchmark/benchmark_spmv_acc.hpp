@@ -32,7 +32,7 @@ struct SpMVAccDefault : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -48,7 +48,7 @@ struct SpMVAccAdaptive : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -64,7 +64,7 @@ struct SpMVAccBlockRow : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -88,7 +88,7 @@ struct SpMVAccLight : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -104,7 +104,7 @@ struct SpMVAccLine : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -120,7 +120,7 @@ struct SpMVAccThreadRow : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -136,7 +136,7 @@ struct SpMVAccVecRow : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -152,7 +152,7 @@ struct SpMVAccWfRow : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -168,7 +168,7 @@ struct SpMVAccLineEnhance : CsrSpMV {
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
