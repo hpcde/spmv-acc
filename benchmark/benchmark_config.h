@@ -48,4 +48,9 @@ inline void lazy_device_sync(bool sync_flag = false) {
   }
 }
 
+// FLAT method config
+constexpr int FLAT_PRE_CALC_BP_KERNEL_VERSION_V1 = 1;
+constexpr int FLAT_PRE_CALC_BP_KERNEL_VERSION_V2 = 2;
+constexpr int FLAT_PRE_CALC_BP_KERNEL_VERSION = FLAT_PRE_CALC_BP_KERNEL_VERSION_V1;
+
 #endif // SPMV_ACC_BENCHMARK_CONFIG_H

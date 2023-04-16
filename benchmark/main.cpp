@@ -106,6 +106,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   SPMV_BENCHMARK(SpMVAccAdaptive, "spmv-acc-adaptive", ENABLE_SPMV_ACC_ADAPTIVE);
   SPMV_BENCHMARK(SpMVAccBlockRow, "spmv-acc-block-row", ENABLE_SPMV_ACC_BLOCK_ROW);
   SPMV_BENCHMARK(SpMVAccFlat, "spmv-acc-flat", ENABLE_SPMV_ACC_FLAT);
+  SPMV_BENCHMARK(SpMVAccFlatV2, "spmv-acc-flat-v2", ENABLE_SPMV_ACC_FLAT);
   SPMV_BENCHMARK(SpMVAccLight, "spmv-acc-light", ENABLE_SPMV_ACC_LIGHT);
   SPMV_BENCHMARK(SpMVAccLine, "spmv-acc-line", ENABLE_SPMV_ACC_LINE);
   SPMV_BENCHMARK(SpMVAccThreadRow, "spmv-acc-thread-row", ENABLE_SPMV_ACC_THREAD_ROW);

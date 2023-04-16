@@ -20,6 +20,10 @@ template <int BREAK_STRIDE, int BLOCKS, typename I>
 __global__ void pre_calc_break_point(const I *__restrict__ row_ptr, const I m, I *__restrict__ break_points,
                                      const I bp_len);
 
+template <int BREAK_STRIDE, int BLOCKS, typename I>
+__global__ void pre_calc_break_point_v2(const I *__restrict__ row_ptr, const I m, I *__restrict__ break_points,
+                                        const I bp_len);
+
 void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                       const csr_desc<int, double> d_csr_desc, const double *x, double *y);
 
