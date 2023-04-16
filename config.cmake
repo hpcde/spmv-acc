@@ -8,6 +8,7 @@ option(SPMV_OMP_ENABLED_FLAG "Enable OpenMP to parse input file" OFF)
 # However, if it is set to `ON`, it will use device side verification.
 option(DEVICE_SIDE_VERIFY_FLAG "Verify result of device side" OFF)
 option(BENCHMARK_CUDA_ENABLE_FLAG "Enable performance benchmark test on CUDA device" OFF)
+option(BENCHMARK_FORCE_SYNC_KERNELS "Add `hipDeviceSynchronize` between kernelss while benchmarking for getting real kernel time" OFF)
 set(AVAILABLE_CU "60" CACHE STRING "available Compute Units per GPU")
 # threads number in a wavefront (which is usually 64 for AMD GPU and 32 for NVIDIA GPU)
 set(WAVEFRONT_SIZE "64" CACHE STRING "threads number in a wavefront")
