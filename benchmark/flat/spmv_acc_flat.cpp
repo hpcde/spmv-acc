@@ -31,10 +31,12 @@ inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int be
   hipMalloc((void **)&break_points, break_points_len * sizeof(int));
   hipMemset(break_points, 0, break_points_len * sizeof(int));
   (pre_calc_break_point<R * THREADS_PER_BLOCK, BLOCKS, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
+  lazy_device_sync();
   pre_timer.stop();
+
   calc_timer.start();
   FLAT_KERNEL_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS_PER_BLOCK);
-  hipDeviceSynchronize();
+  lazy_device_sync(true);
   calc_timer.stop();
   if (bmt != nullptr) {
     bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.);
