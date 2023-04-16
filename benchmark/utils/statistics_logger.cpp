@@ -22,6 +22,7 @@ namespace statistics {
                   << "GFLOPS(total_time),"
                   << "mid pre cost,"
                   << "mid calc cost,"
+                  << "mid fixup(calc2) cost,"
                   << "mid destroy cost,"
                   << "mid total cost,"
                   << "first_failed_at,"
@@ -50,7 +51,7 @@ namespace statistics {
         std::cout << "PERFORMANCE," << mtx_name << "," << strategy_name << "," << rows << "," << cols << "," << nnz
                   << "," << (nnz + 0.0) / rows << "," << calc_time_bandwidth << "," << calc_time_gflops << ","
                   << total_time_bandwidth << "," << total_time_gflops << "," << bmt.pre_time_use << ","
-                  << bmt.calc_time_use << "," << bmt.destroy_time_use << "," << bmt.total_time_use << ","
+                  << bmt.calc_time_use << "," << bmt.calc2_time_use << "," << bmt.destroy_time_use << "," << bmt.total_time_use << ","
                   << verify_result.first_failed_at << "," << verify_result.failed_count << ","
                   << verify_result.max_error << std::endl;
     }

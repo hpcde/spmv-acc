@@ -41,6 +41,6 @@ void spmv(int trans, const csr_desc<int, double> h_csr_desc, const csr_desc<int,
   cudaFree(d_buffer);
   destroy_timer.stop();
   if (bmt != nullptr) {
-    bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
+    bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, destroy_timer.time_use);
   }
 }
