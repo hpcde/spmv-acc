@@ -14,6 +14,7 @@
 #include "hip-flat/spmv_hip_acc_imp.h"
 #include "spmv_acc_flat.h"
 #include "timer.h"
+#include "benchmark_config.h"
 
 template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS_PER_BLOCK>
 inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
@@ -64,10 +65,11 @@ inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta
   } else if (FLAT_PRE_CALC_BP_KERNEL_VERSION == FLAT_PRE_CALC_BP_KERNEL_VERSION_V2) {
     (pre_calc_break_point_v2<R * THREADS_PER_BLOCK, 0, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
   }
+  lazy_device_sync();
   pre_timer.stop();
   calc_timer.start();
   FLAT_KERNEL_ONE_PASS_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, HIP_BLOCKS, THREADS_PER_BLOCK);
-  hipDeviceSynchronize();
+  lazy_device_sync(true);
   calc_timer.stop();
   if (bmt != nullptr) {
     bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.);
