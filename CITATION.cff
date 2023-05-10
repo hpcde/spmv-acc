@@ -1,0 +1,111 @@
+cff-version: 1.2.0
+title: Efficient Algorithm Design of Optimizing SpMV on GPU
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Chu
+    given-names: Genshen
+    orcid: 'https://orcid.org/0000-0003-0374-1894'
+  - family-names: He
+    given-names: Yuanjie
+    orcid: 'https://orcid.org/0009-0003-7115-6846'
+  - family-names: Dong
+    given-names: Lingyu
+    orcid: 'https://orcid.org/0000-0003-0919-553X'
+  - family-names: Ding
+    given-names: Zhezhao
+    orcid: 'https://orcid.org/0000-0003-3437-8151'
+  - family-names: Chen
+    given-names: Dandan
+    orcid: 'https://orcid.org/0000-0002-9847-5092'
+  - family-names: Bai
+    given-names: He
+    orcid: 'https://orcid.org/0000-0001-5418-0375'
+  - family-names: Wang
+    given-names: Xuesong
+    orcid: 'https://orcid.org/0009-0000-2811-557X'
+  - family-names: Hu
+    given-names: Changjun
+    orcid: 'https://orcid.org/0000-0003-3857-7262'
+identifiers:
+  - type: doi
+    value: 10.1145/3588195.3593002
+repository-code: 'https://github.com/hpcde/spmv-acc'
+abstract: >-
+  Sparse matrix-vector multiplication (SpMV) is a
+  fundamental build- ing block for various numerical
+  computing applications. However, most existing GPU-SpMV
+  approaches may suffer from either long preprocessing
+  overhead, load imbalance, format conversion, bad memory
+  access patterns. In this paper, we proposed two new SpMV
+  algorithms: flat and line-enhance, as well as their
+  implementations, for GPU systems to overcome the above
+  shortcomings. Our algorithms work directly on the CSR
+  sparse matrix format. To achieve high performance: 1) for
+  load balance, the flat algorithm uses non- zero splitting
+  and line-enhance uses a mix of row and non-zero splitting;
+  2) memory access patterns are designed for both algorithms
+  for data loading, storing and reduction steps; and 3) an
+  adaptive approach is proposed to select appropriate
+  algorithm and parameters based on matrix characteristics.
+
+  We evaluate our methods using the SuiteSparse Matrix
+  Collec- tion on AMD and NVIDIA GPU platforms. Average
+  performance improvements of 424%, 741%, 49%, 46%, 72% are
+  achieved when comparing our adaptive approach with
+  CSR-Vector, CSR-Adaptive, HOLA, cuSparse and merge-based
+  SpMV, respectively. In bandwidth tests, our approach can
+  also achieve a high memory bandwidth, which is very close
+  to the peak memory bandwidth.
+keywords:
+  - SpMV
+  - GPU
+  - linear algebra
+  - sparse matrix
+  - CSR
+license: Apache-2.0
+version: 0.6.0
+doi: 10.1145/3588195.3593002
+date-released: 2022-04-18
+url: "https://github.com/hpcde/spmv-acc"
+preferred-citation:
+  type: conference-paper
+  authors:
+    - family-names: Chu
+      given-names: Genshen
+      orcid: 'https://orcid.org/0000-0003-0374-1894'
+    - family-names: He
+      given-names: Yuanjie
+      orcid: 'https://orcid.org/0009-0003-7115-6846'
+    - family-names: Dong
+      given-names: Lingyu
+      orcid: 'https://orcid.org/0000-0003-0919-553X'
+    - family-names: Ding
+      given-names: Zhezhao
+      orcid: 'https://orcid.org/0000-0003-3437-8151'
+    - family-names: Chen
+      given-names: Dandan
+      orcid: 'https://orcid.org/0000-0002-9847-5092'
+    - family-names: Bai
+      given-names: He
+      orcid: 'https://orcid.org/0000-0001-5418-0375'
+    - family-names: Wang
+      given-names: Xuesong
+      orcid: 'https://orcid.org/0009-0000-2811-557X'
+    - family-names: Hu
+      given-names: Changjun
+      orcid: 'https://orcid.org/0000-0003-3857-7262'
+  doi: 10.1145/3588195.3593002
+  title: Efficient Algorithm Design of Optimizing SpMV on GPU
+  isbn: 979-8-4007-0155-9/23/06
+  url: http://doi.org/10.1145/3588195.3593002
+  language: en
+  urldate: 2023-6-20
+  booktitle: Proceedings of the 32nd International Symposium on High-Performance Parallel and Distributed Computing (HPDC '23), June 16--23, 2023, Orlando, FL, USA
+  publisher: ACM Press
+#   author: Chu, Genshen and He, Yuanjie and Dong, Lingyu and Ding, Zhezhao and Chen, Dandan and Bai, He and Wang, Xuesong and Hu, Changjun
+  numpages: 14
+  series: HPDC '23
+  address: Orlando, Florida
+  location: Orlando, FL, USA
+  pages: 1--14
+  year: 2023
