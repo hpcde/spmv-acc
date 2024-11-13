@@ -7,6 +7,35 @@
 
 #include "../common/utils.h"
 
+template <typename I, typename T, int NNZ_PER_BLOCK, int R, int THREADS>
+__device__ __forceinline__ void flat_reduce_segment_sum(const int tid_in_block, const int bp_index,
+                                                        const I reduce_start_row_id, const I reduce_end_row_id,
+                                                        const T alpha, const I *__restrict__ row_offset,
+                                                        const I last_element_index, I *__restrict__ _lds_shared_idx,
+                                                        T *__restrict__ _lds_shared_data, T *__restrict__ y) {
+  I row = reduce_start_row_id;
+#pragma unroll
+  for (int i = 0; i < R; ++i) {
+    T *_lds_shared_data_cur = _lds_shared_data + i * THREADS;
+    const I cur_idx = bp_index * NNZ_PER_BLOCK + i * THREADS + tid_in_block;
+    for (I j = row + 1; j <= reduce_end_row_id; ++j) {
+      if (row_offset[j] - cur_idx > 0) {
+        row = j - 1;
+        _lds_shared_idx[tid_in_block] = row;
+        break;
+      }
+    }
+    __syncthreads();
+    block_segment_sum<I, T, THREADS>(_lds_shared_idx, _lds_shared_data_cur);
+    if (cur_idx < last_element_index &&
+        (tid_in_block == THREADS - 1 || _lds_shared_idx[tid_in_block] != _lds_shared_idx[tid_in_block + 1] ||
+         cur_idx == last_element_index - 1)) {
+      atomicAdd(&y[_lds_shared_idx[tid_in_block]], alpha * _lds_shared_data_cur[tid_in_block]);
+    }
+    __syncthreads();
+  };
+}
+
 template <typename I, typename T, int NNZ_PER_BLOCK, int THREADS, int VECTOR_SIZE>
 __device__ __forceinline__ void
 flat_reduce_in_vector(const int n_reduce_rows_num, const int tid_in_block, const int bp_index,

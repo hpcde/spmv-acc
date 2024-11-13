@@ -112,6 +112,7 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   SPMV_BENCHMARK(SpMVAccVecRow, "spmv-acc-vector-row", ENABLE_SPMV_ACC_VECTOR_ROW);
   SPMV_BENCHMARK(SpMVAccWfRow, "spmv-acc-wavefront-row", ENABLE_SPMV_ACC_WF_ROW);
   SPMV_BENCHMARK(SpMVAccLineEnhance, "spmv-acc-line-enhance", ENABLE_SPMV_ACC_LE_ROW);
+  SPMV_BENCHMARK(SpMVAccFlatSegSum, "spmv-acc-flat-seg-sum", ENABLE_SPMV_ACC_FLAT_SEG_SUM);
 
 #ifdef __HIP_PLATFORM_HCC__
   // rocsparse

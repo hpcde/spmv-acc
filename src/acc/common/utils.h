@@ -71,4 +71,26 @@ template <unsigned int WFSIZE> __device__ __forceinline__ double wfreduce_sum(do
 #endif
 }
 
+template <typename IndexType, typename ValueType, size_t THREADS>
+__device__ void block_segment_sum(const IndexType *idx, ValueType *val) {
+  ValueType left = 0;
+  if (threadIdx.x >= 1 && idx[threadIdx.x] == idx[threadIdx.x - 1]) {
+    left = val[threadIdx.x - 1];
+  }
+  __syncthreads();
+#pragma unroll
+  for (int i = 2; i < THREADS; i <<= 1) {
+    val[threadIdx.x] = val[threadIdx.x] + left;
+    left = 0;
+    __syncthreads();
+    if (threadIdx.x >= i && idx[threadIdx.x] == idx[threadIdx.x - i]) {
+      left = val[threadIdx.x - i];
+    }
+    __syncthreads();
+  }
+  val[threadIdx.x] = val[threadIdx.x] + left;
+  left = 0;
+  __syncthreads();
+}
+
 #endif // SPMV_ACC_COMMON_UTILS_H

@@ -44,9 +44,9 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
   const int global_thread_id = threadIdx.x + THREADS * blockIdx.x;
   constexpr int global_threads_num = BLOCKS * THREADS;
 
-  const int wf_id_in_block = blockIdx.x / WF_SIZE;         // wavefront id in block
-  const int block_id = blockIdx.x;                         // block id
-  const int tid_in_block = threadIdx.x % THREADS; // thread id in one block
+  const int wf_id_in_block = blockIdx.x / WF_SIZE; // wavefront id in block
+  const int block_id = blockIdx.x;                 // block id
+  const int tid_in_block = threadIdx.x % THREADS;  // thread id in one block
 
   constexpr unsigned int shared_len = THREADS * R; // 64 * 1024 / (BLOCKS / 64) / sizeof(T); // nnz per block
   __shared__ T shared_val[shared_len];
@@ -89,6 +89,11 @@ __global__ void spmv_flat_kernel(int m, const T alpha, const T beta, const I *__
       flat_reduce_in_vector_with_mem_coalescing<I, T, nnz_per_block, THREADS, REDUCE_VEC_SIZE>(
           n_reduce_rows_num, tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id, alpha, row_offset,
           shared_val, y);
+    } else if (REDUCE_OPTION == FLAT_REDUCE_OPTION_SEGMENT_SUM) {
+      __shared__ I shared_idx[THREADS];
+      flat_reduce_segment_sum<I, T, nnz_per_block, R, THREADS>(tid_in_block, bp_index, reduce_start_row_id,
+                                                               reduce_end_row_id, alpha, row_offset, last_element_index,
+                                                               shared_idx, shared_val, y);
     } else {
       // direct reduction
       flat_reduce_direct<I, T, nnz_per_block, THREADS>(tid_in_block, bp_index, reduce_start_row_id, reduce_end_row_id,

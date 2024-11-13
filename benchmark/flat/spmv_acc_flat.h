@@ -20,4 +20,7 @@ template <int FLAT_PRE_CALC_BP_KERNEL_VERSION = FLAT_PRE_CALC_BP_KERNEL_VERSION_
 void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                       const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt);
 
+void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+                                  const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt);
+
 #endif // SPMV_ACC_BENCHMARK_SPMV_ACC_FLAT_HPP
