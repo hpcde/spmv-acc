@@ -128,6 +128,8 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   SPMV_BENCHMARK(CubDeviceSpMV, "cub", ENABLE_CUB);
   // hola
   SPMV_BENCHMARK(HolaSpMV, "hola", ENABLE_HOLA);
+  // ACSR
+  SPMV_BENCHMARK(ACSRSpMV, "acsr", ENABLE_ACSR);
 #endif
 
   destroy_device_data(d_csr, dev_x, dev_y);

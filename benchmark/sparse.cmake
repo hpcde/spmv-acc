@@ -7,6 +7,7 @@ if (BENCHMARK_CUDA_ENABLE_FLAG)
     # add hola and cub
     include(cub/cub_source_list.cmake)
     include(hola/hola_source_list.cmake)
+    include(acsr/acsr_source_list.cmake)
 else ()
     # add hola-hip
     include(hola-hip/hola-hip_source_list.cmake)
