@@ -42,7 +42,7 @@ struct CuSparseGeneral : CsrSpMV {
     // Execute SpMV
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &cu_alpha, cu_mat, cu_x, &cu_beta, cu_y, CUDA_R_64F,
                  CUSPARSE_MV_ALG_DEFAULT, d_buffer);
-    cudaDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     destroy_timer.start();
     // Clear up on device
@@ -52,7 +52,7 @@ struct CuSparseGeneral : CsrSpMV {
     cusparseDestroy(handle);
     destroy_timer.stop();
     if (bmt != nullptr) {
-      bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
+      bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, destroy_timer.time_use);
     }
   }
   bool verify_beta_y() { return true; }

@@ -28,11 +28,11 @@ struct SpMVAccDefault : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     default_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -44,11 +44,11 @@ struct SpMVAccAdaptive : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     adaptive_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -60,11 +60,11 @@ struct SpMVAccBlockRow : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     block_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -100,11 +100,11 @@ struct SpMVAccLight : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     light_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -116,11 +116,11 @@ struct SpMVAccLine : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     adaptive_line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -132,11 +132,11 @@ struct SpMVAccThreadRow : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     thread_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -148,11 +148,11 @@ struct SpMVAccVecRow : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     vec_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -164,11 +164,11 @@ struct SpMVAccWfRow : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     wf_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }
@@ -180,11 +180,11 @@ struct SpMVAccLineEnhance : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     adaptive_enhance_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
-      bmt->set_time(0., calc_time_cost, 0.);
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
     }
   }
   bool verify_beta_y() { return true; }

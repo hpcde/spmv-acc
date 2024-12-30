@@ -7,6 +7,7 @@ if (BENCHMARK_CUDA_ENABLE_FLAG)
     # add hola and cub
     include(cub/cub_source_list.cmake)
     include(hola/hola_source_list.cmake)
+    include(merge-path/merge_path_source_list.cmake)
     include(acsr/acsr_source_list.cmake)
 else ()
     # add hola-hip
@@ -21,6 +22,13 @@ target_link_libraries(
         ${SPMV_CLI_LIB}
         ${SPMV_BENCHMARK_UTILS_LIB}
 )
+
+if(BENCHMARK_FORCE_SYNC_KERNELS)
+    target_compile_definitions(${SPMV_BENCHMARK_SPARSE_LIB} PUBLIC MACRO_BENCHMARK_FORCE_KERNEL_SYNC=1)
+    message(STATUS "force kernel sync for target ${SPMV_BENCHMARK_SPARSE_LIB} is enabled")
+else()
+    message(STATUS "force kernel sync for target ${SPMV_BENCHMARK_SPARSE_LIB} is disabled")
+endif()
 
 target_include_directories(
     ${SPMV_BENCHMARK_SPARSE_LIB}

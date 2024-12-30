@@ -11,6 +11,7 @@
 #include <hip/hip_runtime_api.h>
 
 #include "api/types.h"
+#include "benchmark_merge_path.hpp"
 #include "clipp.h"
 
 #include "csr_binary_reader.hpp"
@@ -129,6 +130,9 @@ void test_spmv(std::string mtx_path, type_csr h_csr, host_vectors<dtype> h_vecto
   SPMV_BENCHMARK(CubDeviceSpMV, "cub", ENABLE_CUB);
   // hola
   SPMV_BENCHMARK(HolaSpMV, "hola", ENABLE_HOLA);
+  // merge path
+  SPMV_BENCHMARK(MergePathSingleBlockUpdateSpMV, "merge-path-single-block-update", ENABLE_MERGE_PATH)
+  SPMV_BENCHMARK(MergePathLookBackUpdateSpMV, "merge-path-look-back-update", ENABLE_MERGE_PATH)
   // ACSR
   SPMV_BENCHMARK(ACSRSpMV, "acsr", ENABLE_ACSR);
 #endif

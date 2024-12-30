@@ -33,7 +33,7 @@ struct RocSparseVecRow : CsrSpMV {
     calc_timer.start();
     rocsparse_dcsrmv(handle, rocsparse_operation_none, d_csr_desc.rows, d_csr_desc.cols, d_csr_desc.nnz, &hip_alpha,
                      descrA, d_csr_desc.values, d_csr_desc.row_ptr, d_csr_desc.col_index, nullptr, x, &hip_beta, y);
-    hipDeviceSynchronize();
+    lazy_device_sync(true);
     calc_timer.stop();
     destroy_timer.start();
     // Clear up on device
@@ -41,7 +41,7 @@ struct RocSparseVecRow : CsrSpMV {
     rocsparse_destroy_handle(handle);
     destroy_timer.stop();
     if (bmt != nullptr) {
-      bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
+      bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, destroy_timer.time_use);
     }
   }
   bool verify_beta_y() { return true; }
@@ -70,7 +70,7 @@ struct RocSparseAdaptive : CsrSpMV {
     calc_timer.start();
     rocsparse_dcsrmv(handle, rocsparse_operation_none, d_csr_desc.rows, d_csr_desc.cols, d_csr_desc.nnz, &hip_alpha,
                      descrA, d_csr_desc.values, d_csr_desc.row_ptr, d_csr_desc.col_index, info, x, &hip_beta, y);
-    hipDeviceSynchronize();
+    lazy_device_sync();
     calc_timer.stop();
     destroy_timer.start();
     // Clear up on device
@@ -79,7 +79,7 @@ struct RocSparseAdaptive : CsrSpMV {
     rocsparse_destroy_handle(handle);
     destroy_timer.stop();
     if (bmt != nullptr) {
-      bmt->set_time(pre_timer.time_use, calc_timer.time_use, destroy_timer.time_use);
+      bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, destroy_timer.time_use);
     }
   }
   bool verify_beta_y() { return true; }
