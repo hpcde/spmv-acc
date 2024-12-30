@@ -1,0 +1,43 @@
+version: 2
+args:
+git-replace: {}
+pkg: github.com/hpcde/spmv-acc
+
+features:
+ default:
+   needs: [nvidia]
+ nvidia:
+   deps: ["github.com/NVlabs/cub", "bitbucket.org/gpusmack/holaspmv"]
+   needs: []
+ rocm:
+   deps: ["git.hpcer.dev/PRA/hola-hip"]
+   needs: []
+
+dependencies:
+  packages:
+    github.com/NVlabs/cub@1.12.1:
+      optional: true
+      build:
+        - RUN {{.PKG_ROOT}} ln -sf {{.SRC_DIR}}/cub/ {{.INCLUDE}}/cub
+    github.com/muellan/clipp@v1.2.3:
+      build:
+        - CP include/clipp.h {{.INCLUDE}}/clipp.h
+    bitbucket.org/gpusmack/holaspmv@e1df708ac3b8d09efe1c1971f477f2ffde233122:
+      optional: true
+      cmake_lib: |
+          set(HOLASPMV_SRC_DIR {{.SRC_DIR}})
+      build:
+        - RUN {{.SRC_DIR}} git apply {{.PKG_ROOT}}/third-party/holaspmv.patch
+        # download cub 1.8 for hola
+        - RUN {{.SRC_DIR}}/deps
+            curl https://github.com/NVlabs/cub/archive/refs/tags/1.8.0.tar.gz -L -o cub-1.8.0.tar.gz
+            && tar -xf cub-1.8.0.tar.gz
+            && ln -sf cub-1.8.0 cub
+            && rm -rf cub-1.8.0.tar.gz
+    git.hpcer.dev/PRA/hola-hip@08a2b06ceb5b5605dabf6842b90ab63b931a5607:
+      optional: true
+      build:
+        - RUN {{.SRC_DIR}} ls
+        - RUN {{.SRC_DIR}} echo "Please edit file holahip/hip-hola/utils/common.hpp to set the WARP_SIZE to the desired value (usually 32 for NVIDIA GPU and 64 for AMD GPU)."
+      cmake_lib: |
+          set(HOLA_HIP_SRC_DIR {{.SRC_DIR}})
