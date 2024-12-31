@@ -45,21 +45,21 @@ cd ../
 ```bash
 CC=clang CXX=hipcc cmake -DDEVICE_SIDE_VERIFY_FLAG=ON -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
 cmake --build ./build-hip
-./build-hip/bin/spmv-hip examples/data/rajat03.csr
+./build-hip/bin/spmv-cli examples/data/rajat03.csr -f csr
 ```
 
 - Build and verify on CPU side:
 ```bash
 CC=clang CXX=hipcc cmake -DCMAKE_BUILD_TYPE=Release -B./build-hip -S./
 cmake --build ./build-hip
-./build-hip/bin/spmv-hip examples/data/rajat03.csr
+./build-hip/bin/spmv-cli examples/data/rajat03.csr -f csr
 ```
 
 - Build by specifying a kernel strategy (e.g., use strategy `Adaptive`):
 ```bash
 CC=clang CXX=hipcc cmake -DKERNEL_STRATEGY=ADAPTIVE -DCMAKE_BUILD_TYPE=Release -B./build-hip-adaptive -S./
 cmake --build ./build-hip-adaptive
-./build-hip-adaptive/bin/spmv-hip examples/data/rajat03.csr
+./build-hip-adaptive/bin/spmv-cli examples/data/rajat03.csr -f csr
 ```
 
 ## For Developers

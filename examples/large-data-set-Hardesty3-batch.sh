@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J spmv-hip
+#SBATCH -J spmv-cli
 #SBATCH -o log-%j.log
 #SBATCH -e log-%j.err
 #SBATCH -N 1
@@ -10,7 +10,7 @@
 #SBATCH -t 00:05:00
 #SBATCH --export=ALL
 
-BIN_PATH=./spmv-hip
+BIN_PATH=./spmv-cli
 
 module purge
 module load compiler/rocm/3.9.1
@@ -22,4 +22,4 @@ ulimit -c unlimited
 
 # rows, cols, non-zeros, percent of non-zeros, average non-zeros per row
 echo "Hardesty3: (381,689	381,689	37,464,962	0.02572%	98.15573)"
-${BIN_PATH} ./large-data-set/Hardesty3.csr
+${BIN_PATH} ./large-data-set/Hardesty3.csr -f csr 
