@@ -4,6 +4,7 @@ project(SPMV-Acc)
 set(CMAKE_CXX_STANDARD 14)
 
 include(config.cmake)
+include(pkg.dep.cmake)
 
 add_subdirectory(src)
 add_subdirectory(cli)

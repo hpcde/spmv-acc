@@ -38,7 +38,7 @@ add_executable(${SPMV_BENCHMARK_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 target_include_directories(
         ${SPMV_BENCHMARK_NAME}
         PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${CMAKE_SOURCE_DIR}/third-party/include$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}$<SEMICOLON>${PROJECT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:include>
 )
 

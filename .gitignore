@@ -3,6 +3,9 @@
 .idea/
 cmake-build-debug
 third-party/holaspmv/
+third-party/cub/
+vendor/
+pkg.dep.cmake
 
 ### VisualStudioCode template
 .vscode/*

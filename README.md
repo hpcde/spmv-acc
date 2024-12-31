@@ -34,9 +34,9 @@ Please cite SpMV-acc in your publications if it helps your research:
 ### Download dependency
 Before building, we need to download [clipp](https://github.com/muellan/clipp) for command line arguments processing.
 ```bash
-cd third-party
-./get_clipp.sh
-cd ../
+# pkg: https://github.com/genshen/pkg
+pkg fetch
+pkg install
 ```
 
 ### Build steps
