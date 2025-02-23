@@ -20,6 +20,7 @@
 #include "hip-thread-row/thread_row.h"
 #include "hip-vector-row/vector_row.h"
 #include "hip-wf-row/spmv_hip.h"
+#include "hip-csr-adaptive-plus/csr_adaptive_plus_spmv.h"
 #include "hip/spmv_hip_acc_imp.h"
 
 struct SpMVAccDefault : CsrSpMV {
@@ -180,6 +181,22 @@ struct SpMVAccLineEnhance : CsrSpMV {
     my_timer calc_timer;
     calc_timer.start();
     adaptive_enhance_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
+    lazy_device_sync(true);
+    calc_timer.stop();
+    double calc_time_cost = calc_timer.time_use;
+    if (bmt != nullptr) {
+      bmt->set_time(0., calc_time_cost, 0.0, 0.);
+    }
+  }
+  bool verify_beta_y() { return true; }
+};
+
+struct SpMVAccAdaptivePlus : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+                     const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
+    my_timer calc_timer;
+    calc_timer.start();
+    csr_adaptive_plus_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
     lazy_device_sync(true);
     calc_timer.stop();
     double calc_time_cost = calc_timer.time_use;
