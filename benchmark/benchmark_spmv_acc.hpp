@@ -11,6 +11,7 @@
 
 #include "csr_spmv.hpp"
 
+#include "csr-adaptive-plus/csr_adaptive_plus_benchmark.h"
 #include "flat/spmv_acc_flat.h"
 #include "hip-adaptive/adaptive.h"
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
@@ -185,6 +186,24 @@ struct SpMVAccLineEnhance : CsrSpMV {
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
+    }
+  }
+  bool verify_beta_y() { return true; }
+};
+
+struct SpMVAccAdaptivePlus : CsrSpMV {
+  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+                     const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
+    my_timer pre_timer, calc_timer, destroy_timer;
+
+    csr_adaptive_plus_sparse_spmv_with_profile<int, double>(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, pre_timer,
+                                                            calc_timer, destroy_timer);
+
+    double pre_time_cost = pre_timer.time_use;
+    double calc_time_cost = calc_timer.time_use;
+    double destroy_time_cost = destroy_timer.time_use;
+    if (bmt != nullptr) {
+      bmt->set_time(pre_time_cost, calc_time_cost, 0.0, destroy_time_cost);
     }
   }
   bool verify_beta_y() { return true; }

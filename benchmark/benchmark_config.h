@@ -19,6 +19,7 @@ constexpr bool ENABLE_SPMV_ACC_THREAD_ROW = false;
 constexpr bool ENABLE_SPMV_ACC_VECTOR_ROW = true;
 constexpr bool ENABLE_SPMV_ACC_WF_ROW = true;
 constexpr bool ENABLE_SPMV_ACC_LE_ROW = true;
+constexpr bool ENABLE_SPMV_ACC_ADAPTIVE_PLUS = true;
 constexpr bool ENABLE_SPMV_ACC_FLAT_SEG_SUM = true;
 
 // rocm

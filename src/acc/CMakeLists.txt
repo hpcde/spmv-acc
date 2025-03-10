@@ -10,6 +10,7 @@ set(ENABLED_STRATEGIES
         vector_row
         wf_row
         line_enhance
+        csr_adaptive_plus
         )
 
 # find HIP
