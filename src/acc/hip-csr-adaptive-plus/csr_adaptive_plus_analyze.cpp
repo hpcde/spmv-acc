@@ -10,8 +10,8 @@
 #include "csr_adaptive_plus_config.h"
 
 template <typename I, int THREADS_PER_BLOCK, int VEC_SIZE>
-I csr_adaptive_plus_analyze(const I m, const I nnz, const I MIN_NNZ_PER_BLOCK, std::vector<I> &break_points,
-                            std::vector<I> &first_block_of_row, const I *host_row_ptr, const I *dev_row_ptr) {
+I csr_adaptive_plus_analyze_imp(const I m, const I nnz, const I MIN_NNZ_PER_BLOCK, std::vector<I> &break_points,
+                                std::vector<I> &first_block_of_row, const I *host_row_ptr, const I *dev_row_ptr) {
   // each block process en entire row and at least `MIN_NNZ_PER_BLOCK` nnz.
   I bp_index = 0;
   I nnz_count = 0;
@@ -95,15 +95,23 @@ I csr_adaptive_plus_analyze(const I m, const I nnz, const I MIN_NNZ_PER_BLOCK, s
   return break_points.size() - 1; // return the new block number or bp array length.
 }
 
-// instance of csr_adaptive_plus_analyze.
-template int csr_adaptive_plus_analyze<int, 512, 2>(const int m, const int nnz, const int MIN_NNZ_PER_BLOCK,
-                                                    std::vector<int> &break_points, std::vector<int> &row_block_id,
-                                                    const int *host_row_ptr, const int *dev_row_ptr);
+#define INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(PARAM_THREADS_PER_BLOCK, PARAM_VEC_SIZE)                                \
+  template int csr_adaptive_plus_analyze_imp<int, PARAM_THREADS_PER_BLOCK, PARAM_VEC_SIZE>(                            \
+      const int m, const int nnz, const int MIN_NNZ_PER_BLOCK, std::vector<int> &break_points,                         \
+      std::vector<int> &row_block_id, const int *host_row_ptr, const int *dev_row_ptr);
 
-template int csr_adaptive_plus_analyze<int, 512, 8>(const int m, const int nnz, const int MIN_NNZ_PER_BLOCK,
-                                                    std::vector<int> &break_points, std::vector<int> &row_block_id,
-                                                    const int *host_row_ptr, const int *dev_row_ptr);
+// instance of csr_adaptive_plus_analyze_imp for THREADS_PER_BLOCK = 256
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 1);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 2);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 4);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 8);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 32);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 64);
 
-template int csr_adaptive_plus_analyze<int, 512, 16>(const int m, const int nnz, const int MIN_NNZ_PER_BLOCK,
-                                                     std::vector<int> &break_points, std::vector<int> &row_block_id,
-                                                     const int *host_row_ptr, const int *dev_row_ptr);
+// instance of csr_adaptive_plus_analyze_imp for THREADS_PER_BLOCK = 512
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 1);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 2);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 4);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 8);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 32);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 64);
