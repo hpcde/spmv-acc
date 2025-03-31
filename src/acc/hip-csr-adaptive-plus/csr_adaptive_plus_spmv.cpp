@@ -72,16 +72,10 @@ template <typename I> void csr_adaptive_plus_sparse_spmv_destroy(csr_adaptive_pl
   hipFree(info.first_process_block_of_row);
 }
 
-template <typename I, typename T>
-void csr_adaptive_plus_sparse_spmv(int trans, const T alpha, const T beta, const csr_desc<I, T> h_csr_desc,
-                                   const csr_desc<I, T> d_csr_desc, const T *x, T *y) {
-  constexpr int R = 2;
-  constexpr int THREADS_PER_BLOCK = 512;
-  // each block can process `MIN_NNZ_PER_BLOCK` non-zeros.
-  constexpr int MIN_NNZ_PER_BLOCK = 2 * R * THREADS_PER_BLOCK; // fixme: add more nnz.
-
-  constexpr int REDUCE_OPTION = LE_REDUCE_OPTION_VEC;
-  constexpr int VEC_SIZE = 8; // note: if using direct reduce, VEC_SIZE must set to 1.
+template <int VEC_SIZE, int R, int THREADS_PER_BLOCK, int MIN_NNZ_PER_BLOCK, typename I, typename T>
+void csr_adaptive_plus_sparse_spmv_wrapper(int trans, const T alpha, const T beta, const csr_desc<I, T> h_csr_desc,
+                                           const csr_desc<I, T> d_csr_desc, const T *x, T *y) {
+  constexpr int REDUCE_OPTION = VEC_SIZE == 1 ? LE_REDUCE_OPTION_DIRECT : LE_REDUCE_OPTION_VEC;
 
   auto info =
       csr_adaptive_plus_sparse_spmv_analyze<I, T, R, THREADS_PER_BLOCK, MIN_NNZ_PER_BLOCK, REDUCE_OPTION, VEC_SIZE>(
@@ -91,6 +85,40 @@ void csr_adaptive_plus_sparse_spmv(int trans, const T alpha, const T beta, const
       trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, info);
 
   csr_adaptive_plus_sparse_spmv_destroy<I>(info);
+}
+
+template <typename I, typename T>
+void csr_adaptive_plus_sparse_spmv(int trans, const T alpha, const T beta, const csr_desc<I, T> h_csr_desc,
+                                   const csr_desc<I, T> d_csr_desc, const T *x, T *y) {
+  constexpr int R = 2;
+  constexpr int THREADS_PER_BLOCK = 512;
+  // each block can process `MIN_NNZ_PER_BLOCK` non-zeros.
+  constexpr int MIN_NNZ_PER_BLOCK = 2 * R * THREADS_PER_BLOCK; // fixme: add more nnz.
+
+  const int avg_eles_per_row = h_csr_desc.row_ptr[h_csr_desc.rows] / h_csr_desc.rows;
+
+#define SPMV_CSR_ADPTIVE_PLUE_WRAPPER(V)                                                                               \
+  constexpr int VEC_SIZE = V;                                                                                          \
+  csr_adaptive_plus_sparse_spmv_wrapper<VEC_SIZE, R, THREADS_PER_BLOCK, MIN_NNZ_PER_BLOCK, I, T>(                      \
+      trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
+
+  if (avg_eles_per_row <= 2 || __WF_SIZE__ <= 2) {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(1);
+  } else if (avg_eles_per_row <= 4 || __WF_SIZE__ <= 2) {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(2);
+  } else if (avg_eles_per_row <= 8 || __WF_SIZE__ <= 4) {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(4);
+  } else if (avg_eles_per_row <= 16 || __WF_SIZE__ <= 8) {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(8);
+  } else if (avg_eles_per_row <= 32 || __WF_SIZE__ <= 16) {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(16);
+  } else if (avg_eles_per_row <= 64 || __WF_SIZE__ <= 32) {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(32);
+  } else {
+    SPMV_CSR_ADPTIVE_PLUE_WRAPPER(64);
+  }
+
+#undef SPMV_CSR_ADPTIVE_PLUE_WRAPPER
 }
 
 template void csr_adaptive_plus_sparse_spmv<int, double>(int trans, const double alpha, const double beta,
