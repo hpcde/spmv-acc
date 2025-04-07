@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"github.com/genshen/cmds"
+	"io"
 	"os"
 )
 
@@ -73,6 +74,13 @@ func (c *Conv) Run() error {
 		if !c.litterEndian {
 			byteOrder = binary.BigEndian
 		}
+
+		// write binary header to the binary file
+		if err := writeBinHeader(outfile, byteOrder, mm.header.val_type); err != nil {
+			return err
+		}
+
+		// write CSR matrix
 		var nnz TpIndex = (TpIndex)(len(mm.data))
 		if err := binary.Write(outfile, byteOrder, &(mm.header.numRows)); err != nil {
 			return err
@@ -89,9 +97,54 @@ func (c *Conv) Run() error {
 		if err := binary.Write(outfile, byteOrder, colIndex); err != nil {
 			return err
 		}
-		if err := binary.Write(outfile, byteOrder, nonZeros); err != nil {
+		// write CSR matrix: the value part
+		err := writeCsrMatrixValues(outfile, byteOrder, mm.header.val_type, nonZeros)
+		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func writeBinHeader(outfile io.Writer, byteOrder binary.ByteOrder, valTp MMValueType) error {
+	// write magic number
+	var magicNumber int32 = 0x20211015
+	if err := binary.Write(outfile, byteOrder, &(magicNumber)); err != nil {
+		return err
+	}
+	// write format version
+	var formatVersion int32 = 0x2
+	if err := binary.Write(outfile, byteOrder, &(formatVersion)); err != nil {
+		return err
+	}
+	// write value type
+	if err := binary.Write(outfile, byteOrder, &(valTp)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeCsrMatrixValues(outfile io.Writer, byteOrder binary.ByteOrder, valTp MMValueType, nonZeros []TpFloat) error {
+	if valTp == MMValueTypeUnknown {
+		return errors.New("unknown value type in mm file")
+	}
+	if valTp == MMValueTypePattern {
+		return nil
+	}
+
+	if valTp == MMValueTypeInt {
+		nonZerosInt := make([]TpValInt32, len(nonZeros))
+		for i, zs := range nonZeros {
+			nonZerosInt[i] = TpValInt32(zs)
+		}
+		if err := binary.Write(outfile, byteOrder, nonZerosInt); err != nil {
+			return err
+		}
+		return nil
+	} else {
+		if err := binary.Write(outfile, byteOrder, nonZeros); err != nil {
+			return err
+		}
+		return nil
+	}
 }
