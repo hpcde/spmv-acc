@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
 
   auto cli = (clipp::value("input file", mtx_path),
               clipp::option("-f", "--format")
-                      .doc("input matrix format, can be `csr` (default), `mm` (matrix market) or "
-                           " `bin` (csr binary)") &
+                      .doc("input matrix format, can be `csr` (default), `mtx` (matrix market) or "
+                           " `bin2` (csr binary v2)") &
                   clipp::value("format", fmt));
 
   if (!parse(argc, argv, cli)) {
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     csr_reader.as_raw_ptr(h_csr.values, h_csr.col_index, h_csr.row_ptr, h_vectors.hX);
     create_host_data(h_csr, h_vectors);
     test_spmv(mtx_path, h_csr, h_vectors);
-  } else if (fmt == "bin") {
+  } else if (fmt == "bin2") {
     csr_binary_reader<int32_t, dtype> csr_bin_reader;
     csr_bin_reader.load_mat(mtx_path);
     csr_bin_reader.close_stream();
@@ -73,13 +73,15 @@ int main(int argc, char **argv) {
 
     create_host_data(h_csr, h_vectors, true);
     test_spmv(mtx_path, h_csr, h_vectors);
-  } else {
+  } else if (fmt == "mtx") {
     matrix_market_reader<int, dtype> mm_reader;
     matrix_market<int, dtype> mm = mm_reader.load_mat(mtx_path);
     h_csr = mm.to_csr();
 
     create_host_data(h_csr, h_vectors, true);
     test_spmv(mtx_path, h_csr, h_vectors);
+  } else {
+    std::cerr << "unsupported matrix format." << std::endl;
   }
 }
 

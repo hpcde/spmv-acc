@@ -13,6 +13,7 @@ import (
 
 type TpIndex int32
 type TpFloat float64
+type TpValInt32 int32
 
 type Entry struct {
 	row   TpIndex
@@ -37,14 +38,23 @@ func (e Entries) Less(i, j int) bool {
 	return e[i].col < e[j].col
 }
 
+type MMValueType int32
+
+const (
+	MMValueTypeUnknown MMValueType = 0
+	MMValueTypePattern MMValueType = iota // bool
+	MMValueTypeInt     MMValueType = iota
+	MMValueTypeReal    MMValueType = iota // f64
+	MMValueTypeComplex MMValueType = iota // complex f64
+)
+
 // MMHeader contains the header descriptor of matrix market
 type MMHeader struct {
 	numRows      TpIndex
 	numColumns   TpIndex
 	numNonZeroes TpIndex // nnz in file body.
-	pattern      bool
+	val_type     MMValueType
 	hermitian    bool
-	complex      bool
 	symmetric    bool
 }
 
@@ -76,7 +86,8 @@ func conv(filepath string) (*MatrixMarket, error) {
 		reserve *= 2
 	}
 
-	// read body
+	// read body line by line.
+	// value parts in the sparse matrix are all treated as TpFloat.
 	data := make([]Entry, 0, reserve)
 	var read, nnzDia TpIndex
 	for {
@@ -128,17 +139,20 @@ func parseHeader(reader *bufio.Reader, filename string) (*MMHeader, TpIndex, err
 		numRows:      0,
 		numColumns:   0,
 		numNonZeroes: 0,
-		pattern:      false,
+		val_type:     MMValueTypeUnknown,
 		hermitian:    false,
-		complex:      false,
 		symmetric:    false,
 	}
 
 	if tokens[3] == "pattern" {
-		header.pattern = true
-	} else if tokens[3] == "complex" {
-		header.complex = true
-	} else if tokens[3] != "real" && tokens[3] != "integer" { // we treat integer type as real type.
+		header.val_type = MMValueTypePattern
+	} else if tokens[3] == "complex" { // todo: for complex type, we only support its real part.
+		header.val_type = MMValueTypeComplex
+	} else if tokens[3] == "real" {
+		header.val_type = MMValueTypeReal
+	} else if tokens[3] == "integer" {
+		header.val_type = MMValueTypeInt
+	} else {
 		return &header, 0, fmt.Errorf("matrix market data type does not match matrix format on filename: %s", filename)
 	}
 
@@ -201,7 +215,7 @@ func parseBodyLine(line, filename string, header MMHeader, lineCounter TpIndex, 
 		return nil, nil, nil
 	}
 
-	r, c, value, err := parseLineValue(line, header.pattern)
+	r, c, value, err := parseLineValue(line, header.val_type)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read data at line %d from matrix market file %s: %w", lineCounter, filename, err)
 	}
@@ -228,7 +242,9 @@ func parseBodyLine(line, filename string, header MMHeader, lineCounter TpIndex, 
 	}
 }
 
-func parseLineValue(line string, pattern bool) (TpIndex, TpIndex, TpFloat, error) {
+// parseLineValue parse a body line in mm file and return the entry result.
+// Note: parseLineValue treats the value as type TpFloat, even the value type is bool, int or complex (only parse its real part).
+func parseLineValue(line string, valueType MMValueType) (TpIndex, TpIndex, TpFloat, error) {
 	lineBuffer := bytes.Buffer{}
 	lineBuffer.WriteString(strings.TrimSpace(line))
 
@@ -237,7 +253,7 @@ func parseLineValue(line string, pattern bool) (TpIndex, TpIndex, TpFloat, error
 
 	var n int
 	var err error
-	if pattern {
+	if valueType == MMValueTypePattern {
 		n, err = fmt.Fscan(&lineBuffer, &row, &col)
 		value = 1.0
 	} else {

@@ -40,6 +40,34 @@ public:
       std::cerr << "file open failed, file: " << mtx_path << std::endl;
       return;
     }
+    // read header: magic number
+    int32_t magic_num;
+    fin.read((BytePtr)(&(magic_num)), sizeof(magic_num));
+    if (magic_num != 0x20211015) {
+      std::cerr << "read file failed with mismatch magic number, file:" << mtx_path << std::endl;
+      return;
+    }
+    // read header: binary format
+    int32_t bin_format;
+    fin.read((BytePtr)(&(bin_format)), sizeof(bin_format));
+    if (bin_format != 0x2) {
+      std::cerr << "we only support bin file version 2, bin file:" << mtx_path << std::endl;
+      return;
+    }
+    // read header: value type
+    typedef int32_t tp_val_tpye;
+    tp_val_tpye val_type;
+    fin.read((BytePtr)(&(val_type)), sizeof(tp_val_tpye));
+    constexpr tp_val_tpye TP_BOOL = 1;
+    constexpr tp_val_tpye TP_INT = 2;
+    constexpr tp_val_tpye TP_FLOAT = 3;
+    constexpr tp_val_tpye TP_COMPLEX = 4;
+    if (val_type != TP_BOOL && val_type != TP_INT && val_type != TP_FLOAT && val_type != TP_COMPLEX) {
+      std::cerr << "matrix value type not supported, bin file:" << mtx_path << std::endl;
+      return;
+    }
+
+    // read csr matrix
     I &_r = P::rows;
     I &_c = P::cols;
     I &_nnz = P::nnz;
@@ -53,7 +81,22 @@ public:
 
     fin.read((BytePtr)(P::row_ptr), sizeof(I) * (P::rows + 1));
     fin.read((BytePtr)(P::col_index), sizeof(I) * P::nnz);
-    fin.read((BytePtr)(P::values), sizeof(T) * P::nnz);
+
+    // read csr matrix: value part
+    if (val_type == TP_BOOL) {
+      for (int k = 0; k < P::nnz; k++) {
+        P::values[k] = 1.0;
+      }
+    } else if (val_type == TP_INT) {
+      int32_t *temp_int = new int32_t[P::nnz];
+      fin.read((BytePtr)(temp_int), sizeof(T) * P::nnz);
+      for (int k = 0; k < P::nnz; k++) {
+        P::values[k] = temp_int[k];
+      }
+      delete[] temp_int;
+    } else { // float or complex, read directly.
+      fin.read((BytePtr)(P::values), sizeof(T) * P::nnz);
+    }
     fin.close();
   }
 
