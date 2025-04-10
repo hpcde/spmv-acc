@@ -62,6 +62,15 @@ cmake --build ./build-hip-adaptive
 ./build-hip-adaptive/bin/spmv-cli examples/data/rajat03.csr -f csr
 ```
 
+### Build with benchmark
+```bash
+# please remomber to change WARP_SIZE in hola-hip on rocm platform
+cmake -B ./build -S ./ \
+   -DBENCHMARK_FORCE_SYNC_KERNELS=ON -DSPMV_BUILD_BENCHMARK=ON -DSPMV_OMP_ENABLED_FLAG=ON \
+   -DCMAKE_CXX_FLAGS="-std=c++14" -DHIP_HIPCC_FLAGS="-std=c++14"
+cmake --build ./build -j 4
+```
+
 ## For Developers
 ### Add a new kernel strategy
 A **kernel strategy** is an algorithm for calculating SpMV on device side.  

@@ -10,3 +10,5 @@ set(SP_LIB_SOURCE ${SP_LIB_SOURCE}
         ${HOLA_HIP_SRC_DIR}/hip-hola/hola_spmv.cpp
         ${HOLA_HIP_SRC_DIR}/hip-hola/d_csr.cpp
         )
+
+include_directories(${HOLA_HIP_SRC_DIR}/hip-hola/)
