@@ -10,6 +10,7 @@ import (
 	_ "suitesparse-dl/conv"
 	_ "suitesparse-dl/dl"
 	_ "suitesparse-dl/fetch"
+	_ "suitesparse-dl/list"
 )
 
 func main() {
