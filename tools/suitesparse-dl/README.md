@@ -18,8 +18,8 @@ We can use following srcipt to extract matrix market file from downloaded .tar.g
 ```bash
 #!/bin/bash
 
-root_dir='dl'
-target_dir='dl_mm'
+root_dir='dl/100k'
+target_dir='dl_mm/100k'
 mkdir -p $target_dir
 find $root_dir -name "*tar.gz" | sort > tar_list.txt
 for tar_path in `cat tar_list.txt`; do
@@ -81,4 +81,20 @@ Following shows an example of the layout of data directory `./dl_mm`.
 │         └── ash331.mtx
 └── ash85
           └── ash85.mtx
+```
+
+If you want to generate from bin2 file, you can specific flag `--type bin2`, `--data` points to the parent dir of .bin2 file.
+```bash
+./suitesparse-dl gen --data ./bin2/ --output spmv_batch.sh --tpl template.sh --type bin2
+```
+
+## Workflow to generating batch script
+```bash
+suitesparse-dl fetch # fetch metadata
+suitesparse-dl dl # download tar.gz of each matrix
+# below we take 100k as example: tar.gz is saved at ./dl; .mtx is saved at ./dl_mm; .bin2 is saved at .bin2.
+./extract.sh # extract from .tar.gz (without --strip-components 1 to tar command)
+suitesparse-dl list -d ./dl_mm/100k/ > 100k.list
+suitesparse-dl conv -b -mm ./100k.list -o ./bin2/100k/
+suitesparse-dl gen --data ./bin2/100k/ --output spmv_batch.sh --tpl template.sh --type bin2
 ```
