@@ -6,6 +6,7 @@
 #define SPMV_ACC_CSR_ADAPTIVE2_SPMV_H
 
 #include "../api/types.h"
+#include "../api/handle.h"
 
 template <typename Index> struct csr_adaptive_plus_analyze_info {
   Index *break_points = nullptr;
@@ -25,8 +26,17 @@ void csr_adaptive_plus_sparse_spmv_kernel(int trans, const T alpha, const T beta
 
 template <typename I> void csr_adaptive_plus_sparse_spmv_destroy(csr_adaptive_plus_analyze_info<I> info);
 
-template <typename I, typename T>
-void csr_adaptive_plus_sparse_spmv(int trans, const T alpha, const T beta, const csr_desc<I, T> h_csr_desc,
+template <int VEC_SIZE, int R, int THREADS_PER_BLOCK, int MIN_NNZ_PER_BLOCK, typename I, typename T>
+void csr_adaptive_plus_sparse_spmv_wrapper(int trans, const T alpha, const T beta, const csr_desc<I, T> h_csr_desc,
+                                           const csr_desc<I, T> d_csr_desc, const T *x, T *y);
+
+template <int VEC_SIZE, int R, int THREADS_PER_BLOCK, int MIN_NNZ_PER_BLOCK, typename I, typename T>
+void csr_adaptive_plus_sparse_spmv_profile(SpMVAccHanele *handle, int trans, const T alpha, const T beta,
+                                           const csr_desc<I, T> h_csr_desc, const csr_desc<I, T> d_csr_desc, const T *x,
+                                           T *y);
+
+template <bool PROFILE, typename I, typename T>
+void csr_adaptive_plus_sparse_spmv(SpMVAccHanele *handle, int trans, const T alpha, const T beta, const csr_desc<I, T> h_csr_desc,
                                    const csr_desc<I, T> d_csr_desc, const T *x, T *y);
 
 #endif // SPMV_ACC_CSR_ADAPTIVE2_SPMV_H
