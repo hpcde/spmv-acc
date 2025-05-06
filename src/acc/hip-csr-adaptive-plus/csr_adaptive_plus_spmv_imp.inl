@@ -43,7 +43,8 @@ __global__ void line_enhance_plus_kernel(const I m, const I bp[], const I row_1s
     line_enhance_plus<REDUCE_OPTION, WF_SIZE, VEC_SIZE, MAX_ROWS_PER_BLOCK, R, THREADS, I, T>(
         m, bp, alpha, beta, row_offset, csr_col_ind, csr_val, x, y, g_bid, block_row_begin, block_row_end);
   } else { // it is very long row
-    line_enhance_plus_shared_block<REDUCE_OPTION, WF_SIZE, MIN_NNZ_PER_BLOCK, R, THREADS, I, T>(
+    line_enhance_plus_shared_block<REDUCE_OPTION, WF_SIZE, spmv::gpu::adaptive_plus::NN_EI * MIN_NNZ_PER_BLOCK, 
+    R, THREADS, I, T>(
         m, alpha, beta, row_offset, csr_col_ind, csr_val, x, y, g_bid, block_row_begin, block_row_end,
         first_row_block_id);
   }
