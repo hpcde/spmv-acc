@@ -45,7 +45,9 @@ I csr_adaptive_plus_analyze_imp(const I m, const I nnz, const I MIN_NNZ_PER_BLOC
       const I multi_blocks = nnz_current_row / MIN_NNZ_PER_BLOCK;
       const I is_multi_block_row = multi_blocks > 1 ? 1 : 0;
       if (is_multi_block_row) {
-        for (int k = 0; k < multi_blocks; k++) {
+        // assign more nnz to a block
+        const int new_multi_blocks = nnz_current_row / (spmv::gpu::adaptive_plus::NN_EI * MIN_NNZ_PER_BLOCK);
+        for (int k = 0; k < new_multi_blocks; k++) {
           if (k == 0 && nnz_count == nnz_current_row) { // pre block is clean.
             // clean block. we ignore it. because row (i-1) is already asssigned to this block.
           } else {
@@ -105,6 +107,7 @@ INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 1);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 2);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 4);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 8);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 16);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 32);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(256, 64);
 
@@ -113,5 +116,15 @@ INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 1);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 2);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 4);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 8);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 16);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 32);
 INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(512, 64);
+
+// instance of csr_adaptive_plus_analyze_imp for THREADS_PER_BLOCK = 1024
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 1);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 2);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 4);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 8);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 16);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 32);
+INSTANCE_CSR_ADAPTIVE_PLUS_ANALYZE_IMP(1024, 64);

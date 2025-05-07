@@ -4,6 +4,7 @@
 
 #include "csr_adaptive_plus_benchmark.h"
 #include "hip-csr-adaptive-plus/csr_adaptive_plus_spmv.h"
+#include "api/handle.h"
 
 /**
  * the same as csr_adaptive_plus_sparse_spmv, but with timer in it.
@@ -20,22 +21,12 @@ void csr_adaptive_plus_sparse_spmv_with_profile(int trans, const T alpha, const 
   constexpr int REDUCE_OPTION = 1; // it is LE_REDUCE_OPTION_VEC;
   constexpr int VEC_SIZE = 8; // note: if using direct reduce, VEC_SIZE must set to 1.
 
-  pre_timer.start();
-  auto info =
-      csr_adaptive_plus_sparse_spmv_analyze<I, T, R, THREADS_PER_BLOCK, MIN_NNZ_PER_BLOCK, REDUCE_OPTION, VEC_SIZE>(
-          trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
-  pre_timer.stop();
+  SpMVAccHanele handle;
+  csr_adaptive_plus_sparse_spmv<true, I, T>(&handle, trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
 
-  calc_timer.start();
-  // launch the kernerl;
-  csr_adaptive_plus_sparse_spmv_kernel<I, T, R, THREADS_PER_BLOCK, MIN_NNZ_PER_BLOCK, REDUCE_OPTION, VEC_SIZE>(
-      trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, info);
-  hipDeviceSynchronize();
-  calc_timer.stop();
-
-  destroy_timer.start();
-  csr_adaptive_plus_sparse_spmv_destroy<I>(info);
-  destroy_timer.stop();
+  pre_timer.time_use = handle.profile_analyze_time;
+  calc_timer.time_use = handle.profile_kernel_time;
+  destroy_timer.time_use = handle.profile_destroy_time;
 }
 
 template void csr_adaptive_plus_sparse_spmv_with_profile<int, double>(int trans, const double alpha, const double beta,

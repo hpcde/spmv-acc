@@ -9,6 +9,7 @@ namespace spmv {
   namespace gpu {
     namespace adaptive_plus {
       constexpr bool DEBUG = false;
+      constexpr int NN_EI = 2;
     }
   } // namespace gpu
 } // namespace spmv
