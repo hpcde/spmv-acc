@@ -21,7 +21,7 @@ struct RocSparseVecRow : CsrSpMV {
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     const double hip_alpha = static_cast<double>(alpha);
     const double hip_beta = static_cast<double>(beta);
-    my_timer pre_timer, calc_timer, destroy_timer;
+    hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
     pre_timer.start();
     // rocSPARSE handle
     rocsparse_handle handle;
@@ -33,8 +33,7 @@ struct RocSparseVecRow : CsrSpMV {
     calc_timer.start();
     rocsparse_dcsrmv(handle, rocsparse_operation_none, d_csr_desc.rows, d_csr_desc.cols, d_csr_desc.nnz, &hip_alpha,
                      descrA, d_csr_desc.values, d_csr_desc.row_ptr, d_csr_desc.col_index, nullptr, x, &hip_beta, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     destroy_timer.start();
     // Clear up on device
     rocsparse_destroy_mat_descr(descrA);
@@ -52,7 +51,7 @@ struct RocSparseAdaptive : CsrSpMV {
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     const double hip_alpha = static_cast<double>(alpha);
     const double hip_beta = static_cast<double>(beta);
-    my_timer pre_timer, calc_timer, destroy_timer;
+    hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
     pre_timer.start();
     // rocSPARSE handle
     rocsparse_handle handle;
@@ -70,8 +69,7 @@ struct RocSparseAdaptive : CsrSpMV {
     calc_timer.start();
     rocsparse_dcsrmv(handle, rocsparse_operation_none, d_csr_desc.rows, d_csr_desc.cols, d_csr_desc.nnz, &hip_alpha,
                      descrA, d_csr_desc.values, d_csr_desc.row_ptr, d_csr_desc.col_index, info, x, &hip_beta, y);
-    lazy_device_sync();
-    calc_timer.stop();
+    calc_timer.stop(true);
     destroy_timer.start();
     // Clear up on device
     rocsparse_destroy_mat_info(info);

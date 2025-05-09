@@ -6,15 +6,16 @@
 #define SPMV_ACC_BENCHMARK_SPMV_ACC_HPP
 
 #include "api/types.h"
-#include "timer.h"
+#include "utils/timer_utils.h"
 #include "utils/benchmark_time.h"
 
 #include "csr_spmv.hpp"
 
-#include "csr-adaptive-plus/csr_adaptive_plus_benchmark.h"
+#include "api/handle.h"
 #include "flat/spmv_acc_flat.h"
 #include "hip-adaptive/adaptive.h"
 #include "hip-block-row-ordinary/spmv_hip_acc_imp.h"
+#include "hip-csr-adaptive-plus/csr_adaptive_plus_spmv.h"
 #include "hip-light/spmv_hip_acc_imp.h"
 #include "hip-line-enhance/line_enhance_spmv.h"
 #include "hip-line/line_strategy.h"
@@ -26,11 +27,10 @@
 struct SpMVAccDefault : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     default_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -42,11 +42,10 @@ struct SpMVAccDefault : CsrSpMV {
 struct SpMVAccAdaptive : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     adaptive_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -58,11 +57,10 @@ struct SpMVAccAdaptive : CsrSpMV {
 struct SpMVAccBlockRow : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     block_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -98,11 +96,10 @@ struct SpMVAccFlatSegSum : CsrSpMV {
 struct SpMVAccLight : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     light_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -114,11 +111,10 @@ struct SpMVAccLight : CsrSpMV {
 struct SpMVAccLine : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     adaptive_line_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -130,11 +126,10 @@ struct SpMVAccLine : CsrSpMV {
 struct SpMVAccThreadRow : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     thread_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -146,11 +141,10 @@ struct SpMVAccThreadRow : CsrSpMV {
 struct SpMVAccVecRow : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     vec_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -162,11 +156,10 @@ struct SpMVAccVecRow : CsrSpMV {
 struct SpMVAccWfRow : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     wf_row_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -178,11 +171,10 @@ struct SpMVAccWfRow : CsrSpMV {
 struct SpMVAccLineEnhance : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer calc_timer;
+    hip::timer::event_timer calc_timer;
     calc_timer.start();
     adaptive_enhance_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     double calc_time_cost = calc_timer.time_use;
     if (bmt != nullptr) {
       bmt->set_time(0., calc_time_cost, 0.0, 0.);
@@ -194,14 +186,12 @@ struct SpMVAccLineEnhance : CsrSpMV {
 struct SpMVAccAdaptivePlus : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-    my_timer pre_timer, calc_timer, destroy_timer;
+    SpMVAccHanele handle;
+    csr_adaptive_plus_sparse_spmv<true, int, double>(&handle, trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
 
-    csr_adaptive_plus_sparse_spmv_with_profile<int, double>(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, pre_timer,
-                                                            calc_timer, destroy_timer);
-
-    double pre_time_cost = pre_timer.time_use;
-    double calc_time_cost = calc_timer.time_use;
-    double destroy_time_cost = destroy_timer.time_use;
+    double pre_time_cost = handle.profile_analyze_time;
+    double calc_time_cost = handle.profile_kernel_time;
+    double destroy_time_cost = handle.profile_destroy_time;
     if (bmt != nullptr) {
       bmt->set_time(pre_time_cost, calc_time_cost, 0.0, destroy_time_cost);
     }

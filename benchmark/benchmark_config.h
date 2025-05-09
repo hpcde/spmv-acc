@@ -46,12 +46,4 @@ constexpr bool BENCHMARK_FORCE_KERNEL_SYNC = true;
 constexpr bool BENCHMARK_FORCE_KERNEL_SYNC = false;
 #endif
 
-/// @brief lazy device sync will try to not sync device unless user the sync flag (from global config or local config) has been specificed.
-/// @param sync_flag the local sync flag.
-inline void lazy_device_sync(bool sync_flag = false) {
-  if (sync_flag || BENCHMARK_FORCE_KERNEL_SYNC) {
-    hipDeviceSynchronize();
-  }
-}
-
 #endif // SPMV_ACC_BENCHMARK_CONFIG_H

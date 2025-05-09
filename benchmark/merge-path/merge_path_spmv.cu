@@ -15,7 +15,7 @@
 template <int REDUCTION_ALGORITHM, int UPDATE_ALGORITHM>
 void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
-  my_timer pre_timer, calc_timer, calc2_timer, destroy_timer;
+  hip::timer::event_timer  pre_timer, calc_timer, calc2_timer, destroy_timer;
   pre_timer.start();
   cudaMemset(y, 0, h_csr_desc.rows * sizeof(double));
 
@@ -41,7 +41,6 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
 
   // step 1: partition
   partition<int, 256, ITEMS_PER_BLOCK><<<512, 256>>>(d_csr_desc.row_ptr, h_csr_desc.rows, GlobalBlockNum + 1, S);
-  lazy_device_sync();
   pre_timer.stop();
 
   // step 2: reduction
@@ -49,7 +48,6 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   reduction<T, I, BLOCK_THREAD_NUM, ITEMS_PER_THREAD><<<GlobalBlockNum, BLOCK_THREAD_NUM>>>(
       alpha, h_csr_desc.nnz, S, r, d_csr_desc.row_ptr, d_csr_desc.col_index, d_csr_desc.values, x, y,
       typename ReductionTrait<REDUCTION_ALGORITHM>::type{});
-  lazy_device_sync();
   calc_timer.stop();
 
   // step 3: update
@@ -57,8 +55,7 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
   update<T, 256>(r, h_csr_desc.rows, GlobalBlockNum, y, reinterpret_cast<void *>(remain_storage),
                  typename UpdateTrait<UPDATE_ALGORITHM>::type{});
   remain_storage += update_temp_storage_bytes<256>(GlobalBlockNum, typename UpdateTrait<UPDATE_ALGORITHM>::type{});
-  lazy_device_sync(true);
-  calc2_timer.stop();
+  calc2_timer.stop(true);
 
   destroy_timer.start();
   cudaFree(temp_storage);

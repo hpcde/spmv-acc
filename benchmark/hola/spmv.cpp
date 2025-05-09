@@ -26,7 +26,7 @@ void spmv(int trans, int rows, int cols, int nnz, const csr_desc<int, double> d_
   d_x.size = rows;
   d_x.data = const_cast<double *>(x);
   size_t temp_size = 0;
-  my_timer pre_timer, calc_timer, destroy_timer;
+  hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
   pre_timer.start();
   // get tempmem size first
   try {

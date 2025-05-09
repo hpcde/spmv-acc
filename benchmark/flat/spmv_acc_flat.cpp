@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "../utils/benchmark_time.h"
+#include "../utils/timer_utils.h"
 #include "common/macros.h"
 #include "hip-flat/flat_config.h"
 #include "hip-flat/spmv_hip_acc_imp.h"
@@ -20,7 +21,7 @@ template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS
 inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
                                         const int *rowptr, const int *colindex, const double *value, const double *x,
                                         double *y, BenchmarkTime *bmt) {
-  my_timer pre_timer, calc_timer;
+  hip::timer::event_timer pre_timer, calc_timer;
   pre_timer.start();
   int *break_points;
   // the nnz is rowptr[m], in one round, it can process about `blocks * R * threads_per_block` nnz.
@@ -31,13 +32,11 @@ inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int be
   hipMalloc((void **)&break_points, break_points_len * sizeof(int));
   hipMemset(break_points, 0, break_points_len * sizeof(int));
   (pre_calc_break_point<R * THREADS_PER_BLOCK, BLOCKS, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
-  lazy_device_sync();
   pre_timer.stop();
 
   calc_timer.start();
   FLAT_KERNEL_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, BLOCKS, THREADS_PER_BLOCK);
-  lazy_device_sync(true);
-  calc_timer.stop();
+  calc_timer.stop(true);
   if (bmt != nullptr) {
     bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.);
   }
@@ -47,7 +46,7 @@ template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int THREADS_PER_BLOCK, 
 inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
                                       const int *rowptr, const int *colindex, const double *value, const double *x,
                                       double *y, BenchmarkTime *bmt) {
-  my_timer pre_timer, calc_timer;
+  hip::timer::event_timer pre_timer, calc_timer;
   pre_timer.start();
   // each block can process `R*THREADS_PER_BLOCK` non-zeros.
   const int HIP_BLOCKS = nnz / (R * THREADS_PER_BLOCK) + ((nnz % (R * THREADS_PER_BLOCK) == 0) ? 0 : 1);
@@ -67,12 +66,10 @@ inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta
   } else if (FLAT_PRE_CALC_BP_KERNEL_VERSION == FLAT_PRE_CALC_BP_KERNEL_VERSION_V2) {
     (pre_calc_break_point_v2<R * THREADS_PER_BLOCK, 0, int>)<<<1024, 512>>>(rowptr, m, break_points, break_points_len);
   }
-  lazy_device_sync();
   pre_timer.stop();
   calc_timer.start();
   FLAT_KERNEL_ONE_PASS_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, HIP_BLOCKS, THREADS_PER_BLOCK);
-  lazy_device_sync(true);
-  calc_timer.stop();
+  calc_timer.stop(true);
   if (bmt != nullptr) {
     bmt->set_time(pre_timer.time_use, calc_timer.time_use, 0.0, 0.);
   }

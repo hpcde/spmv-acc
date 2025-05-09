@@ -8,6 +8,7 @@
 #include "hola_vector.h"
 
 #include "../utils/benchmark_time.h"
+#include "../utils/timer_utils.h"
 
 void spmv(int trans, int rows, int cols, int nnz, const csr_desc<int, double> d_csr_desc, const double *x, double *y,
           BenchmarkTime *bmt) {
@@ -18,7 +19,7 @@ void spmv(int trans, int rows, int cols, int nnz, const csr_desc<int, double> d_
   dDenseVector<double> d_x(rows, const_cast<double *>(x));
 
   size_t temp_size = 0;
-  my_timer pre_timer, calc_timer, destroy_timer;
+  hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
   pre_timer.start();
   // get tempmem size first
   try {

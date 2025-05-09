@@ -19,7 +19,7 @@ void spmv(int trans, const csr_desc<int, double> h_csr_desc, const csr_desc<int,
   int rows = h_csr_desc.rows;
   int cols = h_csr_desc.cols;
   int nnz = h_csr_desc.nnz;
-  my_timer pre_timer, calc_timer, destroy_timer;
+  hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
   pre_timer.start();
   // Caching allocator for device memory
   cub::CachingDeviceAllocator g_allocator(true);
@@ -35,8 +35,7 @@ void spmv(int trans, const csr_desc<int, double> h_csr_desc, const csr_desc<int,
   // Execute SpMV
   CubDebugExit(cub::DeviceSpmv::CsrMV<double>(d_buffer, d_buffer_size, d_values, d_row_ptr, d_col_index, d_x, d_y, rows,
                                               cols, nnz, (cudaStream_t)0, false));
-  lazy_device_sync(true);
-  calc_timer.stop();
+  calc_timer.stop(true);
   destroy_timer.start();
   cudaFree(d_buffer);
   destroy_timer.stop();
