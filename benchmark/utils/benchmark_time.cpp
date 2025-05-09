@@ -1,6 +1,7 @@
 #include "benchmark_time.h"
 
-void BenchmarkTime::set_time(double _pre_time_use, double _calc_time_use, double _calc2_time_use, double _destroy_time_use) {
+void BenchmarkTime::set_time(double _pre_time_use, double _calc_time_use, double _calc2_time_use,
+                             double _destroy_time_use) {
   pre_time_use = _pre_time_use;
   calc_time_use = _calc_time_use;
   calc2_time_use = _calc2_time_use;
@@ -8,7 +9,9 @@ void BenchmarkTime::set_time(double _pre_time_use, double _calc_time_use, double
   update_total_time();
 }
 
-void BenchmarkTime::update_total_time() { total_time_use = pre_time_use + calc_time_use + calc2_time_use + destroy_time_use; }
+void BenchmarkTime::update_total_time() {
+  total_time_use = pre_time_use + calc_time_use + calc2_time_use + destroy_time_use;
+}
 
 void BenchmarkTimeArray::append(BenchmarkTime bmt) {
   if (index >= BENCHMARK_ARRAY_SIZE) {
