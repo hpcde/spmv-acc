@@ -7,8 +7,6 @@
 
 #include <algorithm>
 
-#include "timer.h"
-
 constexpr int BENCHMARK_ARRAY_SIZE = 3;
 
 struct BenchmarkTime {

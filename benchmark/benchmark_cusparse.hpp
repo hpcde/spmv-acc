@@ -11,6 +11,7 @@
 
 #include "timer.h"
 #include "utils/benchmark_time.h"
+#include "benchmark/timer_utils.h"
 
 struct CuSparseGeneral : CsrSpMV {
   void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
@@ -18,7 +19,7 @@ struct CuSparseGeneral : CsrSpMV {
 
     const double cu_alpha = static_cast<double>(alpha);
     const double cu_beta = static_cast<double>(beta);
-    my_timer pre_timer, calc_timer, destroy_timer;
+    hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
     pre_timer.start();
     // Create cuSPARSE handle
     cusparseHandle_t handle = NULL;
@@ -42,8 +43,7 @@ struct CuSparseGeneral : CsrSpMV {
     // Execute SpMV
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &cu_alpha, cu_mat, cu_x, &cu_beta, cu_y, CUDA_R_64F,
                  CUSPARSE_MV_ALG_DEFAULT, d_buffer);
-    lazy_device_sync(true);
-    calc_timer.stop();
+    calc_timer.stop(true);
     destroy_timer.start();
     // Clear up on device
     cusparseDestroySpMat(cu_mat);

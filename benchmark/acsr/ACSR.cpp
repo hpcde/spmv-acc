@@ -148,7 +148,7 @@ int calc_bin_index(int nnz)
 template<class T>
 void acsr_driver(int alpha, T *values, int *row_off, int* d_col_idx, int * d_row_off, T *x, T *y, int m, int n, int nnz,BenchmarkTime *bmt)
 {
-	my_timer pre_timer, calc_timer, destroy_timer;
+	hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
 
 	pre_timer.start();
 	cudaMemset(y, 0, n * sizeof(T));

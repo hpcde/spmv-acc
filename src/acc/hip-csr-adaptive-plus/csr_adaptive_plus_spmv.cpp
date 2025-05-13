@@ -95,28 +95,37 @@ void csr_adaptive_plus_sparse_spmv_profile(SpMVAccHanele *handle, int trans, con
                                            T *y) {
   constexpr int REDUCE_OPTION = VEC_SIZE == 1 ? LE_REDUCE_OPTION_DIRECT : LE_REDUCE_OPTION_VEC;
 
-  const auto start1 = std::chrono::high_resolution_clock::now();
+  hipEvent_t start, stop;
+  hipEventCreate(&start);
+  hipEventCreate(&stop);
+
+  hipEventRecord(start, NULL);
   auto info =
       csr_adaptive_plus_sparse_spmv_analyze<I, T, R, THREADS_PER_BLOCK, MIN_NNZ_PER_BLOCK, REDUCE_OPTION, VEC_SIZE>(
           trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);
-  const auto end1 = std::chrono::high_resolution_clock::now();
-  const double pre_time = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count();
+  hipEventRecord(stop, NULL);
+  hipEventSynchronize(stop);
+  float pre_time = 0.0f;
+  hipEventElapsedTime(&pre_time, start, stop);
 
-  const auto start2 = std::chrono::high_resolution_clock::now();
+  hipEventRecord(start, NULL);
   csr_adaptive_plus_sparse_spmv_kernel<I, T, R, THREADS_PER_BLOCK, MIN_NNZ_PER_BLOCK, REDUCE_OPTION, VEC_SIZE>(
       trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, info);
-  hipDeviceSynchronize();
-  const auto end2 = std::chrono::high_resolution_clock::now();
-  const double kernel_time = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count();
+  hipEventRecord(stop, NULL);
+  hipEventSynchronize(stop);
+  float kernel_time = 0.0f;
+  hipEventElapsedTime(&kernel_time, start, stop);
 
-  const auto start3 = std::chrono::high_resolution_clock::now();
+  hipEventRecord(start, NULL);
   csr_adaptive_plus_sparse_spmv_destroy<I>(info);
-  const auto end3 = std::chrono::high_resolution_clock::now();
-  const double des_time = std::chrono::duration_cast<std::chrono::microseconds>(end3 - start3).count();
+  hipEventRecord(stop, NULL);
+  hipEventSynchronize(stop);
+  float des_time = 0.0f;
+  hipEventElapsedTime(&des_time, start, stop);
 
-  handle->profile_analyze_time = pre_time;
-  handle->profile_kernel_time = kernel_time;
-  handle->profile_destroy_time = des_time;
+  handle->profile_analyze_time = 1000.0 * pre_time;
+  handle->profile_kernel_time = 1000.0 * kernel_time;
+  handle->profile_destroy_time = 1000.0 * des_time;
 }
 
 template <bool PROFILE, typename I, typename T>
