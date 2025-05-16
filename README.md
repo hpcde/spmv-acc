@@ -105,7 +105,7 @@ You can specific another kernel strategy (algorithm) by following rules:
 6. Edit file `src/acc/strategy_picker.cpp` to call the entry function of the corresponding strategy.
    e.g.,
    ```diff
-   void sparse_spmv(int trans, const int alpha, const int beta, int m, int n, const int *rowptr, const int *colindex,
+   void sparse_spmv(int trans, const double alpha, const double beta, int m, int n, const int *rowptr, const int *colindex,
                     const double *value, const double *x, double *y) {
    #ifdef KERNEL_STRATEGY_DEFAULT
    default_sparse_spmv(trans, alpha, beta, m, n, rowptr, colindex, value, x, y);

@@ -6,7 +6,7 @@
 #include "building_config.h"
 #include "thread_row_config.h"
 
-void thread_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void thread_row_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                             const double *d_x, double *d_y) {
   const int m = d_csr_desc.rows;
   const int n = d_csr_desc.cols;

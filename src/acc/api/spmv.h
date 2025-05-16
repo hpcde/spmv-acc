@@ -17,14 +17,14 @@
  * @param dx vector x.
  * @param dy vector y.
  */
-void sparse_csr_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void sparse_csr_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *dx, double *dy);
 
 /**
  * @deprecated This api is only available on ROCm platform.
  * It may not support CUDA platform due to the possible lack of UVM (Unified Virtual Memory) .
  */
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *rowptr, const int *colindex,
-                 const double *value, const double *x, double *y);
+void sparse_spmv(int htrans, const double halpha, const double hbeta, int hm, int hn, const int *rowptr,
+                 const int *colindex, const double *value, const double *x, double *y);
 
 #endif // SPMV_ACC_SPMV_H

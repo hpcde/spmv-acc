@@ -5,7 +5,7 @@
 #include "../common/macros.h"
 #include "line_enhance_spmv_imp.h"
 
-void line_enhance_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void line_enhance_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                               const double *x, double *y) {
   constexpr int R = 2;
   constexpr int ROWS_PER_BLOCK = 32; // note: make sure ROWS_PER_BLOCK * VEC_SIZE <= THREADS_PER_BLOCK.
@@ -20,7 +20,7 @@ void line_enhance_sparse_spmv(int trans, const int alpha, const int beta, const 
   LINE_ENHANCE_KERNEL_WRAPPER(REDUCE_OPTION, ROWS_PER_BLOCK, VEC_SIZE, R, BLOCKS, THREADS_PER_BLOCK);
 }
 
-void adaptive_enhance_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void adaptive_enhance_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                                   const double *x, double *y) {
   // common parameters:
   VAR_FROM_CSR_DESC(d_csr_desc)

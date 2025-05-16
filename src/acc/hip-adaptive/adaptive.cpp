@@ -13,7 +13,7 @@
 
 #include "../common/macros.h"
 
-void adaptive_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void adaptive_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                           const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
   VAR_FROM_CSR_DESC(d_csr_desc);
   const int n = d_csr_desc.cols;

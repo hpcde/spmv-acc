@@ -24,13 +24,13 @@ template <int BREAK_STRIDE, int BLOCKS, typename I>
 __global__ void pre_calc_break_point_v2(const I *__restrict__ row_ptr, const I m, I *__restrict__ break_points,
                                         const I bp_len);
 
-void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void flat_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                       const csr_desc<int, double> d_csr_desc, const double *x, double *y);
 
-void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void segment_sum_flat_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                                   const csr_desc<int, double> d_csr_desc, const double *x, double *y);
 
-void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha, const int beta,
+void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const double alpha, const double beta,
                                const csr_desc<int, double> d_csr_desc, const double *x, double *y);
 
 #include "flat_imp.inl"

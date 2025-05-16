@@ -25,7 +25,7 @@
 #include "hip/spmv_hip_acc_imp.h"
 
 struct SpMVAccDefault : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -40,7 +40,7 @@ struct SpMVAccDefault : CsrSpMV {
 };
 
 struct SpMVAccAdaptive : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -55,7 +55,7 @@ struct SpMVAccAdaptive : CsrSpMV {
 };
 
 struct SpMVAccBlockRow : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -70,7 +70,7 @@ struct SpMVAccBlockRow : CsrSpMV {
 };
 
 struct SpMVAccFlat : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V1>(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, bmt);
   }
@@ -78,7 +78,7 @@ struct SpMVAccFlat : CsrSpMV {
 };
 
 struct SpMVAccFlatV2 : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V2>(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, bmt);
   }
@@ -86,7 +86,7 @@ struct SpMVAccFlatV2 : CsrSpMV {
 };
 
 struct SpMVAccFlatSegSum : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     segment_sum_flat_sparse_spmv(trans, alpha, beta, h_csr_desc, d_csr_desc, x, y, bmt);
   }
@@ -94,7 +94,7 @@ struct SpMVAccFlatSegSum : CsrSpMV {
 };
 
 struct SpMVAccLight : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -109,7 +109,7 @@ struct SpMVAccLight : CsrSpMV {
 };
 
 struct SpMVAccLine : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -124,7 +124,7 @@ struct SpMVAccLine : CsrSpMV {
 };
 
 struct SpMVAccThreadRow : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -139,7 +139,7 @@ struct SpMVAccThreadRow : CsrSpMV {
 };
 
 struct SpMVAccVecRow : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -154,7 +154,7 @@ struct SpMVAccVecRow : CsrSpMV {
 };
 
 struct SpMVAccWfRow : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -169,7 +169,7 @@ struct SpMVAccWfRow : CsrSpMV {
 };
 
 struct SpMVAccLineEnhance : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     hip::timer::event_timer calc_timer;
     calc_timer.start();
@@ -184,7 +184,7 @@ struct SpMVAccLineEnhance : CsrSpMV {
 };
 
 struct SpMVAccAdaptivePlus : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
     SpMVAccHanele handle;
     csr_adaptive_plus_sparse_spmv<true, int, double>(&handle, trans, alpha, beta, h_csr_desc, d_csr_desc, x, y);

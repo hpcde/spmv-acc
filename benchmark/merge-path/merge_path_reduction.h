@@ -14,7 +14,7 @@ template <typename T, typename BlockScanT, int BLOCK_THREAD_NUM, int ITEMS_PER_T
 
 template <typename T, typename I, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
-    reduction(const int alpha, int nnz, int *__restrict__ S, KeyValuePair<int, T> *__restrict__ r,
+    reduction(const T alpha, int nnz, int *__restrict__ S, KeyValuePair<int, T> *__restrict__ r,
               const I *__restrict__ rowptr, const I *__restrict__ colindex, const T *__restrict__ value,
               const T *__restrict__ x, T *__restrict__ y, LinearSearchType) {
   static_assert(ITEMS_PER_THREAD <= 32, "ITEMS_PER_THREAD must less equal than 32.");
@@ -79,7 +79,7 @@ __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
 
 template <typename T, typename I, int BLOCK_THREAD_NUM, int ITEMS_PER_THREAD = 1>
 __global__ void __launch_bounds__(BLOCK_THREAD_NUM)
-    reduction(const int alpha, int nnz, int *__restrict__ S, KeyValuePair<int, T> *__restrict__ r,
+    reduction(const T alpha, int nnz, int *__restrict__ S, KeyValuePair<int, T> *__restrict__ r,
               const I *__restrict__ rowptr, const I *__restrict__ colindex, const T *__restrict__ value,
               const T *__restrict__ x, T *__restrict__ y, BinarySearchType) {
   static_assert(ITEMS_PER_THREAD <= 32, "ITEMS_PER_THREAD must less equal than 32.");

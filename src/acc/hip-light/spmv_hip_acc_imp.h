@@ -14,7 +14,7 @@ template <int THREADS_PER_VECTOR, int WF_SIZE, typename T>
 __global__ void spmv_light_kernel(const int m, const T alpha, const T beta, int *hip_row_counter, const int *row_offset,
                                   const int *csr_col_ind, const T *csr_val, const T *x, T *y);
 
-void light_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void light_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                        const double *x, double *y);
 
 #include "spmv_hip_acc_imp.inl"

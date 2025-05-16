@@ -35,11 +35,11 @@ __global__ void adaptive_vector_row_kernel(int m, const T alpha, const T beta, c
                                            const int *csr_col_ind, const T *csr_val, const T *x, T *y,
                                            const int block_bp);
 
-void vec_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void vec_row_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                          const double *x, double *y);
 
-void adaptive_vec_row_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha,
-                                  const int beta, const csr_desc<int, double> d_csr_desc, const double *x, double *y);
+void adaptive_vec_row_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const double alpha,
+                                  const double beta, const csr_desc<int, double> d_csr_desc, const double *x, double *y);
 
 #include "opt_double_buffer.hpp"
 #include "vector_row.inl"

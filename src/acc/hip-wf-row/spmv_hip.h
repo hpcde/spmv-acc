@@ -24,7 +24,7 @@ __global__ void device_spmv_wf_row_reg(int trans, const double alpha, const doub
                                        const int *rowptr, const int *colindex, const double *value, const double *x,
                                        double *y);
 
-void wf_row_sparse_spmv(int htrans, const int halpha, const int hbeta, const csr_desc<int, double> d_csr_desc,
+void wf_row_sparse_spmv(int htrans, const double halpha, const double hbeta, const csr_desc<int, double> d_csr_desc,
                         const double *hx, double *hy);
 
 #include "wavefront_row_default.hpp"

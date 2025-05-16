@@ -48,7 +48,7 @@ __inline__ __device__ T blockReduceSum(T val)
 }
 
 template<class T>
-__global__ void spmv(int alpha, T *__restrict__ values, const int *__restrict__ col_idx, const int *__restrict__ row_off, T *__restrict__ vect,
+__global__ void spmv(double alpha, T *__restrict__ values, const int *__restrict__ col_idx, const int *__restrict__ row_off, T *__restrict__ vect,
 					 T *__restrict__ res, int m, int n, const int *__restrict__ bin, int bin_size, int N, int nnz)
 {
 	int tid = threadIdx.x;
@@ -75,7 +75,7 @@ __global__ void spmv(int alpha, T *__restrict__ values, const int *__restrict__ 
 // flag -rdc=true should be set if this kernel is called
 ////////////////////////////////////////////////////////////////////////////////////
 template<class T>
-__global__ void row_specific_spmv(int alpha, T *__restrict__ values, int *__restrict__ col_idx, int *__restrict__ row_off,
+__global__ void row_specific_spmv(double alpha, T *__restrict__ values, int *__restrict__ col_idx, int *__restrict__ row_off,
 								  T *__restrict__ x, T *__restrict__ res, int m, int n, int nnz, int row, int noOfThreads)
 {
 	int tid = threadIdx.x;
@@ -103,7 +103,7 @@ __global__ void row_specific_spmv(int alpha, T *__restrict__ values, int *__rest
 		res[row] = sum * alpha;
 }
 template<class T>
-__global__ void dynamicParallelParent(int alpha, T *__restrict__ values, int *__restrict__ col_idx, int *__restrict__ row_off, T *__restrict__ x,
+__global__ void dynamicParallelParent(double alpha, T *__restrict__ values, int *__restrict__ col_idx, int *__restrict__ row_off, T *__restrict__ x,
 									  T *__restrict__ res, int m, int n, int nnz, int *__restrict__ G1, int G1_size)
 {
 	int tid = threadIdx.x;
@@ -146,7 +146,7 @@ int calc_bin_index(int nnz)
 // Matrix : m x n
 // Vector : n x 1
 template<class T>
-void acsr_driver(int alpha, T *values, int *row_off, int* d_col_idx, int * d_row_off, T *x, T *y, int m, int n, int nnz,BenchmarkTime *bmt)
+void acsr_driver(double alpha, T *values, int *row_off, int* d_col_idx, int * d_row_off, T *x, T *y, int m, int n, int nnz,BenchmarkTime *bmt)
 {
 	hip::timer::event_timer pre_timer, calc_timer, destroy_timer;
 
@@ -237,7 +237,7 @@ void acsr_driver(int alpha, T *values, int *row_off, int* d_col_idx, int * d_row
 }
 
 
-void acsr(int trans, const int alpha, const csr_desc<int, double> h_csr_desc, const csr_desc<int, double> d_csr_desc, const double *x,
+void acsr(int trans, const double alpha, const csr_desc<int, double> h_csr_desc, const csr_desc<int, double> d_csr_desc, const double *x,
           double *y, BenchmarkTime *bmt) {
     double *d_values = const_cast<double *>(d_csr_desc.values);
     double *d_x = const_cast<double *>(x);

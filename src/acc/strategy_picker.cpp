@@ -16,7 +16,7 @@
 #include "hip-wf-row/spmv_hip.h"
 #include "hip/spmv_hip_acc_imp.h"
 
-void sparse_csr_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void sparse_csr_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
 #ifdef KERNEL_STRATEGY_DEFAULT
   default_sparse_spmv(trans, alpha, beta, d_csr_desc, x, y);
