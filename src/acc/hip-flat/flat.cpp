@@ -10,7 +10,7 @@
 #include "spmv_hip_acc_imp.h"
 
 template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS_PER_BLOCK>
-inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
+inline void flat_multi_pass_sparse_spmv(int trans, const double alpha, const double beta, int m, int n, int nnz,
                                         const int *rowptr, const int *colindex, const double *value, const double *x,
                                         double *y) {
   int *break_points;
@@ -27,7 +27,7 @@ inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int be
 }
 
 template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int THREADS_PER_BLOCK>
-inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
+inline void flat_one_pass_sparse_spmv(int trans, const double alpha, const double beta, int m, int n, int nnz,
                                       const int *rowptr, const int *colindex, const double *value, const double *x,
                                       double *y) {
   // each block can process `R*THREADS_PER_BLOCK` non-zeros.
@@ -44,7 +44,7 @@ inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta
   FLAT_KERNEL_ONE_PASS_WRAPPER(R, REDUCE_OPTION, REDUCE_VEC_SIZE, HIP_BLOCKS, THREADS_PER_BLOCK);
 }
 
-void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void flat_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                       const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
   // divide the matrix into 2 blocks and calculate nnz for each block.
   const int m = h_csr_desc.rows;
@@ -56,7 +56,7 @@ void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc
   adaptive_flat_sparse_spmv(nnz_block_0, nnz_block_1, trans, alpha, beta, d_csr_desc, x, y);
 }
 
-void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void segment_sum_flat_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                                   const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
   const int bp_1 = h_csr_desc.row_ptr[h_csr_desc.rows / 2];
   const int bp_2 = h_csr_desc.row_ptr[h_csr_desc.rows];
@@ -81,7 +81,7 @@ void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, co
  * currently, it only support adaptive template parameters on one-pass flat method.
  * \note: if config item FLAT_ONE_PASS_ADAPTIVE is set to false, one-pass adaptive will be disabled.
  */
-void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha, const int beta,
+void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const double alpha, const double beta,
                                const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
   VAR_FROM_CSR_DESC(d_csr_desc)
   const int nnz = d_csr_desc.nnz;

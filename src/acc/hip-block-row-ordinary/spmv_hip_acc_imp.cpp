@@ -13,7 +13,7 @@
 const unsigned blocks = 64;
 const unsigned threadPerBlock = 256;
 
-__global__ void block_row_device_sparse_spmv_acc(int trans, const int alpha, const int beta, int m, int n,
+__global__ void block_row_device_sparse_spmv_acc(int trans, const double alpha, const double beta, int m, int n,
                                                  const int *rowptr, const int *colindex, const double *value,
                                                  const double *x, double *y) {
 
@@ -66,7 +66,7 @@ __global__ void block_row_device_sparse_spmv_acc(int trans, const int alpha, con
   }
 }
 
-void block_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void block_row_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                            const double *x, double *y) {
   VAR_FROM_CSR_DESC(d_csr_desc);
   const int n = d_csr_desc.cols;

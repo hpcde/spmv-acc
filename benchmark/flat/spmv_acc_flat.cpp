@@ -18,7 +18,7 @@
 #include "benchmark_config.h"
 
 template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int BLOCKS, int THREADS_PER_BLOCK>
-inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
+inline void flat_multi_pass_sparse_spmv(int trans, const double alpha, const double beta, int m, int n, int nnz,
                                         const int *rowptr, const int *colindex, const double *value, const double *x,
                                         double *y, BenchmarkTime *bmt) {
   hip::timer::event_timer pre_timer, calc_timer;
@@ -43,7 +43,7 @@ inline void flat_multi_pass_sparse_spmv(int trans, const int alpha, const int be
 }
 
 template <int R, int REDUCE_OPTION, int REDUCE_VEC_SIZE, int THREADS_PER_BLOCK, int FLAT_PRE_CALC_BP_KERNEL_VERSION>
-inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta, int m, int n, int nnz,
+inline void flat_one_pass_sparse_spmv(int trans, const double alpha, const double beta, int m, int n, int nnz,
                                       const int *rowptr, const int *colindex, const double *value, const double *x,
                                       double *y, BenchmarkTime *bmt) {
   hip::timer::event_timer pre_timer, calc_timer;
@@ -76,7 +76,7 @@ inline void flat_one_pass_sparse_spmv(int trans, const int alpha, const int beta
 }
 
 template <int FLAT_PRE_CALC_BP_KERNEL_VERSION>
-void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const int alpha, const int beta,
+void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int trans, const double alpha, const double beta,
                                const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
   VAR_FROM_CSR_DESC(d_csr_desc)
   const int nnz = d_csr_desc.nnz;
@@ -125,7 +125,7 @@ void adaptive_flat_sparse_spmv(const int nnz_block_0, const int nnz_block_1, int
 }
 
 template <int FLAT_PRE_CALC_BP_KERNEL_VERSION>
-void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void flat_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                       const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
   // divide the matrix into 2 blocks and calculate nnz for each block.
   const int m = h_csr_desc.rows;
@@ -138,7 +138,7 @@ void flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc
                                                              x, y, bmt);
 }
 
-void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void segment_sum_flat_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                                   const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
   const int bp_1 = h_csr_desc.row_ptr[h_csr_desc.rows / 2];
   const int bp_2 = h_csr_desc.row_ptr[h_csr_desc.rows];
@@ -158,20 +158,20 @@ void segment_sum_flat_sparse_spmv(int trans, const int alpha, const int beta, co
                                                                         value, x, y, bmt);
 }
 
-template void adaptive_flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V1>(const int, const int, int trans, const int,
-                                                                            const int, const csr_desc<int, double>,
+template void adaptive_flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V1>(const int, const int, int trans, const double,
+                                                                            const double, const csr_desc<int, double>,
                                                                             const double *, double *, BenchmarkTime *);
 
-template void adaptive_flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V2>(const int, const int, int trans, const int,
-                                                                            const int, const csr_desc<int, double>,
+template void adaptive_flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V2>(const int, const int, int trans, const double,
+                                                                            const double, const csr_desc<int, double>,
                                                                             const double *, double *, BenchmarkTime *);
 
-template void flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V1>(int, const int, const int,
+template void flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V1>(int, const double, const double,
                                                                    const csr_desc<int, double>,
                                                                    const csr_desc<int, double>, const double *,
                                                                    double *, BenchmarkTime *);
 
-template void flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V2>(int, const int, const int,
+template void flat_sparse_spmv<FLAT_PRE_CALC_BP_KERNEL_VERSION_V2>(int, const double, const double,
                                                                    const csr_desc<int, double>,
                                                                    const csr_desc<int, double>, const double *,
                                                                    double *, BenchmarkTime *);

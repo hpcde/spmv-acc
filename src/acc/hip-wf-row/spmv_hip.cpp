@@ -15,7 +15,7 @@
 typedef int type_index;
 typedef double type_values;
 
-void wf_row_sparse_spmv(int htrans, const int halpha, const int hbeta, const csr_desc<int, double> d_csr_desc,
+void wf_row_sparse_spmv(int htrans, const double halpha, const double hbeta, const csr_desc<int, double> d_csr_desc,
                         const double *x, double *y) {
 
 #if defined WF_REDUCE_DEFAULT

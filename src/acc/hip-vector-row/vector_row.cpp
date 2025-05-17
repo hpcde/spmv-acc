@@ -6,7 +6,7 @@
 #include "building_config.h"
 #include "../common/macros.h"
 
-void vec_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void vec_row_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                          const double *x, double *y) {
   //  const int avg_eles_per_row = ceil(d_csr_desc.nnz + 0.0 / m);
   VAR_FROM_CSR_DESC(d_csr_desc);
@@ -27,8 +27,8 @@ void vec_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_d
   }
 }
 
-void adaptive_vec_row_sparse_spmv(const int weight_block_0, const int weight_block_1, int trans, const int alpha,
-                                  const int beta, const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
+void adaptive_vec_row_sparse_spmv(const int weight_block_0, const int weight_block_1, int trans, const double alpha,
+                                  const double beta, const csr_desc<int, double> d_csr_desc, const double *x, double *y) {
   VAR_FROM_CSR_DESC(d_csr_desc);
 
   const int avg_eles_per_row = d_csr_desc.nnz / m;

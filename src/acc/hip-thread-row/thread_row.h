@@ -33,7 +33,7 @@ __global__ void kernel_thread_row_block_v2(const T alpha, const T beta, const I 
                                            const I *__restrict__ csr_col_inx, const T *__restrict__ csr_val,
                                            const T *__restrict__ x, T *__restrict__ y);
 
-void thread_row_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void thread_row_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                             const double *d_x, double *d_y);
 
 #include "thread_row.inl"

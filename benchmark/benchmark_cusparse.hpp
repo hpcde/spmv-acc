@@ -14,7 +14,7 @@
 #include "benchmark/timer_utils.h"
 
 struct CuSparseGeneral : CsrSpMV {
-  void csr_spmv_impl(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+  void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
 
     const double cu_alpha = static_cast<double>(alpha);

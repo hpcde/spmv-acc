@@ -13,7 +13,7 @@
 #include "benchmark_config.h"
 
 template <int REDUCTION_ALGORITHM, int UPDATE_ALGORITHM>
-void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> h_csr_desc,
+void merge_path_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
   hip::timer::event_timer  pre_timer, calc_timer, calc2_timer, destroy_timer;
   pre_timer.start();
@@ -66,22 +66,22 @@ void merge_path_spmv(int trans, const int alpha, const int beta, const csr_desc<
 }
 
 // template instantiation
-template void merge_path_spmv<Linear, SingleBlock>(int trans, const int alpha, const int beta,
+template void merge_path_spmv<Linear, SingleBlock>(int trans, const double alpha, const double beta,
                                                    const csr_desc<int, double> h_csr_desc,
                                                    const csr_desc<int, double> d_csr_desc, const double *x, double *y,
                                                    BenchmarkTime *bmt);
 
-template void merge_path_spmv<Linear, LookBack>(int trans, const int alpha, const int beta,
+template void merge_path_spmv<Linear, LookBack>(int trans, const double alpha, const double beta,
                                                 const csr_desc<int, double> h_csr_desc,
                                                 const csr_desc<int, double> d_csr_desc, const double *x, double *y,
                                                 BenchmarkTime *bmt);
 
-template void merge_path_spmv<Binary, SingleBlock>(int trans, const int alpha, const int beta,
+template void merge_path_spmv<Binary, SingleBlock>(int trans, const double alpha, const double beta,
                                                    const csr_desc<int, double> h_csr_desc,
                                                    const csr_desc<int, double> d_csr_desc, const double *x, double *y,
                                                    BenchmarkTime *bmt);
 
-template void merge_path_spmv<Binary, LookBack>(int trans, const int alpha, const int beta,
+template void merge_path_spmv<Binary, LookBack>(int trans, const double alpha, const double beta,
                                                 const csr_desc<int, double> h_csr_desc,
                                                 const csr_desc<int, double> d_csr_desc, const double *x, double *y,
                                                 BenchmarkTime *bmt);

@@ -7,7 +7,7 @@
 #include "spmv.h"
 #include "types.h"
 
-void sparse_spmv(int htrans, const int halpha, const int hbeta, int hm, int hn, const int *rowptr, const int *colindex,
+void sparse_spmv(int htrans, const double halpha, const double hbeta, int hm, int hn, const int *rowptr, const int *colindex,
                  const double *value, const double *x, double *y) {
   // printf("Warning: this api is deprecated, which may cause crash if UVM (Unified Virtual Memory) is not supported.\n");
 

@@ -5,7 +5,7 @@
 #include "line_strategy.h"
 #include "../common/macros.h"
 
-void line_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void line_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                       const double *x, double *y) {
   VAR_FROM_CSR_DESC(d_csr_desc)
 
@@ -74,9 +74,4 @@ void adaptive_line_sparse_spmv(int trans, const double alpha, const double beta,
   } else {
     ADAPTIVE_LINE_WRAPPER(64, nnz_per_row + 4);
   }
-}
-
-void adaptive_line_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
-                               const double *x, double *y) {
-  adaptive_line_sparse_spmv(trans, static_cast<double>(alpha), static_cast<double>(beta), d_csr_desc, x, y);
 }

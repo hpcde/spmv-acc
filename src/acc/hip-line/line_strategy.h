@@ -26,11 +26,7 @@ __global__ void spmv_adaptive_line_kernel(const I m, const T alpha, const T beta
 void adaptive_line_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                                const double *x, double *y);
 
-// only for api compatibility
-void adaptive_line_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
-                               const double *x, double *y);
-
-void line_sparse_spmv(int trans, const int alpha, const int beta, const csr_desc<int, double> d_csr_desc,
+void line_sparse_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> d_csr_desc,
                       const double *x, double *y);
 
 #include "line_adaptive_one_pass.inl"
