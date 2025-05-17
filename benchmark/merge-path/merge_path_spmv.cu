@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "benchmark_config.h"
+#include "utils/timer_utils.h"
 
 template <int REDUCTION_ALGORITHM, int UPDATE_ALGORITHM>
 void merge_path_spmv(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,

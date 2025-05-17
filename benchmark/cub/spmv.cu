@@ -8,6 +8,7 @@
 #include "api/types.h"
 #include "timer.h"
 #include "benchmark_config.h"
+#include "utils/timer_utils.h"
 
 void spmv(int trans, const csr_desc<int, double> h_csr_desc, const csr_desc<int, double> d_csr_desc, const double *x,
           double *y, BenchmarkTime *bmt) {

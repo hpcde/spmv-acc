@@ -11,9 +11,19 @@
 
 #include "timer.h"
 #include "utils/benchmark_time.h"
-#include "benchmark/timer_utils.h"
+#include "utils/timer_utils.h"
 
 struct CuSparseGeneral : CsrSpMV {
+
+  inline cusparseSpMVAlg_t get_spmv_algo() {
+// CUSPARSE_MV_ALG_DEFAULT is deprecated in 11.2.1 and removed in 11.2.2
+#if CUSPARSE_VERSION < 11201
+    return CUSPARSE_MV_ALG_DEFAULT;
+#else
+    return CUSPARSE_SPMV_ALG_DEFAULT;
+#endif
+  }
+
   void csr_spmv_impl(int trans, const double alpha, const double beta, const csr_desc<int, double> h_csr_desc,
                      const csr_desc<int, double> d_csr_desc, const double *x, double *y, BenchmarkTime *bmt) {
 
@@ -36,13 +46,13 @@ struct CuSparseGeneral : CsrSpMV {
     void *d_buffer = NULL;
     size_t buffer_size = 0;
     cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &cu_alpha, cu_mat, cu_x, &cu_beta, cu_y,
-                            CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, &buffer_size);
+                            CUDA_R_64F, get_spmv_algo(), &buffer_size);
     cudaMalloc(&d_buffer, buffer_size);
     pre_timer.stop();
     calc_timer.start();
     // Execute SpMV
     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &cu_alpha, cu_mat, cu_x, &cu_beta, cu_y, CUDA_R_64F,
-                 CUSPARSE_MV_ALG_DEFAULT, d_buffer);
+                 get_spmv_algo(), d_buffer);
     calc_timer.stop(true);
     destroy_timer.start();
     // Clear up on device
