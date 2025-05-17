@@ -11,7 +11,7 @@
 
 #include "timer.h"
 #include "utils/benchmark_time.h"
-#include "benchmark/timer_utils.h"
+#include "utils/timer_utils.h"
 
 struct CuSparseGeneral : CsrSpMV {
   inline cusparseSpMVAlg_t get_spmv_algo() {
