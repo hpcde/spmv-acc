@@ -64,11 +64,10 @@ cmake --build ./build-hip-adaptive
 
 ### Build with benchmark
 ```bash
-# please remomber to change WARP_SIZE in hola-hip on rocm platform
-cmake -B ./build -S ./ \
-   -DBENCHMARK_FORCE_SYNC_KERNELS=ON -DSPMV_BUILD_BENCHMARK=ON -DSPMV_OMP_ENABLED_FLAG=ON \
-   -DCMAKE_CXX_FLAGS="-std=c++14" -DHIP_HIPCC_FLAGS="-std=c++14"
-cmake --build ./build -j 4
+# please remember to change WARP_SIZE in hola-hip on rocm platform
+cmake --list-presets 
+cmake --preset=rocm-hipcc-benchmark # or use --preset=cuda-hipcc-benchmark
+cmake --build --preset=rocm-hipcc-benchmark -j 4  # or use --preset=cuda-hipcc-benchmark
 ```
 
 ## For Developers

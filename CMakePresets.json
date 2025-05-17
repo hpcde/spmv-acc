@@ -1,0 +1,127 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "use-ninja",
+            "hidden": true,
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "default-build-dir",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build"
+        },
+
+        {
+            "name": "enable-benchmark",
+            "hidden": true,
+            "cacheVariables": {
+                "BENCHMARK_FORCE_SYNC_KERNELS": "ON",
+                "SPMV_BUILD_BENCHMARK": "ON",
+                "SPMV_OMP_ENABLED_FLAG": "ON"
+            }
+        },
+        {
+            "name": "use-platform-rocm",
+            "hidden": true,
+            "cacheVariables": {
+                "WAVEFRONT_SIZE": "64",
+                "BENCHMARK_CUDA_ENABLE_FLAG": "OFF"
+            }
+        },
+        {
+            "name": "use-platform-cuda",
+            "hidden": true,
+            "cacheVariables": {
+                "WAVEFRONT_SIZE": "32",
+                "BENCHMARK_CUDA_ENABLE_FLAG": "ON",
+                // set cuda arch here.
+                "HIP_NVCC_FLAGS": "-arch=sm_89 -rdc=true -Xcompiler -fdiagnostics-color=always"
+            }
+        },
+        {
+            "name": "use-nv-hipcc-wrapper",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_CXX_EXTENSIONS": "OFF",
+                "CMAKE_C_COMPILER": "${sourceDir}/scripts/hipcc-nv-wrapper.sh",
+                "CMAKE_CXX_COMPILER": "${sourceDir}/scripts/hipcc-nv-wrapper.sh",
+                "HIP_HIPCC_FLAGS": "-std=c++14"
+            }
+        },
+        {
+            "name": "use-hipcc",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "hipcc",
+                "CMAKE_CXX_COMPILER": "hipcc",
+                "HIP_HIPCC_FLAGS": "-std=c++14"
+            }
+        },
+
+        {
+            "name": "rocm-hipcc",
+            "displayName": "Build for ROCm platform using hipcc without benchmark",
+            "inherits": [
+                "use-hipcc",
+                "use-platform-rocm",
+                "default-build-dir"
+            ]
+        },
+        {
+            "name": "cuda-hipcc",
+            "displayName": "Build for CUDA platform using hipcc without benchmark",
+            "inherits": [
+                "use-nv-hipcc-wrapper",
+                "use-platform-cuda",
+                "default-build-dir"
+            ]
+        },
+        {
+            "name": "rocm-hipcc-benchmark",
+            "displayName": "Build for ROCm platform using hipcc with benchmark enabled",
+            "inherits": [
+                "use-hipcc",
+                "enable-benchmark",
+                "use-platform-rocm",
+                "default-build-dir"
+            ]
+        },
+        {
+            "name": "cuda-hipcc-benchmark",
+            "displayName": "Build for CUDA platform using hipcc with benchmark enabled",
+            "inherits": [
+                "use-nv-hipcc-wrapper",
+                "enable-benchmark",
+                "use-platform-cuda",
+                "default-build-dir"
+            ]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "rocm-hipcc",
+            "configurePreset": "rocm-hipcc"
+        },
+        {
+            "name": "cuda-hipcc",
+            "configurePreset": "cuda-hipcc"
+        },
+        {
+            "name": "rocm-hipcc-benchmark",
+            "configurePreset": "rocm-hipcc-benchmark"
+        },
+        {
+            "name": "cuda-hipcc-benchmark",
+            "configurePreset": "cuda-hipcc-benchmark"
+        }
+    ]
+}
